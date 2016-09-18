@@ -83,11 +83,11 @@ if [[ $? -ne 0 ]]; then
     echo "Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"
     exit
 fi
-email=$(jq '.email // empty' <<< "$user")
-name=$(jq '.name // empty' <<< "$user")
+email=$(jq --raw-output '.email // empty' <<< "$user")
+name=$(jq --raw-output '.name // empty' <<< "$user")
 
 # canonicalize username
-login=$(jq '.login // empty' <<< "$user")
+login=$(jq --raw-output '.login // empty' <<< "$user")
 if [[ ! -z "$login" ]]; then
     username="$login"
 fi
