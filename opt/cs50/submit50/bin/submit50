@@ -36,6 +36,7 @@ fi
 curl --fail -o "$EXCLUDE" --silent "https://raw.githubusercontent.com/submit50/submit50/$problem/exclude"
 if [[ $? -ne 0 ]]; then
     echo "Invalid problem. Did you mean to submit something else?"
+    rm -f "$EXCLUDE"
     exit 1
 fi
 
@@ -45,7 +46,7 @@ while read line; do
     if [[ "$line" =~ ^# ]]; then
         file=$(sed 's/^[ \t]*//;s/[ \t]*$//' <<< "${line#?}")
         if [[ ! -e "$file" ]]; then
-            files+=($file)
+            files+=("$file")
         fi
         unset file
     fi
