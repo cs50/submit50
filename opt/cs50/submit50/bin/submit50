@@ -129,15 +129,31 @@ if [[ $? -ne 0 ]]; then
     rm -f "$EXCLUDE"
     exit
 fi
-email=$(jq --raw-output '.email // empty' <<< "$user")
 name=$(jq --raw-output '.name // empty' <<< "$user")
-
-# canonicalize username
 login=$(jq --raw-output '.login // empty' <<< "$user")
 if [[ ! -z "$login" ]]; then
     username="$login"
 fi
 unset login
+unset user
+
+# GET https://api.github.com/user/emails
+emails=$(curl --config - --fail --silent "https://api.github.com/user/emails" <<< "user = $username:$password" 2>&1)
+if [[ $? -ne 0 ]]; then
+    echo "Sorry, something's wrong!"
+    echo "Let sysadmins@cs50.harvard.edu know!"
+    rm -f "$EXCLUDE"
+    exit
+fi
+verified=$(jq --raw-output '.[] | select(.primary == true) | .verified' <<< "$emails")
+if [[ "$verified" != "true" ]]; then
+    echo "Looks like you still need to verify your email address at https://github.com/settings/emails!"
+    rm -f "$EXCLUDE"
+    exit
+fi
+email=$(jq --raw-output '.[] | select(.primary == true) | .email // empty' <<< "$emails")
+unset verified
+unset emails
 
 # GET https://api.github.com/submit50/$username
 curl --config - --fail --head --silent "https://api.github.com/repos/submit50/$username" <<< "user = $username:$password" > /dev/null 2>&1
