@@ -27,7 +27,45 @@ for cmd in curl expect jq sed; do
     fi
 done
 
-# TODO: check if problem exists by querying for .gitignore
+# ensure problem exists
+EXCLUDE=$(mktemp)
+if [[ $? -ne 0 ]]; then
+    echo "Could not create a temporary file."
+    exit 1
+fi
+curl --fail -o "$EXCLUDE" --silent "https://raw.githubusercontent.com/submit50/submit50/$problem/exclude"
+if [[ $? -ne 0 ]]; then
+    echo "Invalid problem. Did you mean to submit something else?"
+    rm -f "$EXCLUDE"
+    exit 1
+fi
+
+# check for missing files 
+declare -a files
+while read line; do
+    if [[ "$line" =~ ^# ]]; then
+        file=$(sed 's/^[ \t]*//;s/[ \t]*$//' <<< "${line#?}")
+        if [[ ! -e "$file" ]]; then
+            files+=("$file")
+        fi
+        unset file
+    fi
+done < "$EXCLUDE"
+unset line
+if [[ ${#files[@]} -ne 0 ]]; then
+    echo "You seem to be missing these files:"
+    printf " %s\n" "${files[@]}"
+    read -p "Proceed anyway? " -r read
+    shopt -s nocasematch
+    if [[ ! "$read" =~ ^\s*(yes|y)\s*$ ]]; then
+        echo -e -n "\033[31m"
+        echo "Submission cancelled."
+        echo -e -n "\033[39m"
+        rm -f "$EXCLUDE"
+        exit 1
+    fi
+    shopt -u nocasematch
+fi
 
 # ask for GitHub username
 while read -p "GitHub username: " -r username
@@ -72,15 +110,23 @@ headers=$(curl --config - --fail --head --silent "https://api.github.com/user" <
 if [[ $? -ne 0 ]]; then
     echo "Incorrect GitHub username and/or password!"
     echo "Visit https://github.com/password_reset if forgotten."
+    rm -f "$EXCLUDE"
     exit 1
 fi
 datetime=$(sed -nr "s/^Date: (.*)/\1/p" <<< "$headers")
-# TODO: ensure Date: exists
+if [[ -z "$datetime" ]]; then
+    echo "Can't figure out what time it is!"
+    echo "Let sysadmins@cs50.harvard.edu know!"
+    rm -f "$EXCLUDE"
+    exit 1
+fi
 
 # GET https://api.github.com/user
 user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = $username:$password" 2>&1)
 if [[ $? -ne 0 ]]; then
-    echo "Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"
+    echo "Sorry, something's wrong!"
+    echo "Let sysadmins@cs50.harvard.edu know!"
+    rm -f "$EXCLUDE"
     exit
 fi
 email=$(jq --raw-output '.email // empty' <<< "$user")
@@ -97,7 +143,8 @@ unset login
 curl --config - --fail --head --silent "https://api.github.com/repos/submit50/$username" <<< "user = $username:$password" > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then
     echo "Looks like we haven't enabled submit50 for your account yet!"
-    echo "Email sysadmins@cs50.harvard.edu and let us know your GitHub username!"
+    echo "Let sysadmins@cs50.harvard.edu know your GitHub username!"
+    rm -f "$EXCLUDE"
     exit
 fi
 
@@ -105,6 +152,7 @@ fi
 GIT_DIR=$(mktemp -d)
 if [[ $? -ne 0 ]]; then
     echo "Could not create a temporary directory."
+    rm -f "$EXCLUDE"
     exit 1
 fi
 export GIT_DIR
@@ -125,11 +173,10 @@ expect <<- EOF
 EOF
 if [[ $? -ne 0 ]]; then
     echo "Could not clone https://$username@github.com/submit50/$username"
+    rm -rf "$GIT_DIR"
+    rm -f "$EXCLUDE"
     exit 1
 fi
-
-# TODO: confirm files to submit
-#tree=$(git ls-tree -r "$problem" --name-only | jq --raw-input --slurp @json)
 
 # set options
 # https://help.github.com/articles/keeping-your-email-address-private/
@@ -139,11 +186,32 @@ git config user.name "${name:-$username}"
 # updates HEAD to point at $problem
 git symbolic-ref HEAD "refs/heads/$problem"
 
+# patterns of file names to exclude
+git config core.excludesFile "$EXCLUDE"
+git config core.ignorecase true
+
 # adds, modifies, and removes index entries to match the working tree
 echo -e -n "\033[33m"
 echo "git add --all"
 echo -e -n "\033[39m"
 git add --all
+
+# confirm submission
+echo "Files that will be submitted:"
+git ls-files | sed -e 's/^/ /'
+echo "Files that won't be submitted:"
+git ls-files --other | sed -e 's/^/ /'
+read -p "Submit? " -r read
+shopt -s nocasematch
+if [[ ! "$read" =~ ^\s*(yes|y)\s*$ ]]; then
+    echo -e -n "\033[31m"
+    echo "Submission cancelled."
+    echo -e -n "\033[39m"
+    rm -rf "$GIT_DIR"
+    rm -f "$EXCLUDE"
+    exit 1
+fi
+shopt -u nocasematch
 
 # stores the current contents of the index in a new commit
 echo -e -n "\033[33m"
@@ -200,8 +268,9 @@ expect <<- EOF
     }
 EOF
 
-# remove repository
+# remove temporaries
 rm -rf "$GIT_DIR"
+rm -f "$EXCLUDE"
 
 # kthxbai
 echo -e -n "\033[32m"
