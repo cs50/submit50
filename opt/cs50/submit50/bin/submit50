@@ -70,11 +70,8 @@ unset prompt
 # HEAD https://api.github.com/user
 headers=$(curl --config - --fail --head --silent "https://api.github.com/user" <<< "user = $username:$password" 2>&1)
 if [[ $? -ne 0 ]]; then
-    if [[ "$username" =~ .*"@".* ]]; then
-        echo "Log in with your GitHub username, not email address!"
-    else
-        echo "Incorrect GitHub username and/or password! Visit https://github.com/password_reset if forgotten."
-    fi
+    echo "Incorrect GitHub username and/or password!"
+    echo "Visit https://github.com/password_reset if forgotten."
     exit 1
 fi
 datetime=$(sed -nr "s/^Date: (.*)/\1/p" <<< "$headers")
@@ -88,6 +85,13 @@ if [[ $? -ne 0 ]]; then
 fi
 email=$(jq '.email // empty' <<< "$user")
 name=$(jq '.name // empty' <<< "$user")
+
+# canonicalize username
+login=$(jq '.login // empty' <<< "$user")
+if [[ ! -z "$login" ]]; then
+    username="$login"
+fi
+unset login
 
 # GET https://api.github.com/submit50/$username
 curl --config - --fail --head --silent "https://api.github.com/repos/submit50/$username" <<< "user = $username:$password" > /dev/null 2>&1
