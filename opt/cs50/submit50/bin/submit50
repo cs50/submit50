@@ -196,11 +196,28 @@ echo "git add --all"
 echo -e -n "\033[39m"
 git add --all
 
-# confirm submission
+# files that will be submitted
+files=$(git ls-files | sed -e 's/^/ /')
+if [[ -z "$files" ]]; then
+    echo "None of the files in this directory are expected for submission."
+    echo -e -n "\033[31m"
+    echo "Submission cancelled."
+    echo -e -n "\033[39m"
+    rm -rf "$GIT_DIR"
+    rm -f "$EXCLUDE"
+    exit 1
+fi
 echo "Files that will be submitted:"
-git ls-files | sed -e 's/^/ /'
-echo "Files that won't be submitted:"
-git ls-files --other | sed -e 's/^/ /'
+echo "$files"
+unset files
+
+# files that won't be submitted
+files=$(git ls-files --other | sed -e 's/^/ /')
+if [[ ! -z "$files" ]]; then
+    echo "Files that won't be submitted:"
+    echo "$files"
+fi
+unset files
 read -p "Submit? " -r read
 shopt -s nocasematch
 if [[ ! "$read" =~ ^\s*(yes|y)\s*$ ]]; then
