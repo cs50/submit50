@@ -183,7 +183,7 @@ echo -e -n "\033[39m"
 expect <<- EOF
     spawn git clone --bare "https://$username@github.com/submit50/$username" "$GIT_DIR"
     expect {
-        "*Password*:" { send -- "$password\n"; expect eof }
+        "*Password*:" { send -- {$password}; send -- "\n"; expect eof }
         eof { exit }
     }
 EOF
@@ -259,7 +259,7 @@ echo -e -n "\033[39m"
 expect <<- EOF
     spawn git push origin "refs/heads/$problem"
     expect {
-        "Password*:" { send -- "$password\n"; expect eof }
+        "*Password*:" { send -- {$password}; send -- "\n"; expect eof }
         eof { exit }
     }
 EOF
@@ -296,7 +296,7 @@ echo -e -n "\033[39m"
 expect <<- EOF
     spawn git push --force origin "refs/tags/$problem"
     expect {
-        "Password*:" { send -- "$password\n"; expect eof }
+        "*Password*:" { send -- {$password}; send -- "\n"; expect eof }
         eof { exit }
     }
 EOF
