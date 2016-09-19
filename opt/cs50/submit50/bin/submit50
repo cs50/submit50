@@ -106,7 +106,7 @@ done
 unset prompt
 
 # HEAD https://api.github.com/user
-headers=$(curl --config - --fail --head --silent "https://api.github.com/user" <<< "user = $username:$password" 2>&1)
+headers=$(curl --config - --fail --head --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
 if [[ $? -ne 0 ]]; then
     echo "Incorrect GitHub username and/or password!"
     echo "Visit https://github.com/password_reset if forgotten."
@@ -122,7 +122,7 @@ if [[ -z "$datetime" ]]; then
 fi
 
 # GET https://api.github.com/user
-user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = $username:$password" 2>&1)
+user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
 if [[ $? -ne 0 ]]; then
     echo "Sorry, something's wrong!"
     echo "Let sysadmins@cs50.harvard.edu know!"
@@ -138,7 +138,7 @@ unset login
 unset user
 
 # GET https://api.github.com/user/emails
-emails=$(curl --config - --fail --silent "https://api.github.com/user/emails" <<< "user = $username:$password" 2>&1)
+emails=$(curl --config - --fail --silent "https://api.github.com/user/emails" <<< "user = \"$username:$password\"" 2>&1)
 if [[ $? -ne 0 ]]; then
     echo "Sorry, something's wrong!"
     echo "Let sysadmins@cs50.harvard.edu know!"
@@ -156,7 +156,7 @@ unset verified
 unset emails
 
 # GET https://api.github.com/submit50/$username
-curl --config - --fail --head --silent "https://api.github.com/repos/submit50/$username" <<< "user = $username:$password" > /dev/null 2>&1
+curl --config - --fail --head --silent "https://api.github.com/repos/submit50/$username" <<< "user = \"$username:$password\"" > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then
     echo "Looks like we haven't enabled submit50 for your account yet!"
     echo "Let sysadmins@cs50.harvard.edu know your GitHub username!"
