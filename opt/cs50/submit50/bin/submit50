@@ -1,7 +1,23 @@
 #!/bin/bash
 
-# exit on ctrl-c
-trap "echo; cancel" INT
+function main()
+{
+    # dependencies
+    for command in curl expect jq sed; do
+        if ! command -v "$command" > /dev/null 2>&1; then
+            cancel "Missing dependency. Install \`$command\`."
+        fi
+    done
+
+    # usage 
+    if [[ $# -ne 1 ]]; then
+        cancel "Usage: submit50 problem"
+    fi
+    problem="$1"
+
+    # submit problem
+    submit "$1"
+}
 
 # cancels submission
 function cancel()
@@ -41,6 +57,231 @@ function spin()
     echo
 }
 
+# submits a problem
+function submit()
+{
+    # ensure problem exists
+    EXCLUDE=$(mktemp)
+    if [[ $? -ne 0 ]]; then
+        cancel "Could not create a temporary file."
+    fi
+    curl --fail -o "$EXCLUDE" --silent "https://raw.githubusercontent.com/submit50/submit50/$problem/exclude"
+    if [[ $? -ne 0 ]]; then
+        cancel "Invalid problem. Did you mean to submit something else?"
+    fi
+
+    # check for missing files 
+    declare -a files
+    while read line; do
+        if [[ "$line" =~ ^# ]]; then
+            file=$(sed 's/^[ \t]*//;s/[ \t]*$//' <<< "${line#?}")
+            if [[ ! -f "$file" ]]; then
+                files+=("$file")
+            fi
+            unset file
+        fi
+    done < "$EXCLUDE"
+    unset line
+    if [[ ${#files[@]} -ne 0 ]]; then
+        echo "You seem to be missing these files:"
+        printf " %s\n" "${files[@]}"
+        read -p "Proceed anyway? " -r read
+        shopt -s nocasematch
+        if [[ ! "$read" =~ ^\s*(yes|y)\s*$ ]]; then
+            cancel
+        fi
+        shopt -u nocasematch
+    fi
+
+    # ask for GitHub username
+    while read -p "GitHub username: " -r username
+    do
+        if [[ ! -z "$username" ]]; then
+            break
+        fi
+    done
+
+    # ask for GitHub password
+    # http://stackoverflow.com/a/1923893
+    # http://askubuntu.com/a/299469
+    while true
+    do
+        prompt="GitHub password: "
+        while IFS= read -p "$prompt" -r -s -n 1 char
+        do
+            if [[ "$char" == $'\0' ]]; then
+                break
+            fi
+            if [[ "$char" == $'\177' ]]; then
+                if [[ ${#password} -gt 0 ]]; then
+                    prompt=$'\b \b'
+                    password="${password%?}"
+                else
+                    prompt=''
+                fi
+            else
+                prompt='*'
+                password+="$char"
+            fi
+        done
+        echo
+        if [[ ! -z "$password" ]]; then
+            break
+        fi
+    done
+    unset prompt
+
+    # HEAD https://api.github.com/user
+    headers=$(curl --config - --fail --head --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
+    if [[ $? -ne 0 ]]; then
+        cancel "Incorrect GitHub username and/or password!\nVisit https://github.com/password_reset if forgotten."
+    fi
+    datetime=$(sed -nr "s/^Date: (.*)/\1/p" <<< "$headers")
+    if [[ -z "$datetime" ]]; then
+        cancel "Can't figure out what time it is!\nLet sysadmins@cs50.harvard.edu know!"
+    fi
+
+    # GET https://api.github.com/user
+    user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
+    if [[ $? -ne 0 ]]; then
+        cancel "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
+    fi
+    name=$(jq --raw-output '.name // empty' <<< "$user")
+    login=$(jq --raw-output '.login // empty' <<< "$user")
+    if [[ ! -z "$login" ]]; then
+        username="$login"
+    fi
+    unset login
+    unset user
+
+    # GET https://api.github.com/user/emails
+    emails=$(curl --config - --fail --silent "https://api.github.com/user/emails" <<< "user = \"$username:$password\"" 2>&1)
+    if [[ $? -ne 0 ]]; then
+        cancel "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
+    fi
+    verified=$(jq --raw-output '.[] | select(.primary == true) | .verified' <<< "$emails")
+    if [[ "$verified" != "true" ]]; then
+        cancel "Looks like you still need to verify your email address at https://github.com/settings/emails!"
+    fi
+    email=$(jq --raw-output '.[] | select(.primary == true) | .email // empty' <<< "$emails")
+    unset verified
+    unset emails
+
+    # GET https://api.github.com/submit50/$username
+    curl --config - --fail --head --silent "https://api.github.com/repos/submit50/$username" <<< "user = \"$username:$password\"" > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        cancel "Looks like we haven't enabled submit50 for your account yet!\nLet sysadmins@cs50.harvard.edu know your GitHub username!"
+    fi
+
+    # path to the repository
+    GIT_DIR=$(mktemp -d)
+    if [[ $? -ne 0 ]]; then
+        cancel "Could not create a temporary directory."
+    fi
+    export GIT_DIR
+
+    # path to the working tree
+    export GIT_WORK_TREE="$PWD"
+
+    # git clone --bare https://github.com/submit50/$username
+    expect <<- EOF
+        spawn git clone --bare "https://$username@github.com/submit50/$username" "$GIT_DIR"
+        expect {
+            "*Password*:" { send -- {$password}; send -- "\r"; expect eof }
+            eof { exit }
+        }
+EOF
+    if [[ $? -ne 0 ]]; then
+        cancel "Could not clone https://$username@github.com/submit50/$username."
+    fi
+
+    # set options
+    # https://help.github.com/articles/keeping-your-email-address-private/
+    git config user.email "${email:-$username@users.noreply.github.com}"
+    git config user.name "${name:-$username}"
+
+    # updates HEAD to point at $problem
+    git symbolic-ref HEAD "refs/heads/$problem"
+
+    # patterns of file names to exclude
+    git config core.excludesFile "$EXCLUDE"
+    git config core.ignorecase true
+
+    # adds, modifies, and removes index entries to match the working tree
+    git add --all
+
+    # files that will be submitted
+    files=$(git ls-files | sed -e 's/^/ /')
+    if [[ -z "$files" ]]; then
+        cancel "None of the files in this directory are expected for submission."
+    fi
+    echo -e -n "\033[33m"
+    echo "Files that will be submitted:"
+    echo "$files"
+    echo -e -n "\033[39m"
+    unset files
+
+    # files that won't be submitted
+    files=$(git ls-files --other | sed -e 's/^/ /')
+    if [[ ! -z "$files" ]]; then
+        echo -e -n "\033[33m"
+        echo "Files that won't be submitted:"
+        echo "$files"
+        echo -e -n "\033[39m"
+    fi
+    unset files
+    echo -e -n "\033[33m"
+    read -p "Submit? " -r read
+    echo -e -n "\033[39m"
+    shopt -s nocasematch
+    if [[ ! "$read" =~ ^\s*(yes|y)\s*$ ]]; then
+        cancel
+    fi
+    shopt -u nocasematch
+
+    # stores the current contents of the index in a new commit
+    git commit --allow-empty --message="$datetime"
+
+    # updates remote refs using local refs, while sending objects necessary
+    expect <<- EOF
+        spawn git push origin "refs/heads/$problem"
+        expect {
+            "*Password*:" { send -- {$password}; send -- "\r"; expect eof }
+            eof { exit }
+        }
+EOF
+
+    # TODO: don't hardcode branch name
+    # create a new orphan branch and switch to it 
+    git checkout --orphan "orphan"
+
+    # adds, modifies, and removes index entries to match the working tree
+    git add --all
+
+    # stores the current contents of the index in a new commit
+    git commit --allow-empty --message="$datetime"
+
+    # add a tag reference
+    git tag --force "$problem"
+
+    # updates remote refs using local refs, while sending objects necessary
+    expect <<- EOF
+        spawn git push --force origin "refs/tags/$problem"
+        expect {
+            "*Password*:" { send -- {$password}; send -- "\r"; expect eof }
+            eof { exit }
+        }
+EOF
+
+    # kthxbai
+    teardown
+    echo -e -n "\033[32m"
+    echo "Submitted $problem! See https://github.com/submit50/$username/tree/$problem."
+    echo -e -n "\033[39m"
+    exit 0
+}
+
+# deletes temporary directory and temporary file
 function teardown()
 {
     # remove temporary directory
@@ -54,235 +295,5 @@ function teardown()
     fi
 }
 
-# usage 
-if [[ $# -ne 1 ]]; then
-    cancel "Usage: submit50 problem"
-fi
-problem="$1"
-
-# dependencies
-for command in curl expect jq sed; do
-    if ! command -v "$command" > /dev/null 2>&1; then
-        cancel "Missing dependency. Install \`$command\`."
-    fi
-done
-
-# ensure problem exists
-EXCLUDE=$(mktemp)
-if [[ $? -ne 0 ]]; then
-    cancel "Could not create a temporary file."
-fi
-curl --fail -o "$EXCLUDE" --silent "https://raw.githubusercontent.com/submit50/submit50/$problem/exclude"
-if [[ $? -ne 0 ]]; then
-    cancel "Invalid problem. Did you mean to submit something else?"
-fi
-
-# check for missing files 
-declare -a files
-while read line; do
-    if [[ "$line" =~ ^# ]]; then
-        file=$(sed 's/^[ \t]*//;s/[ \t]*$//' <<< "${line#?}")
-        if [[ ! -f "$file" ]]; then
-            files+=("$file")
-        fi
-        unset file
-    fi
-done < "$EXCLUDE"
-unset line
-if [[ ${#files[@]} -ne 0 ]]; then
-    echo "You seem to be missing these files:"
-    printf " %s\n" "${files[@]}"
-    read -p "Proceed anyway? " -r read
-    shopt -s nocasematch
-    if [[ ! "$read" =~ ^\s*(yes|y)\s*$ ]]; then
-        cancel
-    fi
-    shopt -u nocasematch
-fi
-
-# ask for GitHub username
-while read -p "GitHub username: " -r username
-do
-    if [[ ! -z "$username" ]]; then
-        break
-    fi
-done
-
-# ask for GitHub password
-# http://stackoverflow.com/a/1923893
-# http://askubuntu.com/a/299469
-while true
-do
-    prompt="GitHub password: "
-    while IFS= read -p "$prompt" -r -s -n 1 char
-    do
-        if [[ "$char" == $'\0' ]]; then
-            break
-        fi
-        if [[ "$char" == $'\177' ]]; then
-            if [[ ${#password} -gt 0 ]]; then
-                prompt=$'\b \b'
-                password="${password%?}"
-            else
-                prompt=''
-            fi
-        else
-            prompt='*'
-            password+="$char"
-        fi
-    done
-    echo
-    if [[ ! -z "$password" ]]; then
-        break
-    fi
-done
-unset prompt
-
-# HEAD https://api.github.com/user
-headers=$(curl --config - --fail --head --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
-if [[ $? -ne 0 ]]; then
-    cancel "Incorrect GitHub username and/or password!\nVisit https://github.com/password_reset if forgotten."
-fi
-datetime=$(sed -nr "s/^Date: (.*)/\1/p" <<< "$headers")
-if [[ -z "$datetime" ]]; then
-    cancel "Can't figure out what time it is!\nLet sysadmins@cs50.harvard.edu know!"
-fi
-
-# GET https://api.github.com/user
-user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
-if [[ $? -ne 0 ]]; then
-    cancel "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
-fi
-name=$(jq --raw-output '.name // empty' <<< "$user")
-login=$(jq --raw-output '.login // empty' <<< "$user")
-if [[ ! -z "$login" ]]; then
-    username="$login"
-fi
-unset login
-unset user
-
-# GET https://api.github.com/user/emails
-emails=$(curl --config - --fail --silent "https://api.github.com/user/emails" <<< "user = \"$username:$password\"" 2>&1)
-if [[ $? -ne 0 ]]; then
-    cancel "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
-fi
-verified=$(jq --raw-output '.[] | select(.primary == true) | .verified' <<< "$emails")
-if [[ "$verified" != "true" ]]; then
-    cancel "Looks like you still need to verify your email address at https://github.com/settings/emails!"
-fi
-email=$(jq --raw-output '.[] | select(.primary == true) | .email // empty' <<< "$emails")
-unset verified
-unset emails
-
-# GET https://api.github.com/submit50/$username
-curl --config - --fail --head --silent "https://api.github.com/repos/submit50/$username" <<< "user = \"$username:$password\"" > /dev/null 2>&1
-if [[ $? -ne 0 ]]; then
-    cancel "Looks like we haven't enabled submit50 for your account yet!\nLet sysadmins@cs50.harvard.edu know your GitHub username!"
-fi
-
-# path to the repository
-GIT_DIR=$(mktemp -d)
-if [[ $? -ne 0 ]]; then
-    cancel "Could not create a temporary directory."
-fi
-export GIT_DIR
-
-# path to the working tree
-export GIT_WORK_TREE="$PWD"
-
-# git clone --bare https://github.com/submit50/$username
-expect <<- EOF
-    spawn git clone --bare "https://$username@github.com/submit50/$username" "$GIT_DIR"
-    expect {
-        "*Password*:" { send -- {$password}; send -- "\r"; expect eof }
-        eof { exit }
-    }
-EOF
-if [[ $? -ne 0 ]]; then
-    cancel "Could not clone https://$username@github.com/submit50/$username."
-fi
-
-# set options
-# https://help.github.com/articles/keeping-your-email-address-private/
-git config user.email "${email:-$username@users.noreply.github.com}"
-git config user.name "${name:-$username}"
-
-# updates HEAD to point at $problem
-git symbolic-ref HEAD "refs/heads/$problem"
-
-# patterns of file names to exclude
-git config core.excludesFile "$EXCLUDE"
-git config core.ignorecase true
-
-# adds, modifies, and removes index entries to match the working tree
-git add --all
-
-# files that will be submitted
-files=$(git ls-files | sed -e 's/^/ /')
-if [[ -z "$files" ]]; then
-    cancel "None of the files in this directory are expected for submission."
-fi
-echo -e -n "\033[33m"
-echo "Files that will be submitted:"
-echo "$files"
-echo -e -n "\033[39m"
-unset files
-
-# files that won't be submitted
-files=$(git ls-files --other | sed -e 's/^/ /')
-if [[ ! -z "$files" ]]; then
-    echo -e -n "\033[33m"
-    echo "Files that won't be submitted:"
-    echo "$files"
-    echo -e -n "\033[39m"
-fi
-unset files
-echo -e -n "\033[33m"
-read -p "Submit? " -r read
-echo -e -n "\033[39m"
-shopt -s nocasematch
-if [[ ! "$read" =~ ^\s*(yes|y)\s*$ ]]; then
-    cancel
-fi
-shopt -u nocasematch
-
-# stores the current contents of the index in a new commit
-git commit --allow-empty --message="$datetime"
-
-# updates remote refs using local refs, while sending objects necessary
-expect <<- EOF
-    spawn git push origin "refs/heads/$problem"
-    expect {
-        "*Password*:" { send -- {$password}; send -- "\r"; expect eof }
-        eof { exit }
-    }
-EOF
-
-# TODO: don't hardcode branch name
-# create a new orphan branch and switch to it 
-git checkout --orphan "orphan"
-
-# adds, modifies, and removes index entries to match the working tree
-git add --all
-
-# stores the current contents of the index in a new commit
-git commit --allow-empty --message="$datetime"
-
-# add a tag reference
-git tag --force "$problem"
-
-# updates remote refs using local refs, while sending objects necessary
-expect <<- EOF
-    spawn git push --force origin "refs/tags/$problem"
-    expect {
-        "*Password*:" { send -- {$password}; send -- "\r"; expect eof }
-        eof { exit }
-    }
-EOF
-
-# kthxbai
-teardown
-echo -e -n "\033[32m"
-echo "Submitted $problem! See https://github.com/submit50/$username/tree/$problem."
-echo -e -n "\033[39m"
-exit 0
+# call main
+main "$@"
