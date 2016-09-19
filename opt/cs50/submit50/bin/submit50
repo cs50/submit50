@@ -9,14 +9,88 @@ function main()
         fi
     done
 
-    # usage 
-    if [[ $# -ne 1 ]]; then
-        cancel "Usage: submit50 problem"
+    # parse command options
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+        usage 0
+    elif [[ "$1" == "--checkout" ]]; then
+        checkout "${@:2}"
+    elif [[ $# -eq 1 ]]; then
+        submit "${@:1}"
+    else
+        usage 1
     fi
-    problem="$1"
+}
 
-    # submit problem
-    submit "$1"
+# authenticates user
+# sets $email, $name, $password, $username
+function authenticate()
+{
+    # prompt for username
+    while read -p "GitHub username: " -r username
+    do
+        if [[ ! -z "$username" ]]; then
+            break
+        fi
+    done
+
+    # prompt for password
+    # http://stackoverflow.com/a/1923893
+    # http://askubuntu.com/a/299469
+    while true
+    do
+        prompt="GitHub password: "
+        while IFS= read -p "$prompt" -r -s -n 1 char
+        do
+            if [[ "$char" == $'\0' ]]; then
+                break
+            fi
+            if [[ "$char" == $'\177' ]]; then
+                if [[ ${#password} -gt 0 ]]; then
+                    prompt=$'\b \b'
+                    password="${password%?}"
+                else
+                    prompt=''
+                fi
+            else
+                prompt='*'
+                password+="$char"
+            fi
+        done
+        echo
+        if [[ ! -z "$password" ]]; then
+            break
+        fi
+    done
+    unset prompt
+
+    # GET https://api.github.com/user
+    user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
+    if [[ $? -ne 0 ]]; then
+        echo "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
+        exit 1
+    fi
+    name=$(jq --raw-output '.name // empty' <<< "$user")
+    login=$(jq --raw-output '.login // empty' <<< "$user")
+    if [[ ! -z "$login" ]]; then
+        username="$login"
+    fi
+    unset login
+    unset user
+
+    # GET https://api.github.com/user/emails
+    emails=$(curl --config - --fail --silent "https://api.github.com/user/emails" <<< "user = \"$username:$password\"" 2>&1)
+    if [[ $? -ne 0 ]]; then
+        echo "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
+        exit 1
+    fi
+    verified=$(jq --raw-output '.[] | select(.primary == true) | .verified' <<< "$emails")
+    if [[ "$verified" != "true" ]]; then
+        echo "Looks like you still need to verify your email address at https://github.com/settings/emails!"
+        exit 1
+    fi
+    email=$(jq --raw-output '.[] | select(.primary == true) | .email // empty' <<< "$emails")
+    unset verified
+    unset emails
 }
 
 # cancels submission
@@ -42,6 +116,109 @@ function cancel()
     exit 1
 }
 
+#
+function checkout()
+{
+    # usage
+    if [[ $# -lt 1 || $# -gt 2 ]]; then
+        echo "Usage: submit50 --checkout problem [username]"
+        exit 1
+    fi
+    problem="$1"
+
+    # TODO: add support for [username]
+    #if [[ $# -eq 2 ]]; then
+    #    repo="$2"
+    #fi
+
+    # authenticate user
+    authenticate
+
+    # get user's repos
+    # TODO: iterate over Link:
+    repos=$(curl --config - --fail --silent "https://api.github.com/orgs/submit50/repos?per_page=100" <<< "user = \"$username:$password\"" 2>&1)
+    if [[ $? -ne 0 ]]; then
+        echo "Error listing repos."
+        exit 1
+    fi
+    names=$(jq --raw-output '.[].name ' <<< "$repos")
+    unset repos
+    if [[ $? -ne 0 ]]; then
+        echo "Error parsing JSON."
+        exit 1
+    fi
+
+    # iterate over repos
+    while read -r name; do
+
+        # check whether $name exists
+        if [[ -e "$name" ]]; then
+
+            # check whether $name is a directory
+            if [[ ! -d "$name" ]]; then
+                echo "Not a directory: $name"
+                continue
+            fi
+
+            # pull repo
+            pushd "$name"
+            url=$(git config --get remote.origin.url)
+            if [[ $? -ne 0 ]]; then
+                echo "Missing origin: $name"
+                continue
+            fi
+            if [[ ! "$url" == "https://$username@github.com/submit50/"* ]]; then
+                echo "Invalid repo: $name"
+                continue
+            fi
+            expect <<- EOF
+                spawn git pull
+                expect {
+                    "*Password*:" { send -- {$password}; send -- "\r"; expect eof }
+                    eof { exit }
+                }
+EOF
+            popd
+        else
+
+            # clone repo
+            expect <<- EOF
+                spawn git clone "https://$username@github.com/submit50/$name" "$name"
+                expect {
+                    "*Password*:" { send -- {$password}; send -- "\r"; expect eof }
+                    eof { exit }
+                }
+EOF
+            if [[ $? -ne 0 ]]; then
+                echo "Could not clone https://$username@github.com/submit50/$name"
+                continue
+            fi
+        fi
+
+        # check out branch
+        pushd "$name"
+        git branch -r | grep "origin/$problem"
+        if [[ $? -eq 0 ]]; then
+            git branch | grep "$problem"
+            if [[ $? -eq 0 ]]; then
+                git checkout "$problem"
+            else
+                git checkout --track "origin/$problem"
+            fi
+        else
+            git branch | grep "$problem"
+            if [[ $? -eq 0 ]]; then
+                git checkout "$problem"
+            else
+                git checkout -b "$problem"
+                git rm -rf .
+            fi
+        fi
+        popd
+    done <<< "$names"
+}
+
+# TODO: use?
 # http://stackoverflow.com/a/12498305/5156190
 function spin()
 {
@@ -60,6 +237,12 @@ function spin()
 # submits a problem
 function submit()
 {
+    # usage
+    if [[ $# -ne 1 ]]; then
+        usage 1
+    fi
+    problem="$1"
+
     # ensure problem exists
     EXCLUDE=$(mktemp)
     if [[ $? -ne 0 ]]; then
@@ -93,79 +276,18 @@ function submit()
         shopt -u nocasematch
     fi
 
-    # ask for GitHub username
-    while read -p "GitHub username: " -r username
-    do
-        if [[ ! -z "$username" ]]; then
-            break
-        fi
-    done
-
-    # ask for GitHub password
-    # http://stackoverflow.com/a/1923893
-    # http://askubuntu.com/a/299469
-    while true
-    do
-        prompt="GitHub password: "
-        while IFS= read -p "$prompt" -r -s -n 1 char
-        do
-            if [[ "$char" == $'\0' ]]; then
-                break
-            fi
-            if [[ "$char" == $'\177' ]]; then
-                if [[ ${#password} -gt 0 ]]; then
-                    prompt=$'\b \b'
-                    password="${password%?}"
-                else
-                    prompt=''
-                fi
-            else
-                prompt='*'
-                password+="$char"
-            fi
-        done
-        echo
-        if [[ ! -z "$password" ]]; then
-            break
-        fi
-    done
-    unset prompt
+    # authenticate user
+    authenticate
 
     # HEAD https://api.github.com/user
-    headers=$(curl --config - --fail --head --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
+    headers=$(curl --fail --head --silent "https://api.github.com/" 2>&1)
     if [[ $? -ne 0 ]]; then
-        cancel "Incorrect GitHub username and/or password!\nVisit https://github.com/password_reset if forgotten."
+        cancel "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
     fi
     datetime=$(sed -nr "s/^Date: (.*)/\1/p" <<< "$headers")
     if [[ -z "$datetime" ]]; then
         cancel "Can't figure out what time it is!\nLet sysadmins@cs50.harvard.edu know!"
     fi
-
-    # GET https://api.github.com/user
-    user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
-    if [[ $? -ne 0 ]]; then
-        cancel "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
-    fi
-    name=$(jq --raw-output '.name // empty' <<< "$user")
-    login=$(jq --raw-output '.login // empty' <<< "$user")
-    if [[ ! -z "$login" ]]; then
-        username="$login"
-    fi
-    unset login
-    unset user
-
-    # GET https://api.github.com/user/emails
-    emails=$(curl --config - --fail --silent "https://api.github.com/user/emails" <<< "user = \"$username:$password\"" 2>&1)
-    if [[ $? -ne 0 ]]; then
-        cancel "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
-    fi
-    verified=$(jq --raw-output '.[] | select(.primary == true) | .verified' <<< "$emails")
-    if [[ "$verified" != "true" ]]; then
-        cancel "Looks like you still need to verify your email address at https://github.com/settings/emails!"
-    fi
-    email=$(jq --raw-output '.[] | select(.primary == true) | .email // empty' <<< "$emails")
-    unset verified
-    unset emails
 
     # GET https://api.github.com/submit50/$username
     curl --config - --fail --head --silent "https://api.github.com/repos/submit50/$username" <<< "user = \"$username:$password\"" > /dev/null 2>&1
@@ -293,6 +415,16 @@ function teardown()
     if [[ ! -z "$EXCLUDE" && -f "$EXCLUDE" ]]; then
         rm -f "$EXCLUDE"
     fi
+}
+
+# prints usage
+function usage()
+{
+    echo "Usage: submit50 problem"
+    if [[ $1 -ne 0 ]]; then
+        exit $1
+    fi
+    exit 0
 }
 
 # call main
