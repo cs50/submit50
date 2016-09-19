@@ -45,7 +45,7 @@ declare -a files
 while read line; do
     if [[ "$line" =~ ^# ]]; then
         file=$(sed 's/^[ \t]*//;s/[ \t]*$//' <<< "${line#?}")
-        if [[ ! -e "$file" ]]; then
+        if [[ ! -f "$file" ]]; then
             files+=("$file")
         fi
         unset file
