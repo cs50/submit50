@@ -66,7 +66,7 @@ function authenticate()
     # GET https://api.github.com/user
     user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
     if [[ $? -ne 0 ]]; then
-        echo "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
+        echo -e "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
         exit 1
     fi
     name=$(jq --raw-output '.name // empty' <<< "$user")
@@ -80,7 +80,7 @@ function authenticate()
     # GET https://api.github.com/user/emails
     emails=$(curl --config - --fail --silent "https://api.github.com/user/emails" <<< "user = \"$username:$password\"" 2>&1)
     if [[ $? -ne 0 ]]; then
-        echo "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
+        echo -e "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
         exit 1
     fi
     verified=$(jq --raw-output '.[] | select(.primary == true) | .verified' <<< "$emails")
@@ -105,7 +105,7 @@ function cancel()
     # print message, if any
     if [[ ! -z "$1" ]]; then
         echo -e -n "\033[33m"
-        echo "$1"
+        echo -e "$1"
         echo -e -n "\033[39m"
     fi
 
