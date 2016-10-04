@@ -67,9 +67,30 @@ function authenticate()
     unset prompt
 
     # GET https://api.github.com/user
-    user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
+    user=$(curl --config - --fail --include --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
     if [[ $? -ne 0 ]]; then
-        cancel "Invalid username and/or password!"
+        echo "$user" | grep "^X-GitHub-OTP: required;"
+        if [[ $? -eq 0 ]]; then
+
+            # POST https://api.github.com/authorizations
+            curl --config - --fail --include --silent -X POST "https://api.github.com/authorizations" <<< "user = \"$username:$password\"" 2>&1
+
+            # prompt for code
+            while read -p "Authentication code: " -r code
+            do
+                if [[ ! -z "$code" ]]; then
+                    break
+                fi
+            done
+
+            # GET https://api.github.com/user
+            user=$(curl --config - --fail --header "X-GitHub-OTP: $code" --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
+            if [[ $? -ne 0 ]]; then
+                cancel "Invalid authentication code!"
+            fi
+        else
+            cancel "Invalid username and/or password!"
+        fi
     fi
     name=$(jq --raw-output '.name // empty' <<< "$user")
     login=$(jq --raw-output '.login // empty' <<< "$user")
@@ -80,7 +101,7 @@ function authenticate()
     unset user
 
     # GET https://api.github.com/user/emails
-    emails=$(curl --config - --fail --silent "https://api.github.com/user/emails" <<< "user = \"$username:$password\"" 2>&1)
+    emails=$(curl --config - --fail --header "X-GitHub-OTP: $code" --silent "https://api.github.com/user/emails" <<< "user = \"$username:$password\"" 2>&1)
     if [[ $? -ne 0 ]]; then
         echo -e "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
         exit 1

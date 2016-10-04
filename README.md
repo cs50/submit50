@@ -3,6 +3,7 @@
 * Client
     * Add support for bulk-cloning, -pulling.
     * Decide how to colorize output.
+    * Add support for 2FA.
 * Server
     * Tag latest commit.
     * Release latest commit.
