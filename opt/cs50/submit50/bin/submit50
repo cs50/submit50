@@ -2,6 +2,9 @@
 
 function main()
 {
+    # listen for ctrl-c
+    trap "{ echo; cancel; }" INT
+
     # dependencies
     for command in curl expect jq sed; do
         if ! command -v "$command" > /dev/null 2>&1; then
@@ -99,6 +102,9 @@ function cancel()
     # echo input characters (in case user cancelled at password prompt)
     stty echo
  
+    # reset colors
+    echo -e -n "\033[0m"
+
     # remove temporaries
     teardown
 
