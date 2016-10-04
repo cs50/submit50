@@ -69,8 +69,7 @@ function authenticate()
     # GET https://api.github.com/user
     user=$(curl --config - --fail --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
     if [[ $? -ne 0 ]]; then
-        echo -e "Sorry, something's wrong!\nLet sysadmins@cs50.harvard.edu know!"
-        exit 1
+        cancel "Invalid username and/or password!"
     fi
     name=$(jq --raw-output '.name // empty' <<< "$user")
     login=$(jq --raw-output '.login // empty' <<< "$user")
