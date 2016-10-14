@@ -1,6 +1,6 @@
 MAINTAINER = "CS50 <sysadmins@cs50.harvard.edu>"
 NAME = submit50
-VERSION = 1.1.3
+VERSION = 1.2.0
 
 .PHONY: bash
 bash:
