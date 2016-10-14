@@ -1,0 +1,19 @@
+HTTP/1.1 401 Unauthorized
+Server: GitHub.com
+Date: Tue, 04 Oct 2016 18:25:29 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 170
+Status: 401 Unauthorized
+X-GitHub-OTP: required; sms
+X-GitHub-Media-Type: github.v3
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 51
+X-RateLimit-Reset: 1475609047
+Access-Control-Expose-Headers: ETag, Link, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval
+Access-Control-Allow-Origin: *
+Content-Security-Policy: default-src 'none'
+Strict-Transport-Security: max-age=31536000; includeSubdomains; preload
+X-Content-Type-Options: nosniff
+X-Frame-Options: deny
+X-XSS-Protection: 1; mode=block
+X-GitHub-Request-Id: 8CF7E741:06D2:3B5160B:57F3F419
