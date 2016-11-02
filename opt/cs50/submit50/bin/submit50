@@ -316,7 +316,7 @@ function submit()
     if [[ $? -ne 0 ]]; then
         cancel "Could not create a temporary file."
     fi
-    curl --fail -o "$EXCLUDE" --silent "https://raw.githubusercontent.com/submit50/submit50/$problem/exclude"
+    curl --fail -o "$EXCLUDE" --silent "https://raw.githubusercontent.com/submit50/submit50/$problem/exclude?$(date +%s)" # cache busting
     if [[ $? -ne 0 ]]; then
         cancel "Invalid problem. Did you mean to submit something else?"
     fi
