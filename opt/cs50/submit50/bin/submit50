@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# this is submit50
 function main()
 {
     # listen for ctrl-c
@@ -70,7 +71,6 @@ function authenticate()
     user=$(curl --config - --fail --include --silent "https://api.github.com/user" <<< "user = \"$username:$password\"" 2>&1)
     if [[ $? -ne 0 ]]; then
 
-
         #
         echo "$user" | grep "^X-GitHub-OTP: required;"
         if [[ $? -eq 0 ]]; then
@@ -105,11 +105,13 @@ function authenticate()
     date=$(sed -nr "s/^Date: (.*)/\1/p" <<< "$headers")
     if [[ -z "$date" ]]; then
         cancel "Can't figure out what time it is!\nLet sysadmins@cs50.harvard.edu know!"
+    fi
 
     # determine user's name
     name=$(jq --raw-output '.name // empty' <<< "$user")
 
     # determine user's canonical (i.e., properly capitalized) username
+    # TODO: skip headers in $user
     login=$(jq --raw-output '.login // empty' <<< "$user")
     if [[ ! -z "$login" ]]; then
         username="$login"
