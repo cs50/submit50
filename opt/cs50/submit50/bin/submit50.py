@@ -5,12 +5,15 @@ import github3
 import http.client
 import os
 import re
+import requests
 import shutil
 import signal
 import subprocess
 import sys
 import termcolor
+import tempfile
 import time
+import traceback
 import urllib.request
 
 # submit50
@@ -26,20 +29,23 @@ def main():
     # submit50 -h
     # submit50 --help
     if len(sys.argv) == 1 or sys.argv[1] in ("-h", "--help"):
-        sys.exit(usage())
+        usage()
 
     # submit50 --checkout
     elif sys.argv[1] == "--checkout":
-        sys.exit(checkout(sys.argv[1:]))
+        checkout(sys.argv[1:])
 
     # submit50 problem
     elif len(sys.argv) == 2:
-        sys.exit(submit(sys.argv[1]))
+        submit(sys.argv[1])
 
     # submit50 *
     else:
         usage()
         sys.exit(1)
+
+    # kthxbai
+    sys.exit(0)
 
 class Error(Exception):
     """Exception raised for errors."""
@@ -66,35 +72,17 @@ def call(args, stdin=None):
         return None
 call.process = None
 
-def code():
-    """Get one-time authentication code."""
+def credentials():
+    """Return username and password."""
+
+    # prompt for username
     while True:
-        print("Authentication Code: ", end="", flush=True)
-        code = input()
-        if code:
+        print("GitHub username: ", end="", flush=True)
+        username = input().strip()
+        if username:
             break
-    return code
 
-def excepthook(type, value, tb):
-    """Report an exception."""
-    if type is Error:
-        if str(value):
-            print(termcolor.colored(str(value), "yellow"))
-    else:
-        traceback.print_tb(tb)
-        print(termcolor.colored("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), yellow)
-    print(termcolor.colored("Submission cancelled.", "red"))
-sys.excepthook = excepthook
-
-def handler(number, frame):
-    """Handle SIGINT."""
-    if call.process:
-        call.process.kill()
-    print()
-    sys.exit(0)
-
-def password():
-    """Return password."""
+    # prompt for password
     while True:
         print("GitHub password: ", end="", flush=True)
         password = str()
@@ -111,7 +99,30 @@ def password():
                 password += ch
                 print("*", end="", flush=True)
         if password:
-            return password
+            break
+
+    # return credentials
+    return username, password
+
+def excepthook(type, value, tb):
+    """Report an exception."""
+    if type is Error:
+        if str(value):
+            print(termcolor.colored(str(value), "yellow"))
+    elif type is github3.GitHubError:
+        print(termcolor.colored(value.message, "yellow"))
+    else:
+        traceback.print_tb(tb)
+        print(termcolor.colored("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow"))
+    print(termcolor.colored("Submission cancelled.", "red"))
+sys.excepthook = excepthook
+
+def handler(number, frame):
+    """Handle SIGINT."""
+    if call.process:
+        call.process.kill()
+    print()
+    sys.exit(0)
 
 def submit(problem):
     """Submit problem."""
@@ -142,20 +153,35 @@ def submit(problem):
         if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
             raise Error()
 
-    github = github3.login(username(), password(), two_factor_callback=code)
-    print(github)
+    # prompt for credentials
+    username, password = credentials()
+
+    #
+    #r = requests.get("https://api.github.com/repos/submit50/{}".format(username))
+
+    #
+    github = github3.login(username, password, two_factor_callback=two_factor_callback)
+
+    #
+    repository = github.repository("submit50", username)
+    if not repository:
+        raise Error("Looks like we haven't enabled submit50 for your account yet! Let sysadmins@cs50.harvard.edu know your GitHub username!")
+
+    GIT_DIR = tempfile.mkdtemp() # TODO: what if this ends up in CWD?
+    GIT_WORK_TREE = os.getcwd()
+
+
+def two_factor_callback():
+    """Get one-time authentication code."""
+    while True:
+        print("Authentication Code: ", end="", flush=True)
+        code = input()
+        if code:
+            break
+    return code
 
 def usage():
     print("Usage: submit50 problem")
-    return 0
-
-def username():
-    """Return username."""
-    while True:
-        print("GitHub username: ", end="", flush=True)
-        username = input().strip()
-        if username:
-            return username
 
 if __name__ == "__main__":
     main()
