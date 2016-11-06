@@ -101,6 +101,16 @@ def credentials():
         if password:
             break
 
+    try:
+        github = github3.login(username, password, two_factor_callback=two_factor_callback)
+        me = github.me()
+        for email in github.emails():
+            print(email)
+    except Exception as e:
+        print("HERE")
+        print(e)
+        exit(0)
+
     # return credentials
     return username, password
 
@@ -169,6 +179,19 @@ def submit(problem):
 
     GIT_DIR = tempfile.mkdtemp() # TODO: what if this ends up in CWD?
     GIT_WORK_TREE = os.getcwd()
+
+    #
+    child = pexpect.spawnu(
+        "git clone --bare \"https://{}@github.com/submit50/{}\" \"{}\"".format(
+            username, username, GIT_DIR
+        )
+    )
+    child.logfile_read = sys.stdout
+    child.expect("Password.*:")
+    child.sendline(password)
+    child.expect(pexpect.EOF) # TODO: add try/except?
+    child.close()
+
 
 
 def two_factor_callback():

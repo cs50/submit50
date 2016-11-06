@@ -1,3 +1,4 @@
 getch
-github3.py
+github3.py==1.0.0a4
+pexpect
 termcolor
