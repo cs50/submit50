@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+# TEMP
+from pprint import pprint
+
 import getch
 import github3
 import http.client
@@ -15,6 +18,10 @@ import tempfile
 import time
 import traceback
 import urllib.request
+
+class Error(Exception):
+    """Exception raised for errors."""
+    pass
 
 # submit50
 def main():
@@ -47,33 +54,8 @@ def main():
     # kthxbai
     sys.exit(0)
 
-class Error(Exception):
-    """Exception raised for errors."""
-    pass
-
-def call(args, stdin=None):
-    """Run the command described by args. Return output as str."""
-    call.process = subprocess.Popen(
-        args,
-        shell=True,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        universal_newlines=True
-    )
-    try:
-        stdout_data = call.process.communicate(stdin)[0]
-        returncode = call.process.returncode
-        call.process = None
-        return stdout_data if returncode == 0 else None
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        call.process = None
-        return None
-call.process = None
-
-def credentials():
-    """Return username and password."""
+def authenticate():
+    """TODO"""
 
     # prompt for username
     while True:
@@ -101,18 +83,33 @@ def credentials():
         if password:
             break
 
-    try:
-        github = github3.login(username, password, two_factor_callback=two_factor_callback)
-        me = github.me()
-        for email in github.emails():
-            print(email)
-    except Exception as e:
-        print("HERE")
-        print(e)
-        exit(0)
+    # authenticate user
+    github = github3.login(username, password, two_factor_callback=two_factor_callback)
+    user = github.me()
+    username = user.login
+    email = "{}@users.noreply.github.com".format(user.login)
+    return (username, password, email)
 
-    # return credentials
-    return username, password
+def call(args, stdin=None):
+    """Run the command described by args. Return output as str."""
+    call.process = subprocess.Popen(
+        args,
+        shell=True,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        universal_newlines=True
+    )
+    try:
+        stdout_data = call.process.communicate(stdin)[0]
+        returncode = call.process.returncode
+        call.process = None
+        return stdout_data if returncode == 0 else None
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        call.process = None
+        return None
+call.process = None
 
 def excepthook(type, value, tb):
     """Report an exception."""
@@ -138,14 +135,16 @@ def submit(problem):
     """Submit problem."""
 
     # ensure problem exists
+    _, EXCLUDE = tempfile.mkstemp()
     url = "https://raw.githubusercontent.com/submit50/submit50/{}/exclude?{}".format(problem, time.time())
     try:
-        response = urllib.request.urlopen(url)
-        exclude = response.read().decode(response.headers.get_content_charset("utf-8")).splitlines()
-    except:
+        urllib.request.urlretrieve(url, filename=EXCLUDE)
+        lines = open(EXCLUDE)
+    except Exception as e:
+        print(e)
         raise Error("Invalid problem. Did you mean to submit something else?") from None
     missing = []
-    for line in exclude:
+    for line in lines:
         matches = re.match(r"^\s*#\s*([^\s]+)\s*$", line)
         if matches:
             pattern = matches.group(1)
@@ -163,13 +162,15 @@ def submit(problem):
         if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
             raise Error()
 
-    # prompt for credentials
-    username, password = credentials()
+    exit(0)
 
     #
-    #r = requests.get("https://api.github.com/repos/submit50/{}".format(username))
+    try:
+        username, password, email = authenticate()
+    except:
+        raise Error("Invalid username and/or password.") from None
 
-    #
+    # TEMP
     github = github3.login(username, password, two_factor_callback=two_factor_callback)
 
     #
@@ -177,22 +178,33 @@ def submit(problem):
     if not repository:
         raise Error("Looks like we haven't enabled submit50 for your account yet! Let sysadmins@cs50.harvard.edu know your GitHub username!")
 
-    GIT_DIR = tempfile.mkdtemp() # TODO: what if this ends up in CWD?
-    GIT_WORK_TREE = os.getcwd()
-
     #
-    child = pexpect.spawnu(
-        "git clone --bare \"https://{}@github.com/submit50/{}\" \"{}\"".format(
-            username, username, GIT_DIR
-        )
-    )
-    child.logfile_read = sys.stdout
-    child.expect("Password.*:")
-    child.sendline(password)
-    child.expect(pexpect.EOF) # TODO: add try/except?
-    child.close()
+    run("git clone --bare {} {}".format(
+        shlex.quote("https://{}@github.com/submit50/{}".format(username, username)),
+        shlex.quote(GIT_DIR)
+    ))
 
+    run("git config user.email {}".format(shlex.quote(email)))
+    run("git config user.name {}".format(shlex.quote(username)))
 
+    run("git symbolic-ref HEAD {}".format(shlex.quote("refs/heads/{}".format(problem))))
+
+    run("git config core.excludesFile {}".format(shlex.quote(exclude)))
+
+def run(command, password=None):
+    if password:
+        child = pexpect.spawnu(command, env={
+            "GIT_DIR": run.GIT_DIR, "GIT_WORK_TREE": run.GIT_WORK_TREE
+        })
+        child.logfile_read = sys.stdout
+        child.expect("Password.*:")
+        child.sendline(password)
+        child.expect(pexpect.EOF) # TODO: add try/except?
+        child.close()
+    else:
+        pexpect.run(command)
+run.GIT_DIR = tempfile.mkdtemp() # TODO: what if this ends up in CWD?
+run.GIT_WORK_TREE = os.getcwd()
 
 def two_factor_callback():
     """Get one-time authentication code."""
