@@ -125,7 +125,7 @@ def excepthook(type, value, tb):
         print(termcolor.colored("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow"))
     teardown()
     print(termcolor.colored("Submission cancelled.", "red"))
-# sys.excepthook = excepthook
+sys.excepthook = excepthook
 
 def handler(number, frame):
     """Handle SIGINT."""
