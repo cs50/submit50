@@ -4,6 +4,7 @@ import datetime
 import getch
 import github3
 import http.client
+import json
 import os
 import pexpect
 import pytz
@@ -23,6 +24,7 @@ import urllib.request
 
 ORG_NAME = "submit50"
 EXCLUDE = None
+timestamp = ""
 
 class Error(Exception):
     """Exception raised for errors."""
@@ -33,6 +35,12 @@ def main():
 
     # listen for ctrl-c
     signal.signal(signal.SIGINT, handler)
+    
+    # compute timestamp
+    headers = requests.get("https://api.github.com/").headers
+    global timestamp
+    timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z").replace(tzinfo=pytz.utc)
+    timestamp = timestamp.astimezone(pytz.timezone("America/New_York")).strftime("%a, %d %b %Y %H:%M:%S %Z")
 
     # check for git
     if not shutil.which("git"):
@@ -87,10 +95,18 @@ def authenticate():
             break
 
     # authenticate user
-    two_factor_callback.auth = (username, password)
-    github = github3.login(username, password, two_factor_callback=two_factor_callback)
+    two_factor.auth = (username, password)
+    github = github3.login(username, password, two_factor_callback=two_factor)
     email = "{}@users.noreply.github.com".format(username)
-    return (username, password, email, github)
+    
+    # check for 2-factor authentication
+    # http://github3.readthedocs.io/en/develop/examples/oauth.html?highlight=token
+    res = requests.post("https://api.github.com/user", auth=(username, password))
+    if "X-GitHub-OTP" in res.headers:
+        two_factor()
+        password = two_factor.token
+    
+    return (username, password, email)
 
 def call(args, stdin=None):
     """Run the command described by args. Return output as str."""
@@ -138,11 +154,6 @@ def handler(number, frame):
 def submit(problem):
     """Submit problem."""
 
-    # get the current time, convert to EST
-    headers = requests.get("https://api.github.com/").headers
-    timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z").replace(tzinfo=pytz.utc)
-    timestamp = timestamp.astimezone(pytz.timezone("America/New_York")).strftime("%a, %d %b %Y %H:%M:%S %Z")
-
     # ensure problem exists
     global EXCLUDE
     _, EXCLUDE = tempfile.mkstemp()
@@ -175,18 +186,19 @@ def submit(problem):
 
     # authenticate user
     try:
-        username, password, email, github = authenticate()
+        username, password, email = authenticate()
     except:
         raise Error("Invalid username and/or password.") from None
 
     # check for submit50 repository
-    repository = github.repository(ORG_NAME, username)
+    res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
+    repository = res.status_code == 200
     if not repository:
         raise Error("Looks like we haven't enabled submit50 for your account yet! Let sysadmins@cs50.harvard.edu know your GitHub username!")
 
     # clone submit50 repository
     run("git clone --bare {} {}".format(
-        shlex.quote("https://{}@github.com/{}/{}".format(username, ORG_NAME, username)),
+    shlex.quote("https://{}@github.com/{}/{}".format(username, ORG_NAME, username)),
         shlex.quote(run.GIT_DIR)
     ), password=password)
 
@@ -268,16 +280,17 @@ def checkout(args):
 
     # authenticate user
     try:
-        username, password, email, github = authenticate()
+        username, password, email = authenticate()
     except:
         raise Error("Invalid username and/or password.") from None
 
     # get student names if none provided
     if usernames == None:
         usernames = []
-        for repo in github.organization(ORG_NAME).repositories():
-            if repo.name != ORG_NAME:
-                usernames.append(repo.name)
+        repos = requests.get("https://api.github.com/orgs/{}/repos?per_page=100".format(ORG_NAME), auth=(username, password))
+        for repo in repos.json():
+            if repo["name"] != ORG_NAME:
+                usernames.append(repo["name"])
 
     # clone repositories
     for name in usernames:
@@ -300,7 +313,7 @@ def checkout(args):
             run("git pull", cwd=name, env={})
         else:
             # clone repository if it doesn't already exist
-            run("git clone 'https://{}@github.com/submit50/{}' '{}'".format(username, name, name), password=password, env={})
+            run("git clone 'https://{}@github.com/{}/{}' '{}'".format(username, ORG_NAME, name, name), password=password, env={})
 
         # if no problem specified, don't switch branches
         if problem == None:
@@ -351,17 +364,26 @@ def run(command, password=None, cwd=None, env=None):
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 
-def two_factor_callback():
+def two_factor():
     """Get one-time authentication code."""
     # send authentication request
-    requests.post("https://api.github.com/authorizations", auth=two_factor_callback.auth, data={"scopes":["repo", "user"]})
+    requests.post("https://api.github.com/authorizations", auth=two_factor.auth, data={"scopes":["repo", "user"]})
     while True:
         print("Authentication Code: ", end="", flush=True)
         code = input()
         if code:
             break
+    data = json.dumps({"scopes":["repo", "user"], "note":"{} {}".format(ORG_NAME, timestamp)})
+    res = requests.post("https://api.github.com/authorizations", auth=two_factor.auth,
+        data=data,
+        headers={"X-GitHub-OTP": str(code)})
+    if "token" in res.json():
+        two_factor.token = res.json()["token"]
+    else:
+        raise Error("Could not complete two-factor authentication.") from None
     return code
-two_factor_callback.auth = None
+two_factor.auth = None
+two_factor.token = None
 
 def usage():
     print("Usage: submit50 problem")
