@@ -294,6 +294,7 @@ def checkout(args):
 
     # clone repositories
     for name in usernames:
+        name = name.replace("@", "")
 
         # check whether name exists in filesystem
         if os.path.exists(name):
