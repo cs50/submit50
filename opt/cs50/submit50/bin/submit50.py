@@ -115,6 +115,7 @@ call.process = None
 
 def excepthook(type, value, tb):
     """Report an exception."""
+    teardown()
     if type is Error:
         if str(value):
             print(termcolor.colored(str(value), "yellow"))
@@ -123,12 +124,12 @@ def excepthook(type, value, tb):
     else:
         traceback.print_tb(tb)
         print(termcolor.colored("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow"))
-    teardown()
     print(termcolor.colored("Submission cancelled.", "red"))
 sys.excepthook = excepthook
 
 def handler(number, frame):
     """Handle SIGINT."""
+    teardown()
     if call.process:
         call.process.kill()
     print()
@@ -187,7 +188,7 @@ def submit(problem):
     run("git clone --bare {} {}".format(
         shlex.quote("https://{}@github.com/{}/{}".format(username, ORG_NAME, username)),
         shlex.quote(run.GIT_DIR)
-    ))
+    ), password=password)
 
     # set options
     run("git config user.email {}".format(shlex.quote(email)))
@@ -201,8 +202,11 @@ def submit(problem):
     # adds, modifies, and removes index entries to match the working tree
     run("git add --all")
 
-    # files that will be submitted
+    # get file lists
     files = run("git ls-files").decode("utf-8").split()
+    other = run("git ls-files --other").decode("utf-8").split()
+
+    # files that will be submitted
     if len(files) == 0:
         raise Error("None of the files in this directory are expected for submission.") from None
     print(termcolor.colored("Files that will be submitted:", "yellow"))
@@ -210,7 +214,6 @@ def submit(problem):
         print(" {}".format(termcolor.colored(f, "yellow")))
 
     # files that won't be submitted
-    files = run("git ls-files --other").decode("utf-8").split()
     if len(files) != 0:
         print(termcolor.colored("Files that won't be submitted:", "yellow"))
         for f in files:
@@ -222,7 +225,7 @@ def submit(problem):
 
     # push changes
     run("git commit --allow-empty --message='{}'".format(timestamp))
-    run("git push origin 'refs/heads/{}'".format(problem))
+    run("git push origin 'refs/heads/{}'".format(problem), password=password)
 
     # create a new orphan branch and switch to it
     run("git checkout --orphan 'orphan'")
@@ -231,7 +234,7 @@ def submit(problem):
 
     # add a tag reference
     run("git tag --force '{}'".format(problem))
-    run("git push --force origin 'refs/tags/{}'".format(problem))
+    run("git push --force origin 'refs/tags/{}'".format(problem), password=password)
 
     # successful submission
     teardown()
@@ -288,36 +291,36 @@ def checkout(args):
                 continue
 
             # pull repository
-            url = pexpect.run("git config --get remote.origin.url", cwd=name).decode("utf-8")
+            url = run("git config --get remote.origin.url", cwd=name, env={}).decode("utf-8")
             if url == "":
                 print("Missing origin: {}".format(name))
                 continue
             if not url.startswith("https://{}@github.com/{}/".format(username, ORG_NAME)):
                 print("Invalid repo: {}".format(name))
-            pexpect.run("git pull", cwd=name)
+            run("git pull", cwd=name, env={})
         else:
             # clone repository if it doesn't already exist
-            pexpect.run("git clone 'https://{}@github.com/submit50/{}' '{}'".format(username, name, name))
+            run("git clone 'https://{}@github.com/submit50/{}' '{}'".format(username, name, name), password=password, env={})
 
         # if no problem specified, don't switch branches
         if problem == None:
             continue
 
         # check out branch
-        branches = pexpect.run("git branch -r", cwd=name).decode("utf-8")
+        branches = run("git branch -r", cwd=name, env={}).decode("utf-8")
         if "origin/{}".format(problem) in branches:
-            branches = pexpect.run("git branch", cwd=name).decode("utf-8")
+            branches = run("git branch", cwd=name, env={}).decode("utf-8")
             if problem in branches:
-                pexpect.run("git checkout '{}'".format(problem), cwd=name)
+                run("git checkout '{}'".format(problem), cwd=name, env={})
             else:
-                pexpect.run("git checkout --track 'origin/{}'".format(problem), cwd=name)
+                run("git checkout --track 'origin/{}'".format(problem), cwd=name, env={})
         else:
-            branches = pexpect.run("git branch", cwd=name).decode("utf-8")
+            branches = run("git branch", cwd=name, env={}).decode("utf-8")
             if problem in branches:
-                pexpect.run("git checkout '{}'".format(problem), cwd=name)
+                run("git checkout '{}'".format(problem), cwd=name, env={})
             else:
-                pexpect.run("git checkout -b'{}'".format(problem), cwd=name)
-                pexpect.run("git rm -rf .", cwd=name)
+                run("git checkout -b '{}'".format(problem), cwd=name, env={})
+                run("git rm -rf .", cwd=name, env={})
 
     teardown()
 
@@ -327,12 +330,14 @@ def teardown():
     if EXCLUDE:
         run("rm -f '{}'".format(EXCLUDE))
 
-def run(command, password=None, cwd=None):
+def run(command, password=None, cwd=None, env=None):
     print(command)
-    if password:
-        child = pexpect.spawnu(command, env={
+    if env == None:
+        env = {
             "GIT_DIR": run.GIT_DIR, "GIT_WORK_TREE": run.GIT_WORK_TREE
-        }, cwd=cwd)
+        }
+    if password:
+        child = pexpect.spawnu(command, env=env, cwd=cwd)
         child.logfile_read = sys.stdout
         child.expect("Password.*:")
         child.sendline(password)
@@ -342,9 +347,7 @@ def run(command, password=None, cwd=None):
             pass
         child.close()
     else:
-        return pexpect.run(command, env={
-            "GIT_DIR": run.GIT_DIR, "GIT_WORK_TREE": run.GIT_WORK_TREE
-        }, cwd=cwd)
+        return pexpect.run(command, env=env, cwd=cwd)
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 
