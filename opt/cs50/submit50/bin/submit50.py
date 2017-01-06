@@ -226,9 +226,9 @@ def submit(problem):
         print(" {}".format(termcolor.colored(f, "yellow")))
 
     # files that won't be submitted
-    if len(files) != 0:
+    if len(other) != 0:
         print(termcolor.colored("Files that won't be submitted:", "yellow"))
-        for f in files:
+        for f in other:
             print(" {}".format(termcolor.colored(f, "yellow")))
 
     print(termcolor.colored("Submit? ", "yellow"), end="")
