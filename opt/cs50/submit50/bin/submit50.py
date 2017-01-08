@@ -384,7 +384,7 @@ def two_factor():
     res = requests.post("https://api.github.com/authorizations", auth=two_factor.auth,
         data=data,
         headers={"X-GitHub-OTP": str(code)})
-    if "token" in res.json():
+    if res.status_code == 201 and "token" in res.json():
         two_factor.token = res.json()["token"]
     else:
         raise Error("Could not complete two-factor authentication.") from None
