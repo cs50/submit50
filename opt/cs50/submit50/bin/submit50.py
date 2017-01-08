@@ -2,7 +2,6 @@
 
 import datetime
 import getch
-import github3
 import http.client
 import json
 import os
@@ -52,7 +51,7 @@ def main():
         usage()
 
     # submit50 --checkout
-    elif sys.argv[1] == "--checkout":
+    elif sys.argv[1] in ("-c", "--checkout"):
         checkout(sys.argv[2:])
 
     # submit50 problem
@@ -96,15 +95,21 @@ def authenticate():
 
     # authenticate user
     two_factor.auth = (username, password)
-    github = github3.login(username, password, two_factor_callback=two_factor)
     email = "{}@users.noreply.github.com".format(username)
+    
+    # authenticate user
+    res = requests.get("https://api.github.com/user", auth=(username, password))
     
     # check for 2-factor authentication
     # http://github3.readthedocs.io/en/develop/examples/oauth.html?highlight=token
-    res = requests.post("https://api.github.com/user", auth=(username, password))
     if "X-GitHub-OTP" in res.headers:
         two_factor()
         password = two_factor.token
+    # check if incorrect password
+    elif res.status_code == 401:
+        raise Error("Invalid username and/or password.") from None
+    elif res.status_code != 200:
+        raise Error("Could not authenticate user.") from None
     
     return (username, password, email)
 
@@ -135,8 +140,6 @@ def excepthook(type, value, tb):
     if type is Error:
         if str(value):
             print(termcolor.colored(str(value), "yellow"))
-    elif type is github3.GitHubError:
-        print(termcolor.colored(value.message, "yellow"))
     else:
         traceback.print_tb(tb)
         print(termcolor.colored("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow"))
@@ -183,12 +186,9 @@ def submit(problem):
         print("Proceed anyway? ", end="")
         if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
             raise Error()
-
+    
     # authenticate user
-    try:
-        username, password, email = authenticate()
-    except:
-        raise Error("Invalid username and/or password.") from None
+    username, password, email = authenticate()
 
     # check for submit50 repository
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
