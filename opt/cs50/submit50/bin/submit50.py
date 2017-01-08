@@ -374,7 +374,7 @@ run.GIT_WORK_TREE = os.getcwd()
 def two_factor():
     """Get one-time authentication code."""
     # send authentication request
-    requests.post("https://api.github.com/authorizations", auth=two_factor.auth, data={"scopes":["repo", "user"]})
+    requests.post("https://api.github.com/authorizations", auth=two_factor.auth)
     while True:
         print("Authentication Code: ", end="", flush=True)
         code = input()
