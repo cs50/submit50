@@ -198,14 +198,13 @@ def submit(problem):
 
     # clone submit50 repository
     run("git clone --bare {} {}".format(
-    shlex.quote("https://{}@github.com/{}/{}".format(username, ORG_NAME, username)),
-        shlex.quote(run.GIT_DIR)
-    ), password=password)
+        shlex.quote("https://{}@github.com/{}/{}".format(username, ORG_NAME, username)), shlex.quote(run.GIT_DIR)),
+        password=password)
 
     # set options
     run("git config user.email {}".format(shlex.quote(email)))
     run("git config user.name {}".format(shlex.quote(username)))
-    run("git symbolic-ref HEAD {}".format(shlex.quote("refs/heads/{}".format(problem))))
+    run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(problem)))
 
     # patterns of file names to exclude
     run("git config core.excludesFile {}".format(shlex.quote(EXCLUDE)))
@@ -231,7 +230,7 @@ def submit(problem):
         for f in other:
             print(" {}".format(termcolor.colored(f, "yellow")))
 
-    print(termcolor.colored("Submit? ", "yellow"), end="")
+    print(termcolor.colored("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files? ", "yellow"), end="")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         raise Error()
 
@@ -252,7 +251,6 @@ def submit(problem):
     teardown()
     print(termcolor.colored("Submitted {}! See https://github.com/{}/{}/tree/{}.".format(
         problem, ORG_NAME, username, problem), "green"))
-    print("Academic Honesty reminder: If you commit some act that is not reasonable but bring it to the attention of the course’s heads within 72 hours, the course may impose local sanctions that may include an unsatisfactory or failing grade for work submitted, but the course will not refer the matter for further disciplinary action except in cases of repeated acts.")
 
 def checkout(args):
     usernames = None
@@ -346,10 +344,14 @@ def teardown():
 
 def run(command, password=None, cwd=None, env=None):
     print(command)
+    
+    # when not using --checkout, include GIT_DIR and GIT_WORK_TREE in env
     if env == None:
         env = {
             "GIT_DIR": run.GIT_DIR, "GIT_WORK_TREE": run.GIT_WORK_TREE
         }
+        
+    # if authentication required for command, send password when requested
     if password:
         child = pexpect.spawnu(command, env=env, cwd=cwd)
         child.logfile_read = sys.stdout
@@ -361,7 +363,11 @@ def run(command, password=None, cwd=None, env=None):
             pass
         child.close()
     else:
-        return pexpect.run(command, env=env, cwd=cwd)
+        output, status = pexpect.run(command, env=env, cwd=cwd, withexitstatus=True)
+        # check exit status of command
+        if status != 0:
+            raise Error()
+        return output
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 
