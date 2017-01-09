@@ -198,9 +198,7 @@ def submit(problem):
         print("You seem to be missing these files:")
         for pattern in missing:
             print(" {}".format(pattern))
-        print("Proceed anyway? ", end="")
-        if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
-            raise Error()
+        raise Error("Ensure you have the required files before submitting.") from None
     
     # authenticate user
     username, password, email = authenticate()
