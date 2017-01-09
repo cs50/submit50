@@ -122,8 +122,6 @@ def authenticate():
     # authenticate user
     two_factor.auth = (username, password)
     email = "{}@users.noreply.github.com".format(username)
-    
-    # authenticate user
     res = requests.get("https://api.github.com/user", auth=(username, password))
     
     # check for 2-factor authentication
