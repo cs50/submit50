@@ -22,8 +22,9 @@ import time
 import traceback
 import urllib.request
 
-ORG_NAME = "submit50"
+CONFIG_PATH = os.path.expanduser("~/.submit50-config.json")
 EXCLUDE = None
+ORG_NAME = "submit50"
 timestamp = ""
 
 class Error(Exception):
@@ -171,11 +172,40 @@ def handler(number, frame):
 
 def submit(problem):
     """Submit problem."""
-
+    
+    # check for course identifier in problem name
+    # submit50 cs50-2016@hello
+    course = None
+    if "@" in problem:
+        [course, problem] = problem.split("@")
+    
+    # if no course identifier specified, use config file
+    if course == None:
+        # config file exists already
+        if os.path.isfile(CONFIG_PATH):
+            with open(CONFIG_PATH, "r") as f:
+                config = json.load(f)
+            course = config["course"]
+            print("Confirm course identifier {}? ".format(course), end="")
+            if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
+                print("New course identifier: ", end="")
+                course = input()
+                config["course"] = course
+                with open(CONFIG_PATH, "w") as f:
+                    json.dump(config, f)
+        
+        # create new config file
+        else:
+            print("Course identifier: ", end="")
+            course = input()
+            config = {"course": course}
+            with open(CONFIG_PATH, "w") as f:
+                json.dump(config, f)
+    
     # ensure problem exists
     global EXCLUDE
     _, EXCLUDE = tempfile.mkstemp()
-    url = "https://raw.githubusercontent.com/{0}/{0}/master/exclude/{1}".format(ORG_NAME, problem)
+    url = "https://raw.githubusercontent.com/{0}/{0}/master/{1}/{2}/exclude".format(ORG_NAME, course, problem)
     try:
         urllib.request.urlretrieve(url, filename=EXCLUDE)
         lines = open(EXCLUDE)
@@ -215,9 +245,10 @@ def submit(problem):
         password=password)
 
     # set options
+    branch = "{}@{}".format(course, problem)
     run("git config user.email {}".format(shlex.quote(email)))
     run("git config user.name {}".format(shlex.quote(username)))
-    run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(problem)))
+    run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(branch)))
 
     # patterns of file names to exclude
     run("git config core.excludesFile {}".format(shlex.quote(EXCLUDE)))
@@ -245,11 +276,11 @@ def submit(problem):
 
     print(termcolor.colored("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files? ", "yellow"), end="")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
-        raise Error()
+        raise Error("No files were submitted.") from None
 
     # push changes
     run("git commit --allow-empty --message='{}'".format(timestamp))
-    run("git push origin 'refs/heads/{}'".format(problem), password=password)
+    run("git push origin 'refs/heads/{}'".format(branch), password=password)
 
     # create a new orphan branch and switch to it
     run("git checkout --orphan 'orphan'")
@@ -257,13 +288,13 @@ def submit(problem):
     run("git commit --allow-empty --message='{}'".format(timestamp))
 
     # add a tag reference
-    run("git tag --force '{}'".format(problem))
-    run("git push --force origin 'refs/tags/{}'".format(problem), password=password)
+    run("git tag --force '{}'".format(branch))
+    run("git push --force origin 'refs/tags/{}'".format(branch), password=password)
 
     # successful submission
     teardown()
     print(termcolor.colored("Submitted {}! See https://github.com/{}/{}/tree/{}.".format(
-        problem, ORG_NAME, username, problem), "green"))
+        problem, ORG_NAME, username, branch), "green"))
 
 def checkout(args):
     usernames = None
@@ -351,9 +382,9 @@ def checkout(args):
 
 # deletes temporary directory and temporary file
 def teardown():
-    run("rm -rf '{}'".format(run.GIT_DIR))
+    pexpect.run("rm -rf '{}'".format(run.GIT_DIR))
     if EXCLUDE:
-        run("rm -f '{}'".format(EXCLUDE))
+        pexpect.run("rm -f '{}'".format(EXCLUDE))
 
 def run(command, password=None, cwd=None, env=None):
     if run.verbose:
