@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import argparse
 import datetime
 import getch
 import http.client
@@ -44,19 +45,33 @@ def main():
     # check for git
     if not shutil.which("git"):
         sys.exit("Missing dependency. Install git.")
-
+    
+    # define command-line arguments
+    parser = argparse.ArgumentParser(prog="submit50", add_help=False)
+    parser.add_argument("-h", "--help", action="store_true")
+    parser.add_argument("-c", "--checkout", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("args", nargs="*")
+    args = vars(parser.parse_args())
+    
+    # submit50 -v
+    # submit50 --verbose
+    if args["verbose"]:
+        run.verbose = True
+    
     # submit50 -h
     # submit50 --help
-    if len(sys.argv) == 1 or sys.argv[1] in ("-h", "--help"):
+    if (len(args["args"]) == 0 and not args["checkout"]) or args["help"]:
         usage()
 
+    # submit50 -c
     # submit50 --checkout
-    elif sys.argv[1] in ("-c", "--checkout"):
-        checkout(sys.argv[2:])
+    elif args["checkout"]:
+        checkout(args["args"])
 
     # submit50 problem
-    elif len(sys.argv) == 2:
-        submit(sys.argv[1])
+    elif len(args["args"]) == 1:
+        submit(args["args"][0])
 
     # submit50 *
     else:
@@ -343,7 +358,8 @@ def teardown():
         run("rm -f '{}'".format(EXCLUDE))
 
 def run(command, password=None, cwd=None, env=None):
-    print(command)
+    if run.verbose:
+        print(command)
     
     # when not using --checkout, include GIT_DIR and GIT_WORK_TREE in env
     if env == None:
@@ -354,7 +370,11 @@ def run(command, password=None, cwd=None, env=None):
     # if authentication required for command, send password when requested
     if password:
         child = pexpect.spawnu(command, env=env, cwd=cwd)
-        child.logfile_read = sys.stdout
+        
+        # send output of command to stdout only if run with --verbose
+        if run.verbose:
+            child.logfile_read = sys.stdout
+            
         child.expect("Password.*:")
         child.sendline(password)
         try:
@@ -370,6 +390,7 @@ def run(command, password=None, cwd=None, env=None):
         return output
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
+run.verbose = False
 
 def two_factor():
     """Get one-time authentication code."""
