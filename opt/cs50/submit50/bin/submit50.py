@@ -152,11 +152,11 @@ call.process = None
 def excepthook(type, value, tb):
     """Report an exception."""
     teardown()
-    if type is Error:
-        if str(value):
-            print(termcolor.colored(str(value), "yellow"))
+    if type is Error and str(value):
+        print(termcolor.colored(str(value), "yellow"))
     else:
-        traceback.print_tb(tb)
+        if run.verbose:
+            traceback.print_tb(tb)
         print(termcolor.colored("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow"))
     print(termcolor.colored("Submission cancelled.", "red"))
 sys.excepthook = excepthook
@@ -175,7 +175,7 @@ def submit(problem):
     # ensure problem exists
     global EXCLUDE
     _, EXCLUDE = tempfile.mkstemp()
-    url = "https://raw.githubusercontent.com/{0}/{0}/{1}/exclude".format(ORG_NAME, problem)
+    url = "https://raw.githubusercontent.com/{0}/{0}/master/exclude/{1}".format(ORG_NAME, problem)
     try:
         urllib.request.urlretrieve(url, filename=EXCLUDE)
         lines = open(EXCLUDE)
@@ -375,13 +375,15 @@ def run(command, password=None, cwd=None, env=None):
         if run.verbose:
             child.logfile_read = sys.stdout
             
-        child.expect("Password.*:")
-        child.sendline(password)
         try:
+            child.expect("Password.*:")
+            child.sendline(password)
             child.expect(pexpect.EOF)
         except:
             pass
         child.close()
+        if child.exitstatus != 0:
+            raise Error()
     else:
         output, status = pexpect.run(command, env=env, cwd=cwd, withexitstatus=True)
         # check exit status of command
