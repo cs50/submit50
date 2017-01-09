@@ -129,27 +129,6 @@ def authenticate():
     
     return (username, password, email)
 
-def call(args, stdin=None):
-    """Run the command described by args. Return output as str."""
-    call.process = subprocess.Popen(
-        args,
-        shell=True,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        universal_newlines=True
-    )
-    try:
-        stdout_data = call.process.communicate(stdin)[0]
-        returncode = call.process.returncode
-        call.process = None
-        return stdout_data if returncode == 0 else None
-    except subprocess.TimeoutExpired:
-        call.process.kill()
-        call.process = None
-        return None
-call.process = None
-
 def excepthook(type, value, tb):
     """Report an exception."""
     teardown()
@@ -165,8 +144,6 @@ sys.excepthook = excepthook
 def handler(number, frame):
     """Handle SIGINT."""
     teardown()
-    if call.process:
-        call.process.kill()
     print()
     sys.exit(0)
 
