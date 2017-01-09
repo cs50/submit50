@@ -1,4 +1,3 @@
 getch
 pexpect
-pytz
 termcolor

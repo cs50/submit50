@@ -7,7 +7,6 @@ import http.client
 import json
 import os
 import pexpect
-import pytz
 import re
 import requests
 import select
@@ -22,9 +21,12 @@ import time
 import traceback
 import urllib.request
 
+from distutils.version import StrictVersion
+
 CONFIG_PATH = os.path.expanduser("~/.submit50-config.json")
 EXCLUDE = None
 ORG_NAME = "submit50"
+VERSION = "2.0.0"
 timestamp = ""
 
 class Error(Exception):
@@ -37,11 +39,19 @@ def main():
     # listen for ctrl-c
     signal.signal(signal.SIGINT, handler)
     
+    # check for version
+    res = requests.get("https://raw.githubusercontent.com/{0}/{0}/master/VERSION".format(ORG_NAME))
+    if res.status_code != 200:
+        raise Error("Could not verify submit50 version.") from None
+    version_required = res.text.strip()
+    if StrictVersion(version_required) > StrictVersion(VERSION):
+        raise Error("You are running an old version of submit50. Run update50 first and try again.") from None
+    
     # compute timestamp
     headers = requests.get("https://api.github.com/").headers
     global timestamp
-    timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z").replace(tzinfo=pytz.utc)
-    timestamp = timestamp.astimezone(pytz.timezone("America/New_York")).strftime("%a, %d %b %Y %H:%M:%S %Z")
+    timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z")
+    timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
 
     # check for git
     if not shutil.which("git"):
@@ -223,6 +233,7 @@ def submit(problem):
 
     # set options
     branch = "{}@{}".format(course, problem)
+    tag = "{}@{}".format(branch, timestamp)
     run("git config user.email {}".format(shlex.quote(email)))
     run("git config user.name {}".format(shlex.quote(username)))
     run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(branch)))
@@ -265,8 +276,8 @@ def submit(problem):
     run("git commit --allow-empty --message='{}'".format(timestamp))
 
     # add a tag reference
-    run("git tag --force '{}'".format(branch))
-    run("git push --force origin 'refs/tags/{}'".format(branch), password=password)
+    run("git tag --force '{}'".format(tag))
+    run("git push --force origin 'refs/tags/{}'".format(tag), password=password)
 
     # successful submission
     teardown()
