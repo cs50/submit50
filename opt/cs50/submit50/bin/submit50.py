@@ -186,6 +186,14 @@ def submit(problem):
             config = {"course": course}
             with open(CONFIG_PATH, "w") as f:
                 json.dump(config, f)
+                
+    # course identifier specified at command line, cache it
+    else:
+        with open(CONFIG_PATH, "r") as f:
+            config = json.load(f)
+        config["course"] = course
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(config, f)
     
     # ensure problem exists
     global EXCLUDE
