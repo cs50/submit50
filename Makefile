@@ -27,6 +27,8 @@ deb:
 	--deb-no-default-config-files \
 	--depends git \
     --depends python3 \
+	--depends python3-pexpect \
+	--depends python3-termcolor \
 	opt
 
 # TODO: add dependencies
