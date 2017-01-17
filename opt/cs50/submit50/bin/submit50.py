@@ -23,7 +23,7 @@ import urllib.request
 
 from distutils.version import StrictVersion
 
-CONFIG_PATH = os.path.expanduser("~/.submit50-config.json")
+CONFIG_PATH = os.path.expanduser("~/.submit50.json")
 EXCLUDE = None
 ORG_NAME = "submit50"
 VERSION = "2.0.0"
@@ -38,15 +38,15 @@ def main():
 
     # listen for ctrl-c
     signal.signal(signal.SIGINT, handler)
-    
+
     # check for version
     res = requests.get("https://raw.githubusercontent.com/{0}/{0}/master/VERSION".format(ORG_NAME))
     if res.status_code != 200:
-        raise Error("Could not verify submit50 version.") from None
+        raise Error("You have an unknown verison of submit50. Email sysadmins@cs50.harvard.edu.") from None
     version_required = res.text.strip()
     if StrictVersion(version_required) > StrictVersion(VERSION):
-        raise Error("You are running an old version of submit50. Run update50 first and try again.") from None
-    
+        raise Error("You have an old version of submit50. Run update50, then re-run submit50!") from None
+
     # compute timestamp
     headers = requests.get("https://api.github.com/").headers
     global timestamp
@@ -56,7 +56,7 @@ def main():
     # check for git
     if not shutil.which("git"):
         sys.exit("Missing dependency. Install git.")
-    
+
     # define command-line arguments
     parser = argparse.ArgumentParser(prog="submit50", add_help=False)
     parser.add_argument("-h", "--help", action="store_true")
@@ -64,12 +64,12 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("args", nargs="*")
     args = vars(parser.parse_args())
-    
+
     # submit50 -v
     # submit50 --verbose
     if args["verbose"]:
         run.verbose = True
-    
+
     # submit50 -h
     # submit50 --help
     if (len(args["args"]) == 0 and not args["checkout"]) or args["help"]:
@@ -123,7 +123,7 @@ def authenticate():
     two_factor.auth = (username, password)
     email = "{}@users.noreply.github.com".format(username)
     res = requests.get("https://api.github.com/user", auth=(username, password))
-    
+
     # check for 2-factor authentication
     # http://github3.readthedocs.io/en/develop/examples/oauth.html?highlight=token
     if "X-GitHub-OTP" in res.headers:
@@ -134,7 +134,7 @@ def authenticate():
         raise Error("Invalid username and/or password.") from None
     elif res.status_code != 200:
         raise Error("Could not authenticate user.") from None
-    
+
     return (username, password, email)
 
 def excepthook(type, value, tb):
@@ -157,13 +157,13 @@ def handler(number, frame):
 
 def submit(problem):
     """Submit problem."""
-    
+
     # check for course identifier in problem name
     # submit50 cs50-2016@hello
     course = None
     if "@" in problem:
         [course, problem] = problem.split("@")
-    
+
     # if no course identifier specified, use config file
     if course == None:
         # config file exists already
@@ -178,7 +178,7 @@ def submit(problem):
                 config["course"] = course
                 with open(CONFIG_PATH, "w") as f:
                     json.dump(config, f)
-        
+
         # create new config file
         else:
             print("Course identifier: ", end="")
@@ -186,7 +186,7 @@ def submit(problem):
             config = {"course": course}
             with open(CONFIG_PATH, "w") as f:
                 json.dump(config, f)
-                
+
     # course identifier specified at command line, cache it
     else:
         with open(CONFIG_PATH, "r") as f:
@@ -194,7 +194,7 @@ def submit(problem):
         config["course"] = course
         with open(CONFIG_PATH, "w") as f:
             json.dump(config, f)
-    
+
     # ensure problem exists
     global EXCLUDE
     _, EXCLUDE = tempfile.mkstemp()
@@ -222,7 +222,7 @@ def submit(problem):
         for pattern in missing:
             print(" {}".format(pattern))
         raise Error("Ensure you have the required files before submitting.") from None
-    
+
     # authenticate user
     username, password, email = authenticate()
 
@@ -374,30 +374,26 @@ def checkout(args):
 
     teardown()
 
-# deletes temporary directory and temporary file
-def teardown():
-    pexpect.run("rm -rf '{}'".format(run.GIT_DIR))
-    if EXCLUDE:
-        pexpect.run("rm -f '{}'".format(EXCLUDE))
-
 def run(command, password=None, cwd=None, env=None):
+    """Run a command."""
     if run.verbose:
         print(command)
-    
+
     # when not using --checkout, include GIT_DIR and GIT_WORK_TREE in env
     if env == None:
         env = {
-            "GIT_DIR": run.GIT_DIR, "GIT_WORK_TREE": run.GIT_WORK_TREE
+            "GIT_DIR": run.GIT_DIR,
+            "GIT_WORK_TREE": run.GIT_WORK_TREE
         }
-        
+
     # if authentication required for command, send password when requested
     if password:
         child = pexpect.spawnu(command, env=env, cwd=cwd)
-        
+
         # send output of command to stdout only if run with --verbose
         if run.verbose:
             child.logfile_read = sys.stdout
-            
+
         try:
             child.expect("Password.*:")
             child.sendline(password)
@@ -416,6 +412,12 @@ def run(command, password=None, cwd=None, env=None):
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
+
+def teardown():
+    """Delete temporary directory and temporary file."""
+    pexpect.run("rm -rf '{}'".format(run.GIT_DIR))
+    if EXCLUDE:
+        pexpect.run("rm -f '{}'".format(EXCLUDE))
 
 def two_factor():
     """Get one-time authentication code."""
@@ -439,6 +441,7 @@ two_factor.auth = None
 two_factor.token = None
 
 def usage():
+    """Print usage."""
     print("Usage: submit50 problem")
 
 if __name__ == "__main__":
