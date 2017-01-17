@@ -1,6 +1,6 @@
 MAINTAINER = "CS50 <sysadmins@cs50.harvard.edu>"
 NAME = submit50
-VERSION = 1.1.3
+VERSION = 2.0.0
 
 .PHONY: bash
 bash:
@@ -25,10 +25,8 @@ deb:
 	--after-install after-install.sh \
 	--after-remove after-remove.sh \
 	--deb-no-default-config-files \
-	--depends expect \
 	--depends git \
-	--depends jq \
-	--depends util-linux \
+    --depends python3 \
 	opt
 
 # TODO: add dependencies
