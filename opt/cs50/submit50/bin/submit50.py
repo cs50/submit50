@@ -4,6 +4,7 @@ import argparse
 import datetime
 import getch
 import http.client
+import itertools
 import json
 import os
 import pexpect
@@ -22,8 +23,8 @@ import traceback
 import urllib.request
 
 from distutils.version import StrictVersion
+from threading import Thread
 
-CONFIG_PATH = os.path.expanduser("~/.submit50.json")
 EXCLUDE = None
 ORG_NAME = "submit50"
 VERSION = "2.0.0"
@@ -160,40 +161,10 @@ def submit(problem):
 
     # check for course identifier in problem name
     # submit50 cs50-2016@hello
-    course = None
     if "@" in problem:
-        [course, problem] = problem.split("@")
-
-    # if no course identifier specified, use config file
-    if course == None:
-        # config file exists already
-        if os.path.isfile(CONFIG_PATH):
-            with open(CONFIG_PATH, "r") as f:
-                config = json.load(f)
-            course = config["course"]
-            print("Confirm course identifier {}? ".format(course), end="")
-            if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
-                print("New course identifier: ", end="")
-                course = input()
-                config["course"] = course
-                with open(CONFIG_PATH, "w") as f:
-                    json.dump(config, f)
-
-        # create new config file
-        else:
-            print("Course identifier: ", end="")
-            course = input()
-            config = {"course": course}
-            with open(CONFIG_PATH, "w") as f:
-                json.dump(config, f)
-
-    # course identifier specified at command line, cache it
+        [course, problem] = problem.split("@", 1)
     else:
-        with open(CONFIG_PATH, "r") as f:
-            config = json.load(f)
-        config["course"] = course
-        with open(CONFIG_PATH, "w") as f:
-            json.dump(config, f)
+        raise Error("Invalid problem. Did you mean to submit something else?") from None
 
     # ensure problem exists
     global EXCLUDE
@@ -226,6 +197,12 @@ def submit(problem):
     # authenticate user
     username, password, email = authenticate()
 
+    # show the spinner
+    if not run.verbose:
+        spin.keep_spinning = True
+        thread = Thread(target=spin, args=("Logging in... ",))
+        thread.start()
+
     # check for submit50 repository
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
     repository = res.status_code == 200
@@ -255,6 +232,11 @@ def submit(problem):
     files = run("git ls-files").decode("utf-8").split()
     other = run("git ls-files --other").decode("utf-8").split()
 
+    # stop the spinner
+    if not run.verbose:
+        spin.keep_spinning = False
+        thread.join()
+
     # files that will be submitted
     if len(files) == 0:
         raise Error("None of the files in this directory are expected for submission.") from None
@@ -272,6 +254,12 @@ def submit(problem):
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         raise Error("No files were submitted.") from None
 
+    # show the spinner
+    if not run.verbose:
+        spin.keep_spinning = True
+        thread = Thread(target=spin)
+        thread.start()
+
     # push changes
     run("git commit --allow-empty --message='{}'".format(timestamp))
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
@@ -284,6 +272,11 @@ def submit(problem):
     # add a tag reference
     run("git tag --force '{}'".format(tag))
     run("git push --force origin 'refs/tags/{}'".format(tag), password=password)
+
+    # stop the spinner
+    if not run.verbose:
+        spin.keep_spinning = False
+        thread.join()
 
     # successful submission
     teardown()
@@ -415,6 +408,7 @@ run.verbose = False
 
 def teardown():
     """Delete temporary directory and temporary file."""
+    spin.keep_spinning = False
     pexpect.run("rm -rf '{}'".format(run.GIT_DIR))
     if EXCLUDE:
         pexpect.run("rm -f '{}'".format(EXCLUDE))
@@ -439,6 +433,19 @@ def two_factor():
     return code
 two_factor.auth = None
 two_factor.token = None
+
+def spin(message="Submitting... "):
+    spinner = itertools.cycle(["-", "\\", "|", "/"])
+    sys.stdout.write(message)
+    sys.stdout.flush()
+    while spin.keep_spinning:
+        sys.stdout.write(next(spinner))
+        sys.stdout.flush()
+        sys.stdout.write("\b")
+        time.sleep(0.05)
+    sys.stdout.write("\r")
+    sys.stdout.flush()
+spin.keep_spinning = True
 
 def usage():
     """Print usage."""
