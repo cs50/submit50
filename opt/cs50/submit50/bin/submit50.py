@@ -250,7 +250,7 @@ def submit(problem):
         for f in other:
             print(" {}".format(termcolor.colored(f, "yellow")))
 
-    print(termcolor.colored("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files? ", "yellow"), end="")
+    print("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files? ", end="")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         raise Error("No files were submitted.") from None
 
