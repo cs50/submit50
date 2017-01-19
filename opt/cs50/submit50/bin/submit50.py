@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+import atexit
 import datetime
 import getch
 import http.client
@@ -39,6 +40,9 @@ def main():
 
     # listen for ctrl-c
     signal.signal(signal.SIGINT, handler)
+
+    # clean up on normal exit
+    atexit.register(teardown)
 
     # check for version
     res = requests.get("https://raw.githubusercontent.com/{0}/{0}/master/VERSION".format(ORG_NAME))
@@ -152,7 +156,6 @@ sys.excepthook = excepthook
 
 def handler(number, frame):
     """Handle SIGINT."""
-    teardown()
     print()
     sys.exit(0)
 
@@ -278,8 +281,6 @@ def submit(problem):
         spin.keep_spinning = False
         thread.join()
 
-    # successful submission
-    teardown()
     print(termcolor.colored("Submitted {}! See https://github.com/{}/{}/tree/{}.".format(
         problem, ORG_NAME, username, branch), "green"))
 
@@ -364,8 +365,6 @@ def checkout(args):
             else:
                 run("git checkout -b '{}'".format(problem), cwd=name, env={})
                 run("git rm -rf .", cwd=name, env={})
-
-    teardown()
 
 def run(command, password=None, cwd=None, env=None):
     """Run a command."""
