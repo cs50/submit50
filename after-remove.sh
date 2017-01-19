@@ -2,4 +2,4 @@
 
 # remove /opt/cs50/bin/submit50 and any empty parents
 rm -f /opt/cs50/bin/submit50
-rmdir --ignore-fail-on-non-empty -p /opt/cs50/bin
+rm -df /opt/cs50/bin /opt/cs50
