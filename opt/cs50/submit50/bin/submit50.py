@@ -27,7 +27,7 @@ from threading import Thread
 
 EXCLUDE = None
 ORG_NAME = "submit50"
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 timestamp = ""
 
 class Error(Exception):
@@ -41,7 +41,7 @@ def main():
     signal.signal(signal.SIGINT, handler)
 
     # check for version
-    res = requests.get("https://raw.githubusercontent.com/{0}/{0}/master/VERSION".format(ORG_NAME))
+    res = requests.get("https://cs50.me/submit50-version/")
     if res.status_code != 200:
         raise Error("You have an unknown verison of submit50. Email sysadmins@cs50.harvard.edu.") from None
     version_required = res.text.strip()
@@ -159,17 +159,14 @@ def handler(number, frame):
 def submit(problem):
     """Submit problem."""
 
-    # check for course identifier in problem name
-    # submit50 cs50-2016@hello
-    if "@" in problem:
-        [course, problem] = problem.split("@", 1)
-    else:
-        raise Error("Invalid problem. Did you mean to submit something else?") from None
+    # assume cs50/ problem if problem name begins with a year
+    if problem.split("/")[0].isdigit():
+        problem = os.path.join("cs50", problem)
 
     # ensure problem exists
     global EXCLUDE
     _, EXCLUDE = tempfile.mkstemp()
-    url = "https://raw.githubusercontent.com/{0}/{0}/master/{1}/{2}/exclude".format(ORG_NAME, course, problem)
+    url = "https://cs50.me/excludes/{}/".format(problem)
     try:
         urllib.request.urlretrieve(url, filename=EXCLUDE)
         lines = open(EXCLUDE)
@@ -215,7 +212,7 @@ def submit(problem):
         password=password)
 
     # set options
-    branch = "{}@{}".format(course, problem)
+    branch = problem
     tag = "{}@{}".format(branch, timestamp)
     run("git config user.email {}".format(shlex.quote(email)))
     run("git config user.name {}".format(shlex.quote(username)))
