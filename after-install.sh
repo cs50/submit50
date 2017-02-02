@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# install dependencies
+# install dependencies (without ide50 compiler flags)
 umask 0022
+unset CC CFLAGS LDLIBS
 pip3 install getch
 
 # ensure submit50 is executable

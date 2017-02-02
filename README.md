@@ -9,6 +9,10 @@
 
 # CHANGELOG
 
+* 2.1.1
+    * Suppressed student compile flags while installing getch.
+* 2.1.0
+    * TBD
 * 2.0.0
     * Ported to Python.
     * Added support for two-factor authentication.
