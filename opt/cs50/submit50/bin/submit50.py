@@ -27,7 +27,7 @@ from threading import Thread
 
 EXCLUDE = None
 ORG_NAME = "submit50"
-VERSION = "2.1.0"
+VERSION = "2.1.2"
 timestamp = ""
 
 class Error(Exception):
