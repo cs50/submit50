@@ -337,7 +337,7 @@ def checkout(args):
                 continue
             if not url.startswith("https://{}@github.com/{}/".format(username, ORG_NAME)):
                 print("Invalid repo: {}".format(name))
-            run("git pull", cwd=name, env={})
+            run("git pull", cwd=name, password=password, env={})
         else:
             # clone repository if it doesn't already exist
             run("git clone 'https://{}@github.com/{}/{}' '{}'".format(username, ORG_NAME, name, name), password=password, env={})
