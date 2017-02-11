@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+import atexit
 import datetime
 import getch
 import http.client
@@ -39,6 +40,9 @@ def main():
 
     # listen for ctrl-c
     signal.signal(signal.SIGINT, handler)
+
+    # clean up on normal exit
+    atexit.register(teardown)
 
     # check for version
     res = requests.get("https://cs50.me/submit50-version/")
@@ -152,7 +156,6 @@ sys.excepthook = excepthook
 
 def handler(number, frame):
     """Handle SIGINT."""
-    teardown()
     print()
     sys.exit(0)
 
@@ -195,10 +198,7 @@ def submit(problem):
     username, password, email = authenticate()
 
     # show the spinner
-    if not run.verbose:
-        spin.keep_spinning = True
-        thread = Thread(target=spin, args=("Logging in... ",))
-        thread.start()
+    spin(msg="Logging in... ")
 
     # check for submit50 repository
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
@@ -230,9 +230,7 @@ def submit(problem):
     other = run("git ls-files --other").decode("utf-8").split()
 
     # stop the spinner
-    if not run.verbose:
-        spin.keep_spinning = False
-        thread.join()
+    spin(False)
 
     # files that will be submitted
     if len(files) == 0:
@@ -252,10 +250,7 @@ def submit(problem):
         raise Error("No files were submitted.") from None
 
     # show the spinner
-    if not run.verbose:
-        spin.keep_spinning = True
-        thread = Thread(target=spin)
-        thread.start()
+    spin()
 
     # push changes
     run("git commit --allow-empty --message='{}'".format(timestamp))
@@ -271,12 +266,9 @@ def submit(problem):
     run("git push --force origin 'refs/tags/{}'".format(tag), password=password)
 
     # stop the spinner
-    if not run.verbose:
-        spin.keep_spinning = False
-        thread.join()
+    spin(False)
 
     # successful submission
-    teardown()
     print(termcolor.colored("Submitted {}! See https://cs50.me/.".format(problem), "green"))
 
 def checkout(args):
@@ -370,8 +362,6 @@ def checkout(args):
                 if files:
                     run("git rm -rf .", cwd=name, env={})
 
-    teardown()
-
 def run(command, password=None, cwd=None, env=None):
     """Run a command."""
     if run.verbose:
@@ -439,18 +429,25 @@ def two_factor():
 two_factor.auth = None
 two_factor.token = None
 
-def spin(message="Submitting... "):
-    spinner = itertools.cycle(["-", "\\", "|", "/"])
-    sys.stdout.write(message)
-    sys.stdout.flush()
-    while spin.keep_spinning:
-        sys.stdout.write(next(spinner))
+def spin(spinning=True, msg="Submitting... "):
+    spin.spinning = spinning
+    if run.verbose or not spinning:
+        return hasattr(spin, "thread") and spin.thread.join()
+
+    def spin_helper():
+        spinner = itertools.cycle(["-", "\\", "|", "/"])
+        sys.stdout.write(msg)
         sys.stdout.flush()
-        sys.stdout.write("\b")
-        time.sleep(0.05)
-    sys.stdout.write("\r")
-    sys.stdout.flush()
-spin.keep_spinning = True
+        while spin.spinning:
+            sys.stdout.write(next(spinner))
+            sys.stdout.flush()
+            sys.stdout.write("\b")
+            time.sleep(0.05)
+        sys.stdout.write("\r")
+        sys.stdout.flush()
+
+    spin.thread = Thread(target=spin_helper)
+    spin.thread.start()
 
 def usage():
     """Print usage."""
