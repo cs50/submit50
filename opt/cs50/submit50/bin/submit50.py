@@ -204,7 +204,7 @@ def submit(problem):
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
     repository = res.status_code == 200
     if not repository:
-        raise Error("Looks like we haven't enabled submit50 for your account yet! Let sysadmins@cs50.harvard.edu know your GitHub username!")
+        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser then run submit50 here again!")
 
     # clone submit50 repository
     run("git clone --bare {} {}".format(
@@ -277,8 +277,7 @@ def submit(problem):
 
     # successful submission
     teardown()
-    print(termcolor.colored("Submitted {}! See https://github.com/{}/{}/tree/{}.".format(
-        problem, ORG_NAME, username, branch), "green"))
+    print(termcolor.colored("Submitted {}! See https://cs50.me/.".format(problem), "green"))
 
 def checkout(args):
     usernames = None
