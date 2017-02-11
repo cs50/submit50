@@ -277,7 +277,7 @@ def submit(problem):
 
     # successful submission
     teardown()
-    print(termcolor.colored("Submitted {}! See https://github.com/{}/{}/tree/{}.".format(
+    print(termcolor.colored("Submitted {}!\nSee https://github.com/{}/{}/tree/{}.".format(
         problem, ORG_NAME, username, branch), "green"))
 
 def checkout(args):
