@@ -27,7 +27,7 @@ from threading import Thread
 
 EXCLUDE = None
 ORG_NAME = "submit50"
-VERSION = "2.1.0"
+VERSION = "2.1.2"
 timestamp = ""
 
 class Error(Exception):
@@ -337,7 +337,14 @@ def checkout(args):
                 continue
             if not url.startswith("https://{}@github.com/{}/".format(username, ORG_NAME)):
                 print("Invalid repo: {}".format(name))
-            run("git pull", cwd=name, env={})
+
+            # fetch new branches
+            # http://stackoverflow.com/a/11958481
+            # http://stackoverflow.com/a/26339690
+            run("git fetch --all", cwd=name, password=password, env={})
+            _, code = pexpect.run("git config --get branch.$(git symbolic-ref --short -q HEAD).merge", cwd=name, env={}, withexitstatus=True)
+            if code == 0:
+                run("git pull", cwd=name, password=password, env={})
         else:
             # clone repository if it doesn't already exist
             run("git clone 'https://{}@github.com/{}/{}' '{}'".format(username, ORG_NAME, name, name), password=password, env={})
@@ -360,7 +367,9 @@ def checkout(args):
                 run("git checkout '{}'".format(problem), cwd=name, env={})
             else:
                 run("git checkout -b '{}'".format(problem), cwd=name, env={})
-                run("git rm -rf .", cwd=name, env={})
+                files = run("git ls-files", cwd=name, env={})
+                if files:
+                    run("git rm -rf .", cwd=name, env={})
 
     teardown()
 
