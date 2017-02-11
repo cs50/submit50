@@ -28,7 +28,7 @@ from threading import Thread
 
 EXCLUDE = None
 ORG_NAME = "submit50"
-VERSION = "2.0.0"
+VERSION = "2.1.2"
 timestamp = ""
 
 class Error(Exception):
@@ -45,7 +45,7 @@ def main():
     atexit.register(teardown)
 
     # check for version
-    res = requests.get("https://raw.githubusercontent.com/{0}/{0}/master/VERSION".format(ORG_NAME))
+    res = requests.get("https://cs50.me/submit50-version/")
     if res.status_code != 200:
         raise Error("You have an unknown verison of submit50. Email sysadmins@cs50.harvard.edu.") from None
     version_required = res.text.strip()
@@ -162,17 +162,14 @@ def handler(number, frame):
 def submit(problem):
     """Submit problem."""
 
-    # check for course identifier in problem name
-    # submit50 cs50-2016@hello
-    if "@" in problem:
-        [course, problem] = problem.split("@", 1)
-    else:
-        raise Error("Invalid problem. Did you mean to submit something else?") from None
+    # assume cs50/ problem if problem name begins with a year
+    if problem.split("/")[0].isdigit():
+        problem = os.path.join("cs50", problem)
 
     # ensure problem exists
     global EXCLUDE
     _, EXCLUDE = tempfile.mkstemp()
-    url = "https://raw.githubusercontent.com/{0}/{0}/master/{1}/{2}/exclude".format(ORG_NAME, course, problem)
+    url = "https://cs50.me/excludes/{}/".format(problem)
     try:
         urllib.request.urlretrieve(url, filename=EXCLUDE)
         lines = open(EXCLUDE)
@@ -207,7 +204,7 @@ def submit(problem):
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
     repository = res.status_code == 200
     if not repository:
-        raise Error("Looks like we haven't enabled submit50 for your account yet! Let sysadmins@cs50.harvard.edu know your GitHub username!")
+        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser then run submit50 here again!")
 
     # clone submit50 repository
     run("git clone --bare {} {}".format(
@@ -215,7 +212,7 @@ def submit(problem):
         password=password)
 
     # set options
-    branch = "{}@{}".format(course, problem)
+    branch = problem
     tag = "{}@{}".format(branch, timestamp)
     run("git config user.email {}".format(shlex.quote(email)))
     run("git config user.name {}".format(shlex.quote(username)))
@@ -248,7 +245,7 @@ def submit(problem):
         for f in other:
             print(" {}".format(termcolor.colored(f, "yellow")))
 
-    print(termcolor.colored("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files? ", "yellow"), end="")
+    print("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files? ", end="")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         raise Error("No files were submitted.") from None
 
@@ -271,8 +268,8 @@ def submit(problem):
     # stop the spinner
     spin(False)
 
-    print(termcolor.colored("Submitted {}! See https://github.com/{}/{}/tree/{}.".format(
-        problem, ORG_NAME, username, branch), "green"))
+    # successful submission
+    print(termcolor.colored("Submitted {}! See https://cs50.me/.".format(problem), "green"))
 
 def checkout(args):
     usernames = None
@@ -331,7 +328,14 @@ def checkout(args):
                 continue
             if not url.startswith("https://{}@github.com/{}/".format(username, ORG_NAME)):
                 print("Invalid repo: {}".format(name))
-            run("git pull", cwd=name, env={})
+
+            # fetch new branches
+            # http://stackoverflow.com/a/11958481
+            # http://stackoverflow.com/a/26339690
+            run("git fetch --all", cwd=name, password=password, env={})
+            _, code = pexpect.run("git config --get branch.$(git symbolic-ref --short -q HEAD).merge", cwd=name, env={}, withexitstatus=True)
+            if code == 0:
+                run("git pull", cwd=name, password=password, env={})
         else:
             # clone repository if it doesn't already exist
             run("git clone 'https://{}@github.com/{}/{}' '{}'".format(username, ORG_NAME, name, name), password=password, env={})
@@ -354,7 +358,9 @@ def checkout(args):
                 run("git checkout '{}'".format(problem), cwd=name, env={})
             else:
                 run("git checkout -b '{}'".format(problem), cwd=name, env={})
-                run("git rm -rf .", cwd=name, env={})
+                files = run("git ls-files", cwd=name, env={})
+                if files:
+                    run("git rm -rf .", cwd=name, env={})
 
 def run(command, password=None, cwd=None, env=None):
     """Run a command."""
