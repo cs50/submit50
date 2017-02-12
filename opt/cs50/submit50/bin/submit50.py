@@ -128,19 +128,22 @@ def authenticate():
     email = "{}@users.noreply.github.com".format(username)
     res = requests.get("https://api.github.com/user", auth=(username, password))
 
-    print(res)
-
     # check for 2-factor authentication
     # http://github3.readthedocs.io/en/develop/examples/oauth.html?highlight=token
     if "X-GitHub-OTP" in res.headers:
         two_factor()
         password = two_factor.token
+
     # check if incorrect password
     elif res.status_code == 401:
         raise Error("Invalid username and/or password.") from None
+
+    # check for other error
     elif res.status_code != 200:
         raise Error("Could not authenticate user.") from None
 
+    # canonicalize (capitalization of) username, especially if user logged in via email address
+    username = res.json()["login"]
     return (username, password, email)
 
 def excepthook(type, value, tb):
