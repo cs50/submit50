@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import argparse
 import atexit
@@ -26,9 +26,8 @@ import urllib.request
 from distutils.version import StrictVersion
 from threading import Thread
 
-EXCLUDE = None
 ORG_NAME = "submit50"
-VERSION = "2.1.2"
+VERSION = "2.1.3"
 timestamp = ""
 
 class Error(Exception):
@@ -47,7 +46,7 @@ def main():
     # check for version
     res = requests.get("https://cs50.me/submit50-version/")
     if res.status_code != 200:
-        raise Error("You have an unknown verison of submit50. Email sysadmins@cs50.harvard.edu.") from None
+        raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu.") from None
     version_required = res.text.strip()
     if StrictVersion(version_required) > StrictVersion(VERSION):
         raise Error("You have an old version of submit50. Run update50, then re-run submit50!") from None
@@ -134,12 +133,17 @@ def authenticate():
     if "X-GitHub-OTP" in res.headers:
         two_factor()
         password = two_factor.token
+
     # check if incorrect password
     elif res.status_code == 401:
         raise Error("Invalid username and/or password.") from None
+
+    # check for other error
     elif res.status_code != 200:
         raise Error("Could not authenticate user.") from None
 
+    # canonicalize (capitalization of) username, especially if user logged in via email address
+    username = res.json()["login"]
     return (username, password, email)
 
 def excepthook(type, value, tb):
@@ -167,12 +171,11 @@ def submit(problem):
         problem = os.path.join("cs50", problem)
 
     # ensure problem exists
-    global EXCLUDE
-    _, EXCLUDE = tempfile.mkstemp()
+    _, submit.EXCLUDE = tempfile.mkstemp()
     url = "https://cs50.me/excludes/{}/".format(problem)
     try:
-        urllib.request.urlretrieve(url, filename=EXCLUDE)
-        lines = open(EXCLUDE)
+        urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
+        lines = open(submit.EXCLUDE)
     except Exception as e:
         print(e)
         raise Error("Invalid problem. Did you mean to submit something else?") from None
@@ -204,7 +207,7 @@ def submit(problem):
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
     repository = res.status_code == 200
     if not repository:
-        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser then run submit50 here again!")
+        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
 
     # clone submit50 repository
     run("git clone --bare {} {}".format(
@@ -219,7 +222,7 @@ def submit(problem):
     run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(branch)))
 
     # patterns of file names to exclude
-    run("git config core.excludesFile {}".format(shlex.quote(EXCLUDE)))
+    run("git config core.excludesFile {}".format(shlex.quote(submit.EXCLUDE)))
     run("git config core.ignorecase true")
 
     # adds, modifies, and removes index entries to match the working tree
@@ -270,6 +273,7 @@ def submit(problem):
 
     # successful submission
     print(termcolor.colored("Submitted {}! See https://cs50.me/.".format(problem), "green"))
+submit.EXCLUDE = None
 
 def checkout(args):
     usernames = None
@@ -403,10 +407,16 @@ run.verbose = False
 
 def teardown():
     """Delete temporary directory and temporary file."""
-    spin.keep_spinning = False
-    pexpect.run("rm -rf '{}'".format(run.GIT_DIR))
-    if EXCLUDE:
-        pexpect.run("rm -f '{}'".format(EXCLUDE))
+    if spin.spinning:
+        spin.spinning = False
+        sys.stdout.write("\033[2K")
+        sys.stdout.flush()
+    shutil.rmtree(run.GIT_DIR, ignore_errors=True)
+    if submit.EXCLUDE:
+        try:
+            os.remove(submit.EXCLUDE)
+        except:
+            pass
 
 def two_factor():
     """Get one-time authentication code."""
@@ -448,6 +458,7 @@ def spin(spinning=True, msg="Submitting... "):
 
     spin.thread = Thread(target=spin_helper)
     spin.thread.start()
+spin.spinning = False
 
 def usage():
     """Print usage."""
