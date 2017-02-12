@@ -26,7 +26,6 @@ import urllib.request
 from distutils.version import StrictVersion
 from threading import Thread
 
-EXCLUDE = None
 ORG_NAME = "submit50"
 VERSION = "2.1.3"
 timestamp = ""
@@ -45,7 +44,7 @@ def main():
     atexit.register(teardown)
 
     # check for version
-    res = requests.get("https://cs50.me/version")
+    res = requests.get("https://cs50.me/submit50-version")
     if res.status_code != 200:
         raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu.") from None
     version_required = res.text.strip()
@@ -129,6 +128,8 @@ def authenticate():
     email = "{}@users.noreply.github.com".format(username)
     res = requests.get("https://api.github.com/user", auth=(username, password))
 
+    print(res)
+
     # check for 2-factor authentication
     # http://github3.readthedocs.io/en/develop/examples/oauth.html?highlight=token
     if "X-GitHub-OTP" in res.headers:
@@ -167,12 +168,11 @@ def submit(problem):
         problem = os.path.join("cs50", problem)
 
     # ensure problem exists
-    global EXCLUDE
-    _, EXCLUDE = tempfile.mkstemp()
+    _, submit.EXCLUDE = tempfile.mkstemp()
     url = "https://cs50.me/excludes/{}/".format(problem)
     try:
-        urllib.request.urlretrieve(url, filename=EXCLUDE)
-        lines = open(EXCLUDE)
+        urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
+        lines = open(submit.EXCLUDE)
     except Exception as e:
         print(e)
         raise Error("Invalid problem. Did you mean to submit something else?") from None
@@ -219,7 +219,7 @@ def submit(problem):
     run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(branch)))
 
     # patterns of file names to exclude
-    run("git config core.excludesFile {}".format(shlex.quote(EXCLUDE)))
+    run("git config core.excludesFile {}".format(shlex.quote(submit.EXCLUDE)))
     run("git config core.ignorecase true")
 
     # adds, modifies, and removes index entries to match the working tree
@@ -270,6 +270,7 @@ def submit(problem):
 
     # successful submission
     print(termcolor.colored("Submitted {}! See https://cs50.me/.".format(problem), "green"))
+submit.EXCLUDE = None
 
 def checkout(args):
     usernames = None
@@ -404,9 +405,12 @@ run.verbose = False
 def teardown():
     """Delete temporary directory and temporary file."""
     spin.keep_spinning = False
-    pexpect.run("rm -rf '{}'".format(run.GIT_DIR))
-    if EXCLUDE:
-        pexpect.run("rm -f '{}'".format(EXCLUDE))
+    shutil.rmtree(run.GIT_DIR, ignore_errors=True)
+    if submit.EXCLUDE:
+        try:
+            os.remove(submit.EXCLUDE)
+        except:
+            pass
 
 def two_factor():
     """Get one-time authentication code."""
