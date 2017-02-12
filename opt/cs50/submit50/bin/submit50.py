@@ -207,7 +207,7 @@ def submit(problem):
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
     repository = res.status_code == 200
     if not repository:
-        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser then run submit50 here again!")
+        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
 
     # clone submit50 repository
     run("git clone --bare {} {}".format(
