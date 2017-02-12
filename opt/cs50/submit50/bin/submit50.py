@@ -455,6 +455,7 @@ def spin(spinning=True, msg="Submitting... "):
 
     spin.thread = Thread(target=spin_helper)
     spin.thread.start()
+spin.spinning = False
 
 def usage():
     """Print usage."""
