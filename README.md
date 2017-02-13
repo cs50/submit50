@@ -9,6 +9,9 @@
 
 # CHANGELOG
 
+* 2.1.4
+    * Fix problem with two-factor authentication.
+    * Avoid printing "Submission cancelled" when it's inappropriate.
 * 2.1.3
     * Canonicalizd username after login to allow login via email.
     * Generalized finding path to python3.
