@@ -449,7 +449,7 @@ def spin(spinning=True, msg="Submitting... "):
             sys.stdout.write(next(spinner))
             sys.stdout.flush()
             sys.stdout.write("\b")
-            time.sleep(0.05)
+            time.sleep(0.1)
         sys.stdout.write("\r")
         sys.stdout.flush()
 
