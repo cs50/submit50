@@ -27,7 +27,7 @@ from distutils.version import StrictVersion
 from threading import Thread
 
 ORG_NAME = "submit50"
-VERSION = "2.1.3"
+VERSION = "2.1.4"
 timestamp = ""
 
 class Error(Exception):
@@ -124,18 +124,17 @@ def authenticate():
             break
 
     # authenticate user
-    two_factor.auth = (username, password)
     email = "{}@users.noreply.github.com".format(username)
     res = requests.get("https://api.github.com/user", auth=(username, password))
 
     # check for 2-factor authentication
     # http://github3.readthedocs.io/en/develop/examples/oauth.html?highlight=token
     if "X-GitHub-OTP" in res.headers:
-        two_factor()
-        password = two_factor.token
+        password = two_factor(username, password)
+        res = requests.get("https://api.github.com/user", auth=(username, password))
 
     # check if incorrect password
-    elif res.status_code == 401:
+    if res.status_code == 401:
         raise Error("Invalid username and/or password.") from None
 
     # check for other error
@@ -160,7 +159,7 @@ sys.excepthook = excepthook
 
 def handler(number, frame):
     """Handle SIGINT."""
-    print()
+    print(termcolor.colored("\nSubmission cancelled.", "red"))
     sys.exit(0)
 
 def submit(problem):
@@ -418,26 +417,24 @@ def teardown():
         except:
             pass
 
-def two_factor():
+def two_factor(username, password):
     """Get one-time authentication code."""
     # send authentication request
-    requests.post("https://api.github.com/authorizations", auth=two_factor.auth)
+    requests.post("https://api.github.com/authorizations", auth=(username, password))
     while True:
-        print("Authentication Code: ", end="", flush=True)
+        print("Authentication code: ", end="", flush=True)
         code = input()
         if code:
             break
-    data = json.dumps({"scopes":["repo", "user"], "note":"{} {}".format(ORG_NAME, timestamp)})
-    res = requests.post("https://api.github.com/authorizations", auth=two_factor.auth,
+    data = json.dumps({"scopes": ["repo", "user"], "note": "{} {}".format(ORG_NAME, timestamp)})
+    res = requests.post("https://api.github.com/authorizations",
+        auth=(username, password),
         data=data,
         headers={"X-GitHub-OTP": str(code)})
     if res.status_code == 201 and "token" in res.json():
-        two_factor.token = res.json()["token"]
+        return res.json()["token"]
     else:
         raise Error("Could not complete two-factor authentication.") from None
-    return code
-two_factor.auth = None
-two_factor.token = None
 
 def spin(spinning=True, msg="Submitting... "):
     spin.spinning = spinning
@@ -452,7 +449,7 @@ def spin(spinning=True, msg="Submitting... "):
             sys.stdout.write(next(spinner))
             sys.stdout.flush()
             sys.stdout.write("\b")
-            time.sleep(0.05)
+            time.sleep(0.1)
         sys.stdout.write("\r")
         sys.stdout.flush()
 
