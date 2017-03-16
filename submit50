@@ -44,7 +44,7 @@ def main():
     atexit.register(teardown)
 
     # check for version
-    res = requests.get("https://cs50.me/submit50-version/")
+    res = requests.get("https://cs50.me/version")
     if res.status_code != 200:
         raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu.") from None
     version_required = res.text.strip()
