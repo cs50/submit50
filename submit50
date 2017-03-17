@@ -19,6 +19,7 @@ import subprocess
 import sys
 import termcolor
 import tempfile
+import textwrap
 import time
 import traceback
 import urllib.request
@@ -27,7 +28,7 @@ from distutils.version import StrictVersion
 from threading import Thread
 
 ORG_NAME = "submit50"
-VERSION = "2.1.4"
+VERSION = "2.1.5"
 timestamp = ""
 
 class Error(Exception):
@@ -99,27 +100,27 @@ def main():
 def authenticate():
     # prompt for username
     while True:
-        print("GitHub username: ", end="", flush=True)
+        cprint("GitHub username:", end=" ", flush=True)
         username = input().strip()
         if username:
             break
 
     # prompt for password
     while True:
-        print("GitHub password: ", end="", flush=True)
+        cprint("GitHub password:", end=" ", flush=True)
         password = str()
         while True:
             ch = getch.getch()
             if ch == "\n": # Enter
-                print()
+                cprint()
                 break
             elif ch == "\177": # DEL
                 if len(password) > 0:
                     password = password[:-1]
-                    print("\b \b", end="", flush=True)
+                    cprint("\b \b", end="", flush=True)
             else:
                 password += ch
-                print("*", end="", flush=True)
+                cprint("*", end="", flush=True)
         if password:
             break
 
@@ -157,7 +158,7 @@ def checkout(args):
             usernames.append(line.strip())
 
     if len(args) == 0 and usernames == None:
-        print("Usage: submit50 --checkout [problem] [@username ...]")
+        cprint("Usage: submit50 --checkout [problem] [@username ...]")
         sys.exit(1)
 
     if len(args) > 0:
@@ -192,16 +193,16 @@ def checkout(args):
 
             # check whether name is a directory
             if os.path.isfile(name):
-                print("Not a directory: {}".format(name))
+                cprint("Not a directory: {}".format(name))
                 continue
 
             # pull repository
             url = run("git config --get remote.origin.url", cwd=name, env={}).decode("utf-8")
             if url == "":
-                print("Missing origin: {}".format(name))
+                cprint("Missing origin: {}".format(name))
                 continue
             if not url.startswith("https://{}@github.com/{}/".format(username, ORG_NAME)):
-                print("Invalid repo: {}".format(name))
+                cprint("Invalid repo: {}".format(name))
 
             # fetch new branches
             # http://stackoverflow.com/a/11958481
@@ -236,22 +237,88 @@ def checkout(args):
                 if files:
                     run("git rm -rf .", cwd=name, env={})
 
+def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
+    """Colorizes text (and wraps to terminal's width)."""
+    columns, lines = shutil.get_terminal_size()
+    termcolor.cprint(textwrap.fill(text, columns), color=color, on_color=on_color, attrs=attrs, **kwargs)
+
 def excepthook(type, value, tb):
     """Report an exception."""
     teardown()
     if type is Error and str(value):
-        print(termcolor.colored(str(value), "yellow"))
+        cprint(str(value), "yellow")
     else:
         if run.verbose:
             traceback.print_tb(tb)
-        print(termcolor.colored("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow"))
-    print(termcolor.colored("Submission cancelled.", "red"))
+        cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
+    cprint("Submission cancelled.", "red")
 sys.excepthook = excepthook
 
 def handler(number, frame):
     """Handle SIGINT."""
-    print(termcolor.colored("\nSubmission cancelled.", "red"))
+    cprint()
+    cprint("Submission cancelled.", "red")
     sys.exit(0)
+
+def run(command, password=None, cwd=None, env=None):
+    """Run a command."""
+    if run.verbose:
+        cprint(command)
+
+    # when not using --checkout, include GIT_DIR and GIT_WORK_TREE in env
+    if env == None:
+        env = {
+            "GIT_DIR": run.GIT_DIR,
+            "GIT_WORK_TREE": run.GIT_WORK_TREE
+        }
+
+    # if authentication required for command, send password when requested
+    if password:
+        child = pexpect.spawnu(command, env=env, cwd=cwd)
+
+        # send output of command to stdout only if run with --verbose
+        if run.verbose:
+            child.logfile_read = sys.stdout
+
+        try:
+            child.expect("Password.*:")
+            child.sendline(password)
+            child.expect(pexpect.EOF)
+        except:
+            pass
+        child.close()
+        if child.exitstatus != 0:
+            raise Error()
+    else:
+        output, status = pexpect.run(command, env=env, cwd=cwd, withexitstatus=True)
+        # check exit status of command
+        if status != 0:
+            raise Error()
+        return output
+run.GIT_DIR = tempfile.mkdtemp()
+run.GIT_WORK_TREE = os.getcwd()
+run.verbose = False
+
+def spin(spinning=True, msg="Submitting... "):
+    spin.spinning = spinning
+    if run.verbose or not spinning:
+        return hasattr(spin, "thread") and spin.thread.join()
+
+    def spin_helper():
+        spinner = itertools.cycle(["-", "\\", "|", "/"])
+        sys.stdout.write(msg)
+        sys.stdout.flush()
+        while spin.spinning:
+            sys.stdout.write(next(spinner))
+            sys.stdout.flush()
+            sys.stdout.write("\b")
+            time.sleep(0.1)
+        sys.stdout.write("\r")
+        sys.stdout.flush()
+
+    spin.thread = Thread(target=spin_helper)
+    spin.thread.start()
+spin.spinning = False
 
 def submit(problem):
     """Submit problem."""
@@ -267,7 +334,7 @@ def submit(problem):
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
         lines = open(submit.EXCLUDE)
     except Exception as e:
-        print(e)
+        cprint(e)
         raise Error("Invalid problem. Did you mean to submit something else?") from None
 
     # check for missing files
@@ -282,9 +349,9 @@ def submit(problem):
             elif not os.path.isfile(pattern):
                 missing.append(pattern)
     if missing:
-        print("You seem to be missing these files:")
+        cprint("You seem to be missing these files:")
         for pattern in missing:
-            print(" {}".format(pattern))
+            cprint(" {}".format(pattern))
         raise Error("Ensure you have the required files before submitting.") from None
 
     # authenticate user
@@ -328,17 +395,17 @@ def submit(problem):
     # files that will be submitted
     if len(files) == 0:
         raise Error("None of the files in this directory are expected for submission.") from None
-    print(termcolor.colored("Files that will be submitted:", "yellow"))
+    cprint("Files that will be submitted:", "yellow")
     for f in files:
-        print(" {}".format(termcolor.colored(f, "yellow")))
+        cprint(" {}".format(f), "yellow")
 
     # files that won't be submitted
     if len(other) != 0:
-        print(termcolor.colored("Files that won't be submitted:", "yellow"))
+        cprint("Files that won't be submitted:", "yellow")
         for f in other:
-            print(" {}".format(termcolor.colored(f, "yellow")))
+            cprint(" {}".format(f, "yellow"))
 
-    print("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files? ", end="")
+    cprint("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files?", end=" ")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         raise Error("No files were submitted.") from None
 
@@ -362,47 +429,8 @@ def submit(problem):
     spin(False)
 
     # successful submission
-    print(termcolor.colored("Submitted {}! See https://cs50.me/.".format(problem), "green"))
+    cprint("Submitted {}! See https://cs50.me/.".format(problem), "green")
 submit.EXCLUDE = None
-
-def run(command, password=None, cwd=None, env=None):
-    """Run a command."""
-    if run.verbose:
-        print(command)
-
-    # when not using --checkout, include GIT_DIR and GIT_WORK_TREE in env
-    if env == None:
-        env = {
-            "GIT_DIR": run.GIT_DIR,
-            "GIT_WORK_TREE": run.GIT_WORK_TREE
-        }
-
-    # if authentication required for command, send password when requested
-    if password:
-        child = pexpect.spawnu(command, env=env, cwd=cwd)
-
-        # send output of command to stdout only if run with --verbose
-        if run.verbose:
-            child.logfile_read = sys.stdout
-
-        try:
-            child.expect("Password.*:")
-            child.sendline(password)
-            child.expect(pexpect.EOF)
-        except:
-            pass
-        child.close()
-        if child.exitstatus != 0:
-            raise Error()
-    else:
-        output, status = pexpect.run(command, env=env, cwd=cwd, withexitstatus=True)
-        # check exit status of command
-        if status != 0:
-            raise Error()
-        return output
-run.GIT_DIR = tempfile.mkdtemp()
-run.GIT_WORK_TREE = os.getcwd()
-run.verbose = False
 
 def teardown():
     """Delete temporary directory and temporary file."""
@@ -422,7 +450,7 @@ def two_factor(username, password):
     # send authentication request
     requests.post("https://api.github.com/authorizations", auth=(username, password))
     while True:
-        print("Authentication code: ", end="", flush=True)
+        cprint("Authentication code:", end=" ", flush=True)
         code = input()
         if code:
             break
@@ -436,30 +464,9 @@ def two_factor(username, password):
     else:
         raise Error("Could not complete two-factor authentication.") from None
 
-def spin(spinning=True, msg="Submitting... "):
-    spin.spinning = spinning
-    if run.verbose or not spinning:
-        return hasattr(spin, "thread") and spin.thread.join()
-
-    def spin_helper():
-        spinner = itertools.cycle(["-", "\\", "|", "/"])
-        sys.stdout.write(msg)
-        sys.stdout.flush()
-        while spin.spinning:
-            sys.stdout.write(next(spinner))
-            sys.stdout.flush()
-            sys.stdout.write("\b")
-            time.sleep(0.1)
-        sys.stdout.write("\r")
-        sys.stdout.flush()
-
-    spin.thread = Thread(target=spin_helper)
-    spin.thread.start()
-spin.spinning = False
-
 def usage():
     """Print usage."""
-    print("Usage: submit50 problem")
+    cprint("Usage: submit50 problem")
 
 if __name__ == "__main__":
     main()
