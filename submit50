@@ -407,7 +407,7 @@ def teardown():
     """Delete temporary directory and temporary file."""
     if spin.spinning:
         spin.spinning = False
-        sys.stdout.write("\033[2K")
+        sys.stdout.write("\033[2K\r")
         sys.stdout.flush()
     shutil.rmtree(run.GIT_DIR, ignore_errors=True)
     if submit.EXCLUDE:
