@@ -395,10 +395,10 @@ def run(command, password=None, cwd=None, env=None):
     else:
 
         # http://pexpect.readthedocs.io/en/stable/api/pexpect.html#run-function
-        command_output, exitstatus = pexpect.run(command, encoding="utf-8", env=env, cwd=cwd, withexitstatus=True)
+        command_output, exitstatus = pexpect.run(command, env=env, cwd=cwd, withexitstatus=True)
         if exitstatus != 0:
             raise Error()
-        return command_output
+        return command_output.decode("utf-8")
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
