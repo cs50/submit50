@@ -19,5 +19,5 @@ setup(
     name="submit50",
     scripts=["submit50"],
     url="https://github.com/cs50/submit50",
-    version="2.1.4"
+    version="2.1.5"
 )
