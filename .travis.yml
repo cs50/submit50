@@ -11,6 +11,10 @@ before_deploy: pip install twine
 deploy:
   provider: script
 
+  # deploy on tags only
+  on:
+    tags: true
+
   # upload to PyPI
   script: twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*
 
