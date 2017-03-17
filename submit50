@@ -47,7 +47,7 @@ def main():
     # check for version
     res = requests.get("https://cs50.me/submit50-version/")
     if res.status_code != 200:
-        raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu.") from None
+        raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!") from None
     version_required = res.text.strip()
     if StrictVersion(version_required) > StrictVersion(VERSION):
         raise Error("You have an old version of submit50. Run update50, then re-run submit50!") from None
@@ -274,7 +274,7 @@ def run(command, password=None, cwd=None, env=None):
 
     # if authentication required for command, send password when requested
     if password:
-        child = pexpect.spawnu(command, env=env, cwd=cwd)
+        child = pexpect.spawnu(command, cwd=cwd, env=env)
 
         # send output of command to stdout only if run with --verbose
         if run.verbose:
@@ -362,8 +362,7 @@ def submit(problem):
 
     # check for submit50 repository
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
-    repository = res.status_code == 200
-    if not repository:
+    if res.status_code != 200:
         raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
 
     # clone submit50 repository
@@ -397,13 +396,13 @@ def submit(problem):
         raise Error("None of the files in this directory are expected for submission.") from None
     cprint("Files that will be submitted:", "yellow")
     for f in files:
-        cprint(" {}".format(f), "yellow")
+        cprint("./{}".format(f), "yellow")
 
     # files that won't be submitted
     if len(other) != 0:
         cprint("Files that won't be submitted:", "yellow")
         for f in other:
-            cprint(" {}".format(f, "yellow"))
+            cprint("./{}".format(f), "yellow")
 
     cprint("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files?", end=" ")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
@@ -429,7 +428,7 @@ def submit(problem):
     spin(False)
 
     # successful submission
-    cprint("Submitted {}! See https://cs50.me/.".format(problem), "green")
+    cprint("Submitted {}! See https://cs50.me/submissions/{}.".format(problem, branch), "green")
 submit.EXCLUDE = None
 
 def teardown():
