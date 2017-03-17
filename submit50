@@ -228,10 +228,10 @@ def submit(problem):
     run("git add --all")
 
     # get file lists
-    files = run("git ls-files").decode("utf-8").split()
-    other = run("git ls-files --other").decode("utf-8").split()
+    files = run("git ls-files").split()
+    other = run("git ls-files --other").split()
 
-    # stop the spinner
+    # stop spinner
     spin(False)
 
     # files that will be submitted
@@ -247,27 +247,23 @@ def submit(problem):
         for f in other:
             print(" {}".format(termcolor.colored(f, "yellow")))
 
+    # prompt for academic honesty
     print("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files? ", end="")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         raise Error("No files were submitted.") from None
 
-    # show the spinner
+    # show spinner
     spin()
 
-    # push changes
+    # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
 
-    # create a new orphan branch and switch to it
-    run("git checkout --orphan 'orphan'")
-    run("git add --all")
-    run("git commit --allow-empty --message='{}'".format(timestamp))
+    # push tag
+    hash = run("git commit-tree HEAD^{{tree}} -m '{}'".format(timestamp)).strip()
+    run("git push origin {}:refs/tags/{}".format(hash, tag), password=password)
 
-    # add a tag reference
-    run("git tag --force '{}'".format(tag))
-    run("git push --force origin 'refs/tags/{}'".format(tag), password=password)
-
-    # stop the spinner
+    # stop spinner
     spin(False)
 
     # successful submission
@@ -325,7 +321,7 @@ def checkout(args):
                 continue
 
             # pull repository
-            url = run("git config --get remote.origin.url", cwd=name, env={}).decode("utf-8")
+            url = run("git config --get remote.origin.url", cwd=name, env={})
             if url == "":
                 print("Missing origin: {}".format(name))
                 continue
@@ -348,15 +344,15 @@ def checkout(args):
             continue
 
         # check out branch
-        branches = run("git branch -r", cwd=name, env={}).decode("utf-8")
+        branches = run("git branch -r", cwd=name, env={})
         if "origin/{}".format(problem) in branches:
-            branches = run("git branch", cwd=name, env={}).decode("utf-8")
+            branches = run("git branch", cwd=name, env={})
             if problem in branches:
                 run("git checkout '{}'".format(problem), cwd=name, env={})
             else:
                 run("git checkout --track 'origin/{}'".format(problem), cwd=name, env={})
         else:
-            branches = run("git branch", cwd=name, env={}).decode("utf-8")
+            branches = run("git branch", cwd=name, env={})
             if problem in branches:
                 run("git checkout '{}'".format(problem), cwd=name, env={})
             else:
@@ -377,7 +373,7 @@ def run(command, password=None, cwd=None, env=None):
             "GIT_WORK_TREE": run.GIT_WORK_TREE
         }
 
-    # if authentication required for command, send password when requested
+    # authenticated command
     if password:
         child = pexpect.spawnu(command, env=env, cwd=cwd)
 
@@ -394,12 +390,15 @@ def run(command, password=None, cwd=None, env=None):
         child.close()
         if child.exitstatus != 0:
             raise Error()
+
+    # unauthenticated command
     else:
-        output, status = pexpect.run(command, env=env, cwd=cwd, withexitstatus=True)
-        # check exit status of command
-        if status != 0:
+
+        # http://pexpect.readthedocs.io/en/stable/api/pexpect.html#run-function
+        command_output, exitstatus = pexpect.run(command, encoding="utf-8", env=env, cwd=cwd, withexitstatus=True)
+        if exitstatus != 0:
             raise Error()
-        return output
+        return command_output
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
