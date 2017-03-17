@@ -19,6 +19,7 @@ import subprocess
 import sys
 import termcolor
 import tempfile
+import textwrap
 import time
 import traceback
 import urllib.request
@@ -27,7 +28,7 @@ from distutils.version import StrictVersion
 from threading import Thread
 
 ORG_NAME = "submit50"
-VERSION = "2.1.4"
+VERSION = "2.1.5"
 timestamp = ""
 
 class Error(Exception):
@@ -46,7 +47,7 @@ def main():
     # check for version
     res = requests.get("https://cs50.me/version")
     if res.status_code != 200:
-        raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu.") from None
+        raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!") from None
     version_required = res.text.strip()
     if StrictVersion(version_required) > StrictVersion(VERSION):
         raise Error("You have an old version of submit50. Run update50, then re-run submit50!") from None
@@ -99,27 +100,27 @@ def main():
 def authenticate():
     # prompt for username
     while True:
-        print("GitHub username: ", end="", flush=True)
+        cprint("GitHub username:", end=" ", flush=True)
         username = input().strip()
         if username:
             break
 
     # prompt for password
     while True:
-        print("GitHub password: ", end="", flush=True)
+        cprint("GitHub password:", end=" ", flush=True)
         password = str()
         while True:
             ch = getch.getch()
             if ch == "\n": # Enter
-                print()
+                cprint()
                 break
             elif ch == "\177": # DEL
                 if len(password) > 0:
                     password = password[:-1]
-                    print("\b \b", end="", flush=True)
+                    cprint("\b \b", end="", flush=True)
             else:
                 password += ch
-                print("*", end="", flush=True)
+                cprint("*", end="", flush=True)
         if password:
             break
 
@@ -144,132 +145,7 @@ def authenticate():
     # canonicalize (capitalization of) username, especially if user logged in via email address
     username = res.json()["login"]
     return (username, password, email)
-
-def excepthook(type, value, tb):
-    """Report an exception."""
-    teardown()
-    if type is Error and str(value):
-        print(termcolor.colored(str(value), "yellow"))
-    else:
-        if run.verbose:
-            traceback.print_tb(tb)
-        print(termcolor.colored("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow"))
-    print(termcolor.colored("Submission cancelled.", "red"))
-sys.excepthook = excepthook
-
-def handler(number, frame):
-    """Handle SIGINT."""
-    print(termcolor.colored("\nSubmission cancelled.", "red"))
-    sys.exit(0)
-
-def submit(problem):
-    """Submit problem."""
-
-    # assume cs50/ problem if problem name begins with a year
-    if problem.split("/")[0].isdigit():
-        problem = os.path.join("cs50", problem)
-
-    # ensure problem exists
-    _, submit.EXCLUDE = tempfile.mkstemp()
-    url = "https://cs50.me/excludes/{}/".format(problem)
-    try:
-        urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
-        lines = open(submit.EXCLUDE)
-    except Exception as e:
-        print(e)
-        raise Error("Invalid problem. Did you mean to submit something else?") from None
-
-    # check for missing files
-    missing = []
-    for line in lines:
-        matches = re.match(r"^\s*#\s*([^\s]+)\s*$", line)
-        if matches:
-            pattern = matches.group(1)
-            if pattern[:-1] == "/":
-                if not os.path.isdir(pattern):
-                    missing.append(pattern)
-            elif not os.path.isfile(pattern):
-                missing.append(pattern)
-    if missing:
-        print("You seem to be missing these files:")
-        for pattern in missing:
-            print(" {}".format(pattern))
-        raise Error("Ensure you have the required files before submitting.") from None
-
-    # authenticate user
-    username, password, email = authenticate()
-
-    # show the spinner
-    spin(msg="Authenticating... ")
-
-    # check for submit50 repository
-    res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
-    repository = res.status_code == 200
-    if not repository:
-        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
-
-    # clone submit50 repository
-    run("git clone --bare {} {}".format(
-        shlex.quote("https://{}@github.com/{}/{}".format(username, ORG_NAME, username)), shlex.quote(run.GIT_DIR)),
-        password=password)
-
-    # set options
-    branch = problem
-    tag = "{}@{}".format(branch, timestamp)
-    run("git config user.email {}".format(shlex.quote(email)))
-    run("git config user.name {}".format(shlex.quote(username)))
-    run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(branch)))
-
-    # patterns of file names to exclude
-    run("git config core.excludesFile {}".format(shlex.quote(submit.EXCLUDE)))
-    run("git config core.ignorecase true")
-
-    # adds, modifies, and removes index entries to match the working tree
-    run("git add --all")
-
-    # get file lists
-    files = run("git ls-files").split()
-    other = run("git ls-files --other").split()
-
-    # stop spinner
-    spin(False)
-
-    # files that will be submitted
-    if len(files) == 0:
-        raise Error("None of the files in this directory are expected for submission.") from None
-    print(termcolor.colored("Files that will be submitted:", "yellow"))
-    for f in files:
-        print(" {}".format(termcolor.colored(f, "yellow")))
-
-    # files that won't be submitted
-    if len(other) != 0:
-        print(termcolor.colored("Files that won't be submitted:", "yellow"))
-        for f in other:
-            print(" {}".format(termcolor.colored(f, "yellow")))
-
-    # prompt for academic honesty
-    print("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files? ", end="")
-    if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
-        raise Error("No files were submitted.") from None
-
-    # show spinner
-    spin()
-
-    # push branch
-    run("git commit --allow-empty --message='{}'".format(timestamp))
-    run("git push origin 'refs/heads/{}'".format(branch), password=password)
-
-    # push tag
-    hash = run("git commit-tree HEAD^{{tree}} -m '{}'".format(timestamp)).strip()
-    run("git push origin {}:refs/tags/{}".format(hash, tag), password=password)
-
-    # stop spinner
-    spin(False)
-
-    # successful submission
-    print(termcolor.colored("Submitted {}! See https://cs50.me/.".format(problem), "green"))
-submit.EXCLUDE = None
-
+    
 def checkout(args):
     usernames = None
     problem = None
@@ -282,7 +158,7 @@ def checkout(args):
             usernames.append(line.strip())
 
     if len(args) == 0 and usernames == None:
-        print("Usage: submit50 --checkout [problem] [@username ...]")
+        cprint("Usage: submit50 --checkout [problem] [@username ...]")
         sys.exit(1)
 
     if len(args) > 0:
@@ -317,16 +193,16 @@ def checkout(args):
 
             # check whether name is a directory
             if os.path.isfile(name):
-                print("Not a directory: {}".format(name))
+                cprint("Not a directory: {}".format(name))
                 continue
 
             # pull repository
             url = run("git config --get remote.origin.url", cwd=name, env={})
             if url == "":
-                print("Missing origin: {}".format(name))
+                cprint("Missing origin: {}".format(name))
                 continue
             if not url.startswith("https://{}@github.com/{}/".format(username, ORG_NAME)):
-                print("Invalid repo: {}".format(name))
+                cprint("Invalid repo: {}".format(name))
 
             # fetch new branches
             # http://stackoverflow.com/a/11958481
@@ -361,10 +237,33 @@ def checkout(args):
                 if files:
                     run("git rm -rf .", cwd=name, env={})
 
+def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
+    """Colorizes text (and wraps to terminal's width)."""
+    columns, lines = shutil.get_terminal_size()
+    termcolor.cprint(textwrap.fill(text, columns), color=color, on_color=on_color, attrs=attrs, **kwargs)
+
+def excepthook(type, value, tb):
+    """Report an exception."""
+    teardown()
+    if type is Error and str(value):
+        cprint(str(value), "yellow")
+    else:
+        if run.verbose:
+            traceback.print_tb(tb)
+        cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
+    cprint("Submission cancelled.", "red")
+sys.excepthook = excepthook
+    
+def handler(number, frame):
+    """Handle SIGINT."""
+    cprint()
+    cprint("Submission cancelled.", "red")
+    sys.exit(0)
+    
 def run(command, password=None, cwd=None, env=None):
     """Run a command."""
     if run.verbose:
-        print(command)
+        cprint(command)
 
     # when not using --checkout, include GIT_DIR and GIT_WORK_TREE in env
     if env == None:
@@ -375,7 +274,7 @@ def run(command, password=None, cwd=None, env=None):
 
     # authenticated command
     if password:
-        child = pexpect.spawnu(command, env=env, cwd=cwd)
+        child = pexpect.spawnu(command, cwd=cwd, env=env)
 
         # send output of command to stdout only if run with --verbose
         if run.verbose:
@@ -403,38 +302,6 @@ run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
 
-def teardown():
-    """Delete temporary directory and temporary file."""
-    if spin.spinning:
-        spin.spinning = False
-        sys.stdout.write("\033[2K\r")
-        sys.stdout.flush()
-    shutil.rmtree(run.GIT_DIR, ignore_errors=True)
-    if submit.EXCLUDE:
-        try:
-            os.remove(submit.EXCLUDE)
-        except:
-            pass
-
-def two_factor(username, password):
-    """Get one-time authentication code."""
-    # send authentication request
-    requests.post("https://api.github.com/authorizations", auth=(username, password))
-    while True:
-        print("Authentication code: ", end="", flush=True)
-        code = input()
-        if code:
-            break
-    data = json.dumps({"scopes": ["repo", "user"], "note": "{} {}".format(ORG_NAME, timestamp)})
-    res = requests.post("https://api.github.com/authorizations",
-        auth=(username, password),
-        data=data,
-        headers={"X-GitHub-OTP": str(code)})
-    if res.status_code == 201 and "token" in res.json():
-        return res.json()["token"]
-    else:
-        raise Error("Could not complete two-factor authentication.") from None
-
 def spin(spinning=True, msg="Submitting... "):
     spin.spinning = spinning
     if run.verbose or not spinning:
@@ -456,9 +323,148 @@ def spin(spinning=True, msg="Submitting... "):
     spin.thread.start()
 spin.spinning = False
 
+def submit(problem):
+    """Submit problem."""
+
+    # assume cs50/ problem if problem name begins with a year
+    if problem.split("/")[0].isdigit():
+        problem = os.path.join("cs50", problem)
+
+    # ensure problem exists
+    _, submit.EXCLUDE = tempfile.mkstemp()
+    url = "https://cs50.me/excludes/{}/".format(problem)
+    try:
+        urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
+        lines = open(submit.EXCLUDE)
+    except Exception as e:
+        cprint(e)
+        raise Error("Invalid problem. Did you mean to submit something else?") from None
+
+    # check for missing files
+    missing = []
+    for line in lines:
+        matches = re.match(r"^\s*#\s*([^\s]+)\s*$", line)
+        if matches:
+            pattern = matches.group(1)
+            if pattern[:-1] == "/":
+                if not os.path.isdir(pattern):
+                    missing.append(pattern)
+            elif not os.path.isfile(pattern):
+                missing.append(pattern)
+    if missing:
+        cprint("You seem to be missing these files:")
+        for pattern in missing:
+            cprint(" {}".format(pattern))
+        raise Error("Ensure you have the required files before submitting.") from None
+
+    # authenticate user
+    username, password, email = authenticate()
+
+    # show spinner
+    spin(msg="Authenticating... ")
+
+    # check for submit50 repository
+    res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
+    if res.status_code != 200:
+        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+
+    # clone submit50 repository
+    run("git clone --bare {} {}".format(
+        shlex.quote("https://{}@github.com/{}/{}".format(username, ORG_NAME, username)), shlex.quote(run.GIT_DIR)),
+        password=password)
+
+    # set options
+    branch = problem
+    tag = "{}@{}".format(branch, timestamp)
+    run("git config user.email {}".format(shlex.quote(email)))
+    run("git config user.name {}".format(shlex.quote(username)))
+    run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(branch)))
+
+    # patterns of file names to exclude
+    run("git config core.excludesFile {}".format(shlex.quote(submit.EXCLUDE)))
+    run("git config core.ignorecase true")
+
+    # adds, modifies, and removes index entries to match the working tree
+    run("git add --all")
+
+    # get file lists
+    files = run("git ls-files").split()
+    other = run("git ls-files --other").split()
+
+    # stop spinner
+    spin(False)
+
+    # files that will be submitted
+    if len(files) == 0:
+        raise Error("None of the files in this directory are expected for submission.") from None
+    cprint("Files that will be submitted:", "yellow")
+    for f in files:
+        cprint("./{}".format(f), "yellow")
+
+    # files that won't be submitted
+    if len(other) != 0:
+        cprint("Files that won't be submitted:", "yellow")
+        for f in other:
+            cprint("./{}".format(f), "yellow")
+    
+    # prompt for academic honesty
+    cprint("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files?", end=" ")
+    if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
+        raise Error("No files were submitted.") from None
+
+    # show spinner
+    spin()
+
+    # push branch
+    run("git commit --allow-empty --message='{}'".format(timestamp))
+    run("git push origin 'refs/heads/{}'".format(branch), password=password)
+
+    # push tag
+    hash = run("git commit-tree HEAD^{{tree}} -m '{}'".format(timestamp)).strip()
+    run("git push origin {}:refs/tags/{}".format(hash, tag), password=password)
+
+    # stop spinner
+    spin(False)
+
+    # successful submission
+    cprint("Submitted {}! See https://cs50.me/submissions/{}.".format(problem, branch), "green")
+submit.EXCLUDE = None
+
+def teardown():
+    """Delete temporary directory and temporary file."""
+    if spin.spinning:
+        spin.spinning = False
+        sys.stdout.write("\033[2K\r")
+        sys.stdout.flush()
+    shutil.rmtree(run.GIT_DIR, ignore_errors=True)
+    if submit.EXCLUDE:
+        try:
+            os.remove(submit.EXCLUDE)
+        except:
+            pass
+
+def two_factor(username, password):
+    """Get one-time authentication code."""
+    # send authentication request
+    requests.post("https://api.github.com/authorizations", auth=(username, password))
+    while True:
+        cprint("Authentication code:", end=" ", flush=True)
+        code = input()
+        if code:
+            break
+    data = json.dumps({"scopes": ["repo", "user"], "note": "{} {}".format(ORG_NAME, timestamp)})
+    res = requests.post("https://api.github.com/authorizations",
+        auth=(username, password),
+        data=data,
+        headers={"X-GitHub-OTP": str(code)})
+    if res.status_code == 201 and "token" in res.json():
+        return res.json()["token"]
+    else:
+        raise Error("Could not complete two-factor authentication.") from None
+
 def usage():
     """Print usage."""
-    print("Usage: submit50 problem")
+    cprint("Usage: submit50 problem")
 
 if __name__ == "__main__":
     main()
