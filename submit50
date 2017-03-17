@@ -24,11 +24,11 @@ import time
 import traceback
 import urllib.request
 
-from distutils.version import StrictVersion
+from pkg_resources import get_distribution, parse_version
 from threading import Thread
 
 ORG_NAME = "submit50"
-VERSION = "2.1.5"
+__version__ = get_distribution("submit50").version
 timestamp = ""
 
 class Error(Exception):
@@ -49,7 +49,7 @@ def main():
     if res.status_code != 200:
         raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!") from None
     version_required = res.text.strip()
-    if StrictVersion(version_required) > StrictVersion(VERSION):
+    if parse_version(version_required) > parse_version(__version__):
         raise Error("You have an old version of submit50. Run update50, then re-run submit50!") from None
 
     # compute timestamp
