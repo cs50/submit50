@@ -200,7 +200,7 @@ def submit(problem):
     username, password, email = authenticate()
 
     # show the spinner
-    spin(msg="Logging in... ")
+    spin(msg="Authenticating... ")
 
     # check for submit50 repository
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
