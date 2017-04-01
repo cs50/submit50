@@ -8,4 +8,15 @@ clean:
 
 .PHONY: install
 install: build
-	pip install dist/submit50*.tar.gz
+	pip3 install dist/*.tar.gz
+
+.PHONY: push
+push:
+	git push origin "v$$(python3 setup.py --version)"
+
+.PHONY: release
+release: tag push
+
+.PHONY: tag
+tag:
+	git tag "v$$(python3 setup.py --version)"
