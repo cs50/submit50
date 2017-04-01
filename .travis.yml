@@ -33,12 +33,12 @@ deploy:
   # deploy to PyPI
   - provider: script
 
-  # upload sdist to PyPI
-  script: twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*
+    # upload sdist to PyPI
+    script: twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD dist/*
 
-  # avoid stashing sdist
-  skip_cleanup: true
+    # avoid stashing sdist
+    skip_cleanup: true
 
-  # deploy on tags only
-  on:
-    tags: true
+    # deploy on tags only
+    on:
+      tags: true
