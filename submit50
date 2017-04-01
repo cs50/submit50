@@ -337,7 +337,9 @@ def submit(problem):
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
         lines = open(submit.EXCLUDE)
     except Exception as e:
-        cprint(e)
+        if run.verbose:
+            cprint(str(e))
+
         raise Error("Invalid problem. Did you mean to submit something else?") from None
 
     # check for missing files
