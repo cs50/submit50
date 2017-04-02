@@ -382,7 +382,6 @@ def submit(problem):
 
     # patterns of file names to exclude
     run("git config core.excludesFile {}".format(shlex.quote(submit.EXCLUDE)))
-    run("git config core.ignorecase true")
 
     # adds, modifies, and removes index entries to match the working tree
     run("git add --all")
