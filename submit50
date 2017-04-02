@@ -421,6 +421,7 @@ def submit(problem):
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
 
     # push tag
+    # http://stackoverflow.com/a/23486788
     hash = run("git commit-tree HEAD^{{tree}} -m '{}'".format(timestamp)).strip()
     run("git push origin {}:refs/tags/{}".format(hash, tag), password=password)
 
