@@ -274,34 +274,24 @@ def run(command, password=None, cwd=None, env=None):
             "GIT_WORK_TREE": run.GIT_WORK_TREE
         }
 
-    # authenticated command
+    # spawn command
+    child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, timeout=None)
+
+    # send output of command to stdout only if run with --verbose
+    if run.verbose:
+        child.logfile_read = sys.stdout
+
+    # wait for prompt, send password
     if password:
-        child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env)
+        child.expect("Password.*:")
+        child.sendline(password)
 
-        # send output of command to stdout only if run with --verbose
-        if run.verbose:
-            child.logfile_read = sys.stdout
-
-        try:
-            child.expect("Password.*:")
-            child.sendline(password)
-            child.expect(pexpect.EOF)
-        except:
-            pass
-        child.close()
-        if child.signalstatus is None and child.exitstatus != 0:
-            raise Error()
-
-    # unauthenticated command
-    else:
-
-        # http://pexpect.readthedocs.io/en/stable/api/pexpect.html#run-function
-        child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, timeout=None)
-        command_output = child.read()
-        child.close()
-        if child.signalstatus is None and child.exitstatus != 0:
-            raise Error()
-        return command_output
+    # read output, check status
+    command_output = child.read().strip()
+    child.close()
+    if child.signalstatus is None and child.exitstatus != 0:
+        raise Error()
+    return command_output
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
