@@ -274,30 +274,33 @@ def run(command, password=None, cwd=None, env=None):
 
     # authenticated command
     if password:
-        child = pexpect.spawnu(command, cwd=cwd, env=env)
+
+        # https://pexpect.readthedocs.io/en/stable/api/pexpect.html#spawn-class
+        child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, timeout=None)
 
         # send output of command to stdout only if run with --verbose
         if run.verbose:
             child.logfile_read = sys.stdout
 
-        try:
-            child.expect("Password.*:")
-            child.sendline(password)
-            child.expect(pexpect.EOF)
-        except:
-            pass
+        # wait for prompt, send password
+        child.expect("Password.*:")
+        child.sendline(password)
+
+        # wait for exit, check status
+        child.expect(pexpect.EOF)
         child.close()
         if child.exitstatus != 0:
             raise Error()
 
     # unauthenticated command
     else:
-
+        
         # http://pexpect.readthedocs.io/en/stable/api/pexpect.html#run-function
-        command_output, exitstatus = pexpect.run(command, env=env, cwd=cwd, withexitstatus=True)
+        logfile = sys.stdout if run.verbose else None
+        command_output, exitstatus = pexpect.run(command, cwd=cwd, encoding="utf-8", env=env, logfile=logfile, timeout=None, withexitstatus=True)
         if exitstatus != 0:
             raise Error()
-        return command_output.decode("utf-8")
+        return command_output
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
