@@ -244,6 +244,8 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
 
 def excepthook(type, value, tb):
     """Report an exception."""
+    excepthook.ignore = False
+    spin(False)
     teardown()
     if type is Error and str(value):
         cprint(str(value), "yellow")
@@ -256,9 +258,9 @@ sys.excepthook = excepthook
     
 def handler(number, frame):
     """Handle SIGINT."""
-    cprint()
+    spin(False)
     cprint("Submission cancelled.", "red")
-    sys.exit(0)
+    os._exit(0)
     
 def run(command, password=None, cwd=None, env=None):
     """Run a command."""
@@ -272,59 +274,56 @@ def run(command, password=None, cwd=None, env=None):
             "GIT_WORK_TREE": run.GIT_WORK_TREE
         }
 
-    # authenticated command
+    # spawn command
+    child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, timeout=None)
+
+    # send output of command to stdout only if run with --verbose
+    if run.verbose:
+        child.logfile_read = sys.stdout
+
+    # wait for prompt, send password
     if password:
-
-        # https://pexpect.readthedocs.io/en/stable/api/pexpect.html#spawn-class
-        child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, timeout=None)
-
-        # send output of command to stdout only if run with --verbose
-        if run.verbose:
-            child.logfile_read = sys.stdout
-
-        # wait for prompt, send password
         child.expect("Password.*:")
         child.sendline(password)
 
-        # wait for EOF, check status
-        command_output = child.read().strip()
-        child.close()
-        if child.exitstatus != 0:
-            raise Error()
-        return command_output
-
-    # unauthenticated command
-    else:
-        
-        # http://pexpect.readthedocs.io/en/stable/api/pexpect.html#run-function
-        logfile = sys.stdout if run.verbose else None
-        command_output, exitstatus = pexpect.run(command, cwd=cwd, encoding="utf-8", env=env, logfile=logfile, timeout=None, withexitstatus=True)
-        if exitstatus != 0:
-            raise Error()
-        return command_output
+    # read output, check status
+    command_output = child.read().strip()
+    child.close()
+    if child.signalstatus is None and child.exitstatus != 0:
+        raise Error()
+    return command_output
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
 
-def spin(spinning=True, msg="Submitting... "):
-    spin.spinning = spinning
-    if run.verbose or not spinning:
-        return hasattr(spin, "thread") and spin.thread.join()
+def spin(message):
+    """Displays a spinning message."""
 
-    def spin_helper():
-        spinner = itertools.cycle(["-", "\\", "|", "/"])
-        sys.stdout.write(msg)
-        sys.stdout.flush()
-        while spin.spinning:
-            sys.stdout.write(next(spinner))
+    # don't spin in verbose mode
+    if run.verbose:
+        return
+
+    # stop spinning if already spinning
+    if spin.spinning:
+        spin.spinning = False
+        spin.thread.join()
+
+    # start spinning if message passed
+    if message:
+        def spin_helper():
+            spinner = itertools.cycle(["-", "\\", "|", "/"])
+            sys.stdout.write(message + "... ")
             sys.stdout.flush()
-            sys.stdout.write("\b")
-            time.sleep(0.1)
-        sys.stdout.write("\r")
-        sys.stdout.flush()
-
-    spin.thread = Thread(target=spin_helper)
-    spin.thread.start()
+            while spin.spinning:
+                sys.stdout.write(next(spinner))
+                sys.stdout.flush()
+                sys.stdout.write("\b")
+                time.sleep(0.1)
+            sys.stdout.write("\033[2K\r")
+            sys.stdout.flush()
+        spin.spinning = True
+        spin.thread = Thread(target=spin_helper)
+        spin.thread.start()
 spin.spinning = False
 
 def submit(problem):
@@ -366,13 +365,19 @@ def submit(problem):
     # authenticate user
     username, password, email = authenticate()
 
-    # show spinner
-    spin(msg="Authenticating... ")
+    # start spinner
+    spin("Authenticating")
 
     # check for submit50 repository
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
     if res.status_code != 200:
         raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+
+    # stop spinner
+    spin(False)
+
+    # start spinner
+    spin("Preparing")
 
     # clone submit50 repository
     run("git clone --bare {} {}".format(
@@ -417,8 +422,8 @@ def submit(problem):
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         raise Error("No files were submitted.") from None
 
-    # show spinner
-    spin()
+    # start spinner
+    spin("Submitting")
 
     # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
@@ -438,10 +443,6 @@ submit.EXCLUDE = None
 
 def teardown():
     """Delete temporary directory and temporary file."""
-    if spin.spinning:
-        spin.spinning = False
-        sys.stdout.write("\033[2K\r")
-        sys.stdout.flush()
     shutil.rmtree(run.GIT_DIR, ignore_errors=True)
     if submit.EXCLUDE:
         try:
