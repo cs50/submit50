@@ -286,11 +286,12 @@ def run(command, password=None, cwd=None, env=None):
         child.expect("Password.*:")
         child.sendline(password)
 
-        # wait for exit, check status
-        child.expect(pexpect.EOF)
+        # wait for EOF, check status
+        command_output = child.read().strip()
         child.close()
         if child.exitstatus != 0:
             raise Error()
+        return command_output
 
     # unauthenticated command
     else:
