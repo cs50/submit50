@@ -12,7 +12,7 @@ deploy:
 
   # create github release
   - provider: script
-    script: make release
+    script: 'curl --fail --data "{ \"tag_name\": \"v$(python setup.py --version)\", \"target_commitish\": \"$TRAVIS_COMMIT\", \"name\": \"v$(python setup.py --version)\" }" --user bot50:$GITHUB_TOKEN https://api.github.com/repos/$TRAVIS_REPO_SLUG/releases'
     on:
       branch: master
 
