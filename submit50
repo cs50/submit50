@@ -474,4 +474,8 @@ def usage():
     cprint("Usage: submit50 problem")
 
 if __name__ == "__main__":
+    if sys.version_info < (2, 7):
+        sys.exit("CS50 Submit requires Python 2.7 or higher")
+    if sys.version_info.major == 2:
+        input = raw_input
     main()
