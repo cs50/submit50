@@ -3,12 +3,11 @@
 import argparse
 import atexit
 import datetime
-import getch
-import http.client
 import itertools
 import json
 import os
 import pexpect
+import pipes
 import re
 import requests
 import select
@@ -22,15 +21,25 @@ import tempfile
 import textwrap
 import time
 import traceback
-import urllib.request
 
+from backports.shutil_get_terminal_size import get_terminal_size
+from distutils.spawn import find_executable
 from pkg_resources import get_distribution, parse_version
+from six.moves import urllib
 from threading import Thread
 
 ORG_NAME = "submit50"
 #__version__ = get_distribution("submit50").version
 __version__ = "2.2.0"
 timestamp = ""
+
+# ensure compatibility with Python 2
+try:
+   input = raw_input
+except NameError:
+   pass
+if not hasattr(shlex, "quote"):
+    shlex.quote = pipes.quote
 
 class Error(Exception):
     """Exception raised for errors."""
@@ -48,10 +57,10 @@ def main():
     # check for version
     res = requests.get("https://cs50.me/version")
     if res.status_code != 200:
-        raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!") from None
+        raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!")
     version_required = res.text.strip()
     if parse_version(version_required) > parse_version(__version__):
-        raise Error("You have an old version of submit50. Run update50, then re-run submit50!") from None
+        raise Error("You have an old version of submit50. Run update50, then re-run submit50!")
 
     # compute timestamp
     headers = requests.get("https://api.github.com/").headers
@@ -60,7 +69,7 @@ def main():
     timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
 
     # check for git
-    if not shutil.which("git"):
+    if not find_executable("git"):
         sys.exit("Missing dependency. Install git.")
 
     # define command-line arguments
@@ -94,8 +103,8 @@ def authenticate():
         cprint("GitHub password:", end=" ", flush=True)
         password = str()
         while True:
-            ch = getch.getch()
-            if ch == "\n": # Enter
+            ch = getch()
+            if ch in ["\n", "\r"]: # Enter
                 cprint()
                 break
             elif ch == "\177": # DEL
@@ -120,19 +129,22 @@ def authenticate():
 
     # check if incorrect password
     if res.status_code == 401:
-        raise Error("Invalid username and/or password.") from None
+        raise Error("Invalid username and/or password.")
 
     # check for other error
     elif res.status_code != 200:
-        raise Error("Could not authenticate user.") from None
+        raise Error("Could not authenticate user.")
 
     # canonicalize (capitalization of) username, especially if user logged in via email address
     username = res.json()["login"]
     return (username, password, email)
-    
+
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
     columns, _ = shutil.get_terminal_size((80, 0)) # assume 80 in case not running in a terminal
+    if sys.version_info[0] < 3 and "flush" in kwargs:
+        del kwargs["flush"]
+
     termcolor.cprint(textwrap.fill(text, columns), color=color, on_color=on_color, attrs=attrs, **kwargs)
 
 def excepthook(type, value, tb):
@@ -149,14 +161,14 @@ def excepthook(type, value, tb):
         cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
     cprint("Submission cancelled.", "red")
 sys.excepthook = excepthook
-    
+
 def handler(number, frame):
     """Handle SIGINT."""
     spin(False)
     print()
     cprint("Submission cancelled.", "red")
     os._exit(0)
-    
+
 def run(command, password=None, cwd=None, env=None):
     """Run a command."""
 
@@ -172,7 +184,7 @@ def run(command, password=None, cwd=None, env=None):
         }
 
     # spawn command
-    child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, timeout=None)
+    child = pexpect.spawn(command, cwd=cwd, env=env, timeout=None)
 
     # send output of command to stdout only if run with --verbose
     if run.verbose:
@@ -188,7 +200,7 @@ def run(command, password=None, cwd=None, env=None):
     child.close()
     if child.signalstatus is None and child.exitstatus != 0:
         raise Error()
-    return command_output
+    return command_output.decode("utf-8")
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
@@ -240,7 +252,7 @@ def submit(problem):
         if run.verbose:
             cprint(str(e))
 
-        raise Error("Invalid problem. Did you mean to submit something else?") from None
+        raise Error("Invalid problem. Did you mean to submit something else?")
 
     # check for missing files
     missing = []
@@ -257,7 +269,7 @@ def submit(problem):
         cprint("You seem to be missing these files:")
         for pattern in missing:
             cprint(" {}".format(pattern))
-        raise Error("Ensure you have the required files before submitting.") from None
+        raise Error("Ensure you have the required files before submitting.")
 
     # authenticate user
     username, password, email = authenticate()
@@ -303,7 +315,7 @@ def submit(problem):
 
     # files that will be submitted
     if len(files) == 0:
-        raise Error("None of the files in this directory are expected for submission.") from None
+        raise Error("None of the files in this directory are expected for submission.")
     cprint("Files that will be submitted:", "yellow")
     for f in files:
         cprint("./{}".format(f), "yellow")
@@ -313,11 +325,11 @@ def submit(problem):
         cprint("Files that won't be submitted:", "yellow")
         for f in other:
             cprint("./{}".format(f), "yellow")
-    
+
     # prompt for academic honesty
     cprint("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files?", end=" ")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
-        raise Error("No files were submitted.") from None
+        raise Error("No files were submitted.")
 
     # start spinner
     spin("Submitting")
@@ -364,7 +376,43 @@ def two_factor(username, password):
     if res.status_code == 201 and "token" in res.json():
         return res.json()["token"]
     else:
-        raise Error("Could not complete two-factor authentication.") from None
+        raise Error("Could not complete two-factor authentication.")
+
+# https://stackoverflow.com/a/510364
+class _Getch:
+    """Gets a single character from standard input."""
+    def __init__(self):
+        try:
+            self.impl = _GetchWindows()
+        except ImportError:
+            self.impl = _GetchUnix()
+
+    def __call__(self): return self.impl()
+
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+class _GetchWindows:
+    def __init__(self):
+        import msvcrt
+
+    def __call__(self):
+        import msvcrt
+        return msvcrt.getch()
+
+getch = _Getch()
 
 if __name__ == "__main__":
     main()
