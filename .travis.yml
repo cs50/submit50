@@ -3,7 +3,10 @@ python: '3.4'
 branches:
   except: "/^v\\d/"
 install: true
-script: true
+script:
+- python setup.py sdist
+- python setup.py install
+- submit50 --help
 deploy:
 - provider: script
   script: 'curl --fail --data "{ \"tag_name\": \"v$(python setup.py --version)\",
