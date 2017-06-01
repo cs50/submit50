@@ -14,7 +14,7 @@ setup(
         "Topic :: Utilities"
     ],
     description="This is submit50, with which you can submit solutions to problems for CS50.",
-    install_requires=["getch", "pexpect>=4.0", "requests", "termcolor"],
+    install_requires=["getch", "pexpect>=4.0", "requests", "termcolor", "backports.shutil_get_terminal_size"],
     keywords=["submit", "submit50"],
     name="submit50",
     scripts=["submit50"],
