@@ -259,6 +259,7 @@ sys.excepthook = excepthook
 def handler(number, frame):
     """Handle SIGINT."""
     spin(False)
+    print()
     cprint("Submission cancelled.", "red")
     os._exit(0)
     
