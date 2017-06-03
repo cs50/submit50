@@ -28,7 +28,8 @@ from pkg_resources import get_distribution, parse_version
 from threading import Thread
 
 ORG_NAME = "submit50"
-__version__ = get_distribution("submit50").version
+#__version__ = get_distribution("submit50").version
+__version__ = "2.2.0"
 timestamp = ""
 
 class Error(Exception):
@@ -63,10 +64,9 @@ def main():
         sys.exit("Missing dependency. Install git.")
 
     # define command-line arguments
-    parser = argparse.ArgumentParser(prog="submit50", add_help=False)
-    parser.add_argument("-h", "--help", action="store_true")
-    parser.add_argument("-v", "--verbose", action="store_true")
-    parser.add_argument("args", nargs="*")
+    parser = argparse.ArgumentParser(prog="submit50")
+    parser.add_argument("-v", "--verbose", action="store_true", help="show commands being executed")
+    parser.add_argument("problem", help="problem to submit")
     args = vars(parser.parse_args())
 
     # submit50 -v
@@ -74,19 +74,9 @@ def main():
     if args["verbose"]:
         run.verbose = True
 
-    # submit50 -h
-    # submit50 --help
-    if len(args["args"]) == 0 or args["help"]:
-        usage()
-
     # submit50 problem
     elif len(args["args"]) == 1:
         submit(args["args"][0])
-
-    # submit50 *
-    else:
-        usage()
-        sys.exit(1)
 
     # kthxbai
     sys.exit(0)
@@ -155,6 +145,7 @@ def excepthook(type, value, tb):
     else:
         if run.verbose:
             traceback.print_tb(tb)
+        traceback.print_tb(tb)
         cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
     cprint("Submission cancelled.", "red")
 sys.excepthook = excepthook
@@ -374,10 +365,6 @@ def two_factor(username, password):
         return res.json()["token"]
     else:
         raise Error("Could not complete two-factor authentication.") from None
-
-def usage():
-    """Print usage."""
-    cprint("Usage: submit50 problem")
 
 if __name__ == "__main__":
     main()
