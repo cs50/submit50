@@ -65,7 +65,6 @@ def main():
     # define command-line arguments
     parser = argparse.ArgumentParser(prog="submit50", add_help=False)
     parser.add_argument("-h", "--help", action="store_true")
-    parser.add_argument("-c", "--checkout", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("args", nargs="*")
     args = vars(parser.parse_args())
@@ -77,13 +76,8 @@ def main():
 
     # submit50 -h
     # submit50 --help
-    if (len(args["args"]) == 0 and not args["checkout"]) or args["help"]:
+    if len(args["args"]) == 0 or args["help"]:
         usage()
-
-    # submit50 -c
-    # submit50 --checkout
-    elif args["checkout"]:
-        checkout(args["args"])
 
     # submit50 problem
     elif len(args["args"]) == 1:
@@ -146,97 +140,6 @@ def authenticate():
     username = res.json()["login"]
     return (username, password, email)
     
-def checkout(args):
-    usernames = None
-    problem = None
-
-    # detect piped usernames
-    # http://stackoverflow.com/a/17735803
-    if not sys.stdin.isatty():
-        usernames = []
-        for line in sys.stdin:
-            usernames.append(line.strip())
-
-    if len(args) == 0 and usernames == None:
-        cprint("Usage: submit50 --checkout [problem] [@username ...]")
-        sys.exit(1)
-
-    if len(args) > 0:
-        # check if problem is specified
-        if args[0].startswith("@") and usernames == None:
-            usernames = args
-        else:
-            problem = args[0]
-            if usernames == None and len(args) > 1:
-                usernames = args[1:]
-
-    # authenticate user
-    try:
-        username, password, email = authenticate()
-    except:
-        raise Error("Invalid username and/or password.") from None
-
-    # get student names if none provided
-    if usernames == None:
-        usernames = []
-        repos = requests.get("https://api.github.com/orgs/{}/repos?per_page=100".format(ORG_NAME), auth=(username, password))
-        for repo in repos.json():
-            if repo["name"] != ORG_NAME:
-                usernames.append(repo["name"])
-
-    # clone repositories
-    for name in usernames:
-        name = name.replace("@", "")
-
-        # check whether name exists in filesystem
-        if os.path.exists(name):
-
-            # check whether name is a directory
-            if os.path.isfile(name):
-                cprint("Not a directory: {}".format(name))
-                continue
-
-            # pull repository
-            url = run("git config --get remote.origin.url", cwd=name, env={})
-            if url == "":
-                cprint("Missing origin: {}".format(name))
-                continue
-            if not url.startswith("https://{}@github.com/{}/".format(username, ORG_NAME)):
-                cprint("Invalid repo: {}".format(name))
-
-            # fetch new branches
-            # http://stackoverflow.com/a/11958481
-            # http://stackoverflow.com/a/26339690
-            run("git fetch --all", cwd=name, password=password, env={})
-            _, code = pexpect.run("git config --get branch.$(git symbolic-ref --short -q HEAD).merge", cwd=name, env={}, withexitstatus=True)
-            if code == 0:
-                run("git pull", cwd=name, password=password, env={})
-        else:
-            # clone repository if it doesn't already exist
-            run("git clone 'https://{}@github.com/{}/{}' '{}'".format(username, ORG_NAME, name, name), password=password, env={})
-
-        # if no problem specified, don't switch branches
-        if problem == None:
-            continue
-
-        # check out branch
-        branches = run("git branch -r", cwd=name, env={})
-        if "origin/{}".format(problem) in branches:
-            branches = run("git branch", cwd=name, env={})
-            if problem in branches:
-                run("git checkout '{}'".format(problem), cwd=name, env={})
-            else:
-                run("git checkout --track 'origin/{}'".format(problem), cwd=name, env={})
-        else:
-            branches = run("git branch", cwd=name, env={})
-            if problem in branches:
-                run("git checkout '{}'".format(problem), cwd=name, env={})
-            else:
-                run("git checkout -b '{}'".format(problem), cwd=name, env={})
-                files = run("git ls-files", cwd=name, env={})
-                if files:
-                    run("git rm -rf .", cwd=name, env={})
-
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
     columns, _ = shutil.get_terminal_size((80, 0)) # assume 80 in case not running in a terminal
@@ -265,11 +168,13 @@ def handler(number, frame):
     
 def run(command, password=None, cwd=None, env=None):
     """Run a command."""
+
+    # echo command
     if run.verbose:
         cprint(command)
 
-    # when not using --checkout, include GIT_DIR and GIT_WORK_TREE in env
-    if env == None:
+    # include GIT_DIR and GIT_WORK_TREE in env
+    if not env:
         env = {
             "GIT_DIR": run.GIT_DIR,
             "GIT_WORK_TREE": run.GIT_WORK_TREE
