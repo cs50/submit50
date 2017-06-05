@@ -197,7 +197,7 @@ def handler(number, frame):
     os._exit(0)
 
 
-def run(command, password=None, cwd=None, env=None):
+def run(command, password=None, cwd=None, env=None, err=""):
     """Run a command."""
 
     # echo command
@@ -230,7 +230,7 @@ def run(command, password=None, cwd=None, env=None):
     command_output = child.read().strip()
     child.close()
     if child.signalstatus is None and child.exitstatus != 0:
-        e = Error()
+        e = Error(err)
         e.__cause__ = None
         raise e
     return command_output.decode("utf-8")
@@ -318,28 +318,14 @@ def submit(problem):
     username, password, email = authenticate()
 
     # start spinner
-    spin("Authenticating")
-
-    # check for submit50 repository
-    res = requests.get(
-            "https://api.github.com/repos/{}/{}".format(ORG_NAME, username),
-            auth=(username, password))
-    if res.status_code != 200:
-        e = Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
-        e.__cause__ = None
-        raise e
-
-    # stop spinner
-    spin(False)
-
-    # start spinner
     spin("Preparing")
 
     # clone submit50 repository
     repo = "https://{}@github.com/{}/{}".format(username, ORG_NAME, username)
     run("git clone --bare {} {}".format(
         shlex.quote(repo), shlex.quote(run.GIT_DIR)),
-        password=password)
+        password=password,
+        err="Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
 
     # set options
     branch = problem
