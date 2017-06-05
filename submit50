@@ -40,9 +40,11 @@ except NameError:
 if not hasattr(shlex, "quote"):
     shlex.quote = pipes.quote
 
+
 class Error(Exception):
     """Exception raised for errors."""
     pass
+
 
 # submit50
 def main():
@@ -57,12 +59,12 @@ def main():
     res = requests.get("https://cs50.me/version")
     if res.status_code != 200:
         e = Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
     version_required = res.text.strip()
     if parse_version(version_required) > parse_version(__version__):
         e = Error("You have an old version of submit50. Run update50, then re-run submit50!")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
 
     # compute timestamp
@@ -133,13 +135,13 @@ def authenticate():
     # check if incorrect password
     if res.status_code == 401:
         e = Error("Invalid username and/or password.")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
 
     # check for other error
     elif res.status_code != 200:
         e = Error("Could not authenticate user.")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
 
     # canonicalize (capitalization of) username, especially if user logged in via email address
@@ -212,7 +214,7 @@ def run(command, password=None, cwd=None, env=None):
     child.close()
     if child.signalstatus is None and child.exitstatus != 0:
         e = Error()
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
     return command_output.decode("utf-8")
 run.GIT_DIR = tempfile.mkdtemp()
@@ -267,7 +269,7 @@ def submit(problem):
             cprint(str(e))
 
         e = Error("Invalid problem. Did you mean to submit something else?")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
 
     # check for missing files
@@ -286,7 +288,7 @@ def submit(problem):
         for pattern in missing:
             cprint(" {}".format(pattern))
         e = Error("Ensure you have the required files before submitting.")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
 
     # authenticate user
@@ -299,7 +301,7 @@ def submit(problem):
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
     if res.status_code != 200:
         e = Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
 
     # stop spinner
@@ -336,7 +338,7 @@ def submit(problem):
     # files that will be submitted
     if len(files) == 0:
         e = Error("None of the files in this directory are expected for submission.")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
     cprint("Files that will be submitted:", "yellow")
     for f in files:
@@ -352,7 +354,7 @@ def submit(problem):
     cprint("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files?", end=" ")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         e = Error("No files were submitted.")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
 
     # start spinner
@@ -401,7 +403,7 @@ def two_factor(username, password):
         return res.json()["token"]
     else:
         e = Error("Could not complete two-factor authentication.")
-        e.__cause__ == None
+        e.__cause__ = None
         raise e
 
 # https://stackoverflow.com/a/510364
