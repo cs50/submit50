@@ -29,15 +29,14 @@ from six.moves import urllib
 from threading import Thread
 
 ORG_NAME = "submit50"
-#__version__ = get_distribution("submit50").version
-__version__ = "2.2.0"
+__version__ = get_distribution("submit50").version
 timestamp = ""
 
 # ensure compatibility with Python 2
 try:
-   input = raw_input
+    input = raw_input
 except NameError:
-   pass
+    pass
 if not hasattr(shlex, "quote"):
     shlex.quote = pipes.quote
 
@@ -57,10 +56,14 @@ def main():
     # check for version
     res = requests.get("https://cs50.me/version")
     if res.status_code != 200:
-        raise Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!")
+        e = Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!")
+        e.__cause__ == None
+        raise e
     version_required = res.text.strip()
     if parse_version(version_required) > parse_version(__version__):
-        raise Error("You have an old version of submit50. Run update50, then re-run submit50!")
+        e = Error("You have an old version of submit50. Run update50, then re-run submit50!")
+        e.__cause__ == None
+        raise e
 
     # compute timestamp
     headers = requests.get("https://api.github.com/").headers
@@ -84,8 +87,8 @@ def main():
         run.verbose = True
 
     # submit50 problem
-    elif len(args["args"]) == 1:
-        submit(args["args"][0])
+    elif args["problem"]:
+        submit(args["problem"])
 
     # kthxbai
     sys.exit(0)
@@ -129,11 +132,15 @@ def authenticate():
 
     # check if incorrect password
     if res.status_code == 401:
-        raise Error("Invalid username and/or password.")
+        e = Error("Invalid username and/or password.")
+        e.__cause__ == None
+        raise e
 
     # check for other error
     elif res.status_code != 200:
-        raise Error("Could not authenticate user.")
+        e = Error("Could not authenticate user.")
+        e.__cause__ == None
+        raise e
 
     # canonicalize (capitalization of) username, especially if user logged in via email address
     username = res.json()["login"]
@@ -142,6 +149,8 @@ def authenticate():
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
     columns, _ = shutil.get_terminal_size((80, 0)) # assume 80 in case not running in a terminal
+
+    # only python3 supports "flush" keyword argument
     if sys.version_info[0] < 3 and "flush" in kwargs:
         del kwargs["flush"]
 
@@ -192,14 +201,19 @@ def run(command, password=None, cwd=None, env=None):
 
     # wait for prompt, send password
     if password:
-        child.expect("Password.*:")
-        child.sendline(password)
+        try:
+            child.expect("Password.*:")
+            child.sendline(password)
+        except:
+            pass
 
     # read output, check status
     command_output = child.read().strip()
     child.close()
     if child.signalstatus is None and child.exitstatus != 0:
-        raise Error()
+        e = Error()
+        e.__cause__ == None
+        raise e
     return command_output.decode("utf-8")
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
@@ -252,7 +266,9 @@ def submit(problem):
         if run.verbose:
             cprint(str(e))
 
-        raise Error("Invalid problem. Did you mean to submit something else?")
+        e = Error("Invalid problem. Did you mean to submit something else?")
+        e.__cause__ == None
+        raise e
 
     # check for missing files
     missing = []
@@ -269,7 +285,9 @@ def submit(problem):
         cprint("You seem to be missing these files:")
         for pattern in missing:
             cprint(" {}".format(pattern))
-        raise Error("Ensure you have the required files before submitting.")
+        e = Error("Ensure you have the required files before submitting.")
+        e.__cause__ == None
+        raise e
 
     # authenticate user
     username, password, email = authenticate()
@@ -280,7 +298,9 @@ def submit(problem):
     # check for submit50 repository
     res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
     if res.status_code != 200:
-        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+        e = Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+        e.__cause__ == None
+        raise e
 
     # stop spinner
     spin(False)
@@ -315,7 +335,9 @@ def submit(problem):
 
     # files that will be submitted
     if len(files) == 0:
-        raise Error("None of the files in this directory are expected for submission.")
+        e = Error("None of the files in this directory are expected for submission.")
+        e.__cause__ == None
+        raise e
     cprint("Files that will be submitted:", "yellow")
     for f in files:
         cprint("./{}".format(f), "yellow")
@@ -329,7 +351,9 @@ def submit(problem):
     # prompt for academic honesty
     cprint("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files?", end=" ")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
-        raise Error("No files were submitted.")
+        e = Error("No files were submitted.")
+        e.__cause__ == None
+        raise e
 
     # start spinner
     spin("Submitting")
@@ -376,7 +400,9 @@ def two_factor(username, password):
     if res.status_code == 201 and "token" in res.json():
         return res.json()["token"]
     else:
-        raise Error("Could not complete two-factor authentication.")
+        e = Error("Could not complete two-factor authentication.")
+        e.__cause__ == None
+        raise e
 
 # https://stackoverflow.com/a/510364
 class _Getch:
@@ -386,13 +412,10 @@ class _Getch:
             self.impl = _GetchWindows()
         except ImportError:
             self.impl = _GetchUnix()
-
     def __call__(self): return self.impl()
-
 class _GetchUnix:
     def __init__(self):
         import tty, sys
-
     def __call__(self):
         import sys, tty, termios
         fd = sys.stdin.fileno()
@@ -403,15 +426,12 @@ class _GetchUnix:
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
-
 class _GetchWindows:
     def __init__(self):
         import msvcrt
-
     def __call__(self):
         import msvcrt
         return msvcrt.getch()
-
 getch = _Getch()
 
 if __name__ == "__main__":
