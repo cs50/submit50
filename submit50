@@ -58,12 +58,14 @@ def main():
     # check for version
     res = requests.get("https://cs50.me/version")
     if res.status_code != 200:
-        e = Error("You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!")
+        e = Error("You have an unknown version of submit50. " +
+                  "Email sysadmins@cs50.harvard.edu!")
         e.__cause__ = None
         raise e
     version_required = res.text.strip()
     if parse_version(version_required) > parse_version(__version__):
-        e = Error("You have an old version of submit50. Run update50, then re-run submit50!")
+        e = Error("You have an old version of submit50. " +
+                  "Run update50, then re-run submit50!")
         e.__cause__ = None
         raise e
 
@@ -182,7 +184,9 @@ def excepthook(type, value, tb):
         if run.verbose:
             traceback.print_tb(tb)
         traceback.print_tb(tb)
-        cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
+        cprint("Sorry, something's wrong! " +
+               "Let sysadmins@cs50.harvard.edu know!",
+               "yellow")
     cprint("Submission cancelled.", "red")
 
 
@@ -278,12 +282,13 @@ def submit(problem):
     """Submit problem."""
 
     # assume cs50/ problem if problem name begins with a year
+    branch = problem
     if problem.split("/")[0].isdigit():
-        problem = os.path.join("cs50", problem)
+        branch = os.path.join("cs50", problem)
 
     # ensure problem exists
     _, submit.EXCLUDE = tempfile.mkstemp()
-    url = "https://cs50.me/excludes/{}/".format(problem)
+    url = "https://cs50.me/excludes/{}/".format(branch)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
         lines = open(submit.EXCLUDE)
@@ -325,10 +330,11 @@ def submit(problem):
     run("git clone --bare {} {}".format(
         shlex.quote(repo), shlex.quote(run.GIT_DIR)),
         password=password,
-        err="Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+        err="Looks like submit50 isn't enabled for your account yet. " +
+            "Log into https://cs50.me/ in a browser, " +
+            "click \"Authorize application\", then re-run submit50 here!")
 
     # set options
-    branch = problem
     tag = "{}@{}".format(branch, timestamp)
     run("git config user.email {}".format(shlex.quote(email)))
     run("git config user.name {}".format(shlex.quote(username)))
@@ -349,7 +355,7 @@ def submit(problem):
 
     # files that will be submitted
     if len(files) == 0:
-        e = Error("None of the files in this directory are expected for submission.")
+        e = Error("No files in this directory are expected for submission.")
         e.__cause__ = None
         raise e
     cprint("Files that will be submitted:", "yellow")
@@ -363,7 +369,8 @@ def submit(problem):
             cprint("./{}".format(f), "yellow")
 
     # prompt for academic honesty
-    cprint("Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files?", end=" ")
+    cprint("Keeping in mind the course's policy on academic honesty, " +
+           "are you sure you want to submit these files?", end=" ")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         e = Error("No files were submitted.")
         e.__cause__ = None
@@ -386,7 +393,9 @@ def submit(problem):
     spin(False)
 
     # successful submission
-    cprint("Submitted {}! See https://cs50.me/submissions/{}.".format(problem, branch), "green")
+    cprint("Submitted {}! ".format(problem) +
+           "See https://cs50.me/submissions/{}.".format(branch),
+           "green")
 
 
 submit.EXCLUDE = None
