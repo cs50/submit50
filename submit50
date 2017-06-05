@@ -70,7 +70,8 @@ def main():
     # compute timestamp
     headers = requests.get("https://api.github.com/").headers
     global timestamp
-    timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z")
+    fmt = "%a, %d %b %Y %H:%M:%S %Z"
+    timestamp = datetime.datetime.strptime(headers["Date"], fmt)
     timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
 
     # check for git
@@ -79,7 +80,9 @@ def main():
 
     # define command-line arguments
     parser = argparse.ArgumentParser(prog="submit50")
-    parser.add_argument("-v", "--verbose", action="store_true", help="show commands being executed")
+    parser.add_argument("-v", "--verbose",
+                        action="store_true",
+                        help="show commands being executed")
     parser.add_argument("problem", help="problem to submit")
     args = vars(parser.parse_args())
 
@@ -95,6 +98,7 @@ def main():
     # kthxbai
     sys.exit(0)
 
+
 def authenticate():
     # prompt for username
     while True:
@@ -109,10 +113,10 @@ def authenticate():
         password = str()
         while True:
             ch = getch()
-            if ch in ["\n", "\r"]: # Enter
+            if ch in ["\n", "\r"]:  # Enter
                 cprint()
                 break
-            elif ch == "\177": # DEL
+            elif ch == "\177":  # DEL
                 if len(password) > 0:
                     password = password[:-1]
                     cprint("\b \b", end="", flush=True)
@@ -124,13 +128,15 @@ def authenticate():
 
     # authenticate user
     email = "{}@users.noreply.github.com".format(username)
-    res = requests.get("https://api.github.com/user", auth=(username, password))
+    res = requests.get("https://api.github.com/user",
+                       auth=(username, password))
 
     # check for 2-factor authentication
     # http://github3.readthedocs.io/en/develop/examples/oauth.html?highlight=token
     if "X-GitHub-OTP" in res.headers:
         password = two_factor(username, password)
-        res = requests.get("https://api.github.com/user", auth=(username, password))
+        res = requests.get("https://api.github.com/user",
+                           auth=(username, password))
 
     # check if incorrect password
     if res.status_code == 401:
@@ -144,19 +150,26 @@ def authenticate():
         e.__cause__ = None
         raise e
 
-    # canonicalize (capitalization of) username, especially if user logged in via email address
+    # canonicalize (capitalization of) username,
+    # especially if user logged in via email address
     username = res.json()["login"]
     return (username, password, email)
 
+
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
-    columns, _ = shutil.get_terminal_size((80, 0)) # assume 80 in case not running in a terminal
+    # assume 80 in case not running in a terminal
+    columns, _ = shutil.get_terminal_size((80, 0))
 
     # only python3 supports "flush" keyword argument
     if sys.version_info[0] < 3 and "flush" in kwargs:
         del kwargs["flush"]
 
-    termcolor.cprint(textwrap.fill(text, columns), color=color, on_color=on_color, attrs=attrs, **kwargs)
+    termcolor.cprint(textwrap.fill(text, columns),
+                     color=color,
+                     on_color=on_color,
+                     attrs=attrs, **kwargs)
+
 
 def excepthook(type, value, tb):
     """Report an exception."""
@@ -171,7 +184,10 @@ def excepthook(type, value, tb):
         traceback.print_tb(tb)
         cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
     cprint("Submission cancelled.", "red")
+
+
 sys.excepthook = excepthook
+
 
 def handler(number, frame):
     """Handle SIGINT."""
@@ -179,6 +195,7 @@ def handler(number, frame):
     print()
     cprint("Submission cancelled.", "red")
     os._exit(0)
+
 
 def run(command, password=None, cwd=None, env=None):
     """Run a command."""
@@ -206,7 +223,7 @@ def run(command, password=None, cwd=None, env=None):
         try:
             child.expect("Password.*:")
             child.sendline(password)
-        except:
+        except Exception:
             pass
 
     # read output, check status
@@ -217,9 +234,12 @@ def run(command, password=None, cwd=None, env=None):
         e.__cause__ = None
         raise e
     return command_output.decode("utf-8")
+
+
 run.GIT_DIR = tempfile.mkdtemp()
 run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
+
 
 def spin(message):
     """Displays a spinning message."""
@@ -249,7 +269,10 @@ def spin(message):
         spin.spinning = True
         spin.thread = Thread(target=spin_helper)
         spin.thread.start()
+
+
 spin.spinning = False
+
 
 def submit(problem):
     """Submit problem."""
@@ -298,7 +321,9 @@ def submit(problem):
     spin("Authenticating")
 
     # check for submit50 repository
-    res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
+    res = requests.get(
+            "https://api.github.com/repos/{}/{}".format(ORG_NAME, username),
+            auth=(username, password))
     if res.status_code != 200:
         e = Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
         e.__cause__ = None
@@ -311,8 +336,9 @@ def submit(problem):
     spin("Preparing")
 
     # clone submit50 repository
+    repo = "https://{}@github.com/{}/{}".format(username, ORG_NAME, username)
     run("git clone --bare {} {}".format(
-        shlex.quote("https://{}@github.com/{}/{}".format(username, ORG_NAME, username)), shlex.quote(run.GIT_DIR)),
+        shlex.quote(repo), shlex.quote(run.GIT_DIR)),
         password=password)
 
     # set options
@@ -366,7 +392,8 @@ def submit(problem):
 
     # push tag
     # http://stackoverflow.com/a/23486788
-    hash = run("git commit-tree HEAD^{{tree}} -m '{}'".format(timestamp)).strip()
+    hash = run("git commit-tree HEAD^{{tree}} -m '{}'".format(timestamp))
+    hash = hash.strip()
     run("git push origin {}:refs/tags/{}".format(hash, tag), password=password)
 
     # stop spinner
@@ -374,7 +401,10 @@ def submit(problem):
 
     # successful submission
     cprint("Submitted {}! See https://cs50.me/submissions/{}.".format(problem, branch), "green")
+
+
 submit.EXCLUDE = None
+
 
 def teardown():
     """Delete temporary directory and temporary file."""
@@ -382,29 +412,35 @@ def teardown():
     if submit.EXCLUDE:
         try:
             os.remove(submit.EXCLUDE)
-        except:
+        except Exception:
             pass
+
 
 def two_factor(username, password):
     """Get one-time authentication code."""
     # send authentication request
-    requests.post("https://api.github.com/authorizations", auth=(username, password))
+    requests.post("https://api.github.com/authorizations",
+                  auth=(username, password))
     while True:
         cprint("Authentication code:", end=" ", flush=True)
         code = input()
         if code:
             break
-    data = json.dumps({"scopes": ["repo", "user"], "note": "{} {}".format(ORG_NAME, timestamp)})
+    data = json.dumps(
+            {"scopes": ["repo", "user"],
+             "note": "{} {}".format(ORG_NAME, timestamp)}
+            )
     res = requests.post("https://api.github.com/authorizations",
-        auth=(username, password),
-        data=data,
-        headers={"X-GitHub-OTP": str(code)})
+                        auth=(username, password),
+                        data=data,
+                        headers={"X-GitHub-OTP": str(code)})
     if res.status_code == 201 and "token" in res.json():
         return res.json()["token"]
     else:
         e = Error("Could not complete two-factor authentication.")
         e.__cause__ = None
         raise e
+
 
 # https://stackoverflow.com/a/510364
 class _Getch:
@@ -414,12 +450,19 @@ class _Getch:
             self.impl = _GetchWindows()
         except ImportError:
             self.impl = _GetchUnix()
+
     def __call__(self): return self.impl()
+
+
 class _GetchUnix:
     def __init__(self):
-        import tty, sys
+        import tty
+        import sys
+
     def __call__(self):
-        import sys, tty, termios
+        import sys
+        import tty
+        import termios
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
         try:
@@ -428,12 +471,17 @@ class _GetchUnix:
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
+
+
 class _GetchWindows:
     def __init__(self):
         import msvcrt
+
     def __call__(self):
         import msvcrt
         return msvcrt.getch()
+
+
 getch = _Getch()
 
 if __name__ == "__main__":
