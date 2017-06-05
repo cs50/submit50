@@ -94,7 +94,7 @@ def main():
         run.verbose = True
 
     # submit50 problem
-    elif args["problem"]:
+    if args["problem"]:
         submit(args["problem"])
 
     # kthxbai
@@ -220,7 +220,7 @@ def run(command, password=None, cwd=None, env=None, err=""):
 
     # send output of command to stdout only if run with --verbose
     if run.verbose:
-        child.logfile_read = sys.stdout
+        child.logfile_read = sys.stdout.buffer
 
     # wait for prompt, send password
     if password:
@@ -231,13 +231,13 @@ def run(command, password=None, cwd=None, env=None, err=""):
             pass
 
     # read output, check status
-    command_output = child.read().strip()
+    command_output = child.read().decode("utf-8").strip()
     child.close()
     if child.signalstatus is None and child.exitstatus != 0:
         e = Error(err)
         e.__cause__ = None
         raise e
-    return command_output.decode("utf-8")
+    return command_output
 
 
 run.GIT_DIR = tempfile.mkdtemp()
