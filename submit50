@@ -183,7 +183,8 @@ def run(command, cwd=None, env=None, lines=[], password=None, hide=False):
     if not env:
         env = {
             "GIT_DIR": run.GIT_DIR,
-            "GIT_WORK_TREE": run.GIT_WORK_TREE
+            "GIT_WORK_TREE": run.GIT_WORK_TREE,
+            "HOME": os.environ.get("HOME") or os.path.expanduser("~")
         }
 
     # spawn command
@@ -305,7 +306,6 @@ def submit(problem):
     tag = "{}@{}".format(branch, timestamp)
     run("git config user.email {}".format(shlex.quote(email)))
     run("git config user.name {}".format(shlex.quote(username)))
-    run("git config credentialcache.ignoresighup true")
     run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(branch)))
 
     # patterns of file names to exclude
@@ -355,8 +355,9 @@ def submit(problem):
     spin(False)
 
     # cache credentials
-    run("git -c credential.helper='cache --socket /tmp/submit50/socket --timeout {}' credential approve"
-        .format(int(datetime.timedelta(weeks=2).total_seconds())),
+    run("git -c credential.helper='cache --socket /tmp/submit50/socket --timeout {}' "
+        .format(int(datetime.timedelta(weeks=2).total_seconds())) +
+        "-c credentialcache.ignore_sighub=true credential approve",
         lines=["username={}".format(username), "password={}".format(password), "", ""],
         hide=True)
 
