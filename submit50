@@ -83,7 +83,9 @@ def authenticate():
     """Authenticate user."""
 
     # check cache for credentials
-    credentials = run("git -c credential.helper='cache --socket /tmp/submit50/socket' credential fill", lines=[""]*3)
+    credentials = run("git -c credential.helper='cache --socket /tmp/submit50/socket' credential fill",
+                      lines=[""]*3,
+                      hide=True)
     run("git credential-cache --socket /tmp/submit50/socket exit")
 
     # prompt for username if not in cache
@@ -170,7 +172,7 @@ def handler(number, frame):
     cprint("Submission cancelled.", "red")
     os._exit(0)
     
-def run(command, cwd=None, env=None, lines=[], password=None):
+def run(command, cwd=None, env=None, lines=[], password=None, hide=False):
     """Run a command."""
 
     # echo command
@@ -188,13 +190,14 @@ def run(command, cwd=None, env=None, lines=[], password=None):
     child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, ignore_sighup=True, timeout=None, echo=True)
 
     # send output of command to stdout only if run with --verbose
-    if run.verbose:
+    if run.verbose and not hide:
         child.logfile_read = sys.stdout
 
     # wait for prompt, send password
     if password:
-        child.expect("Password for '.*': ")
-        child.sendline(password)
+        res = child.expect(["Password for '.*': ", pexpect.EOF])
+        if res == 0:
+            child.sendline(password)
 
     # send lines of input
     for line in lines:
@@ -302,6 +305,7 @@ def submit(problem):
     tag = "{}@{}".format(branch, timestamp)
     run("git config user.email {}".format(shlex.quote(email)))
     run("git config user.name {}".format(shlex.quote(username)))
+    run("git config credentialcache.ignoresighup true")
     run("git symbolic-ref HEAD refs/heads/{}".format(shlex.quote(branch)))
 
     # patterns of file names to exclude
@@ -351,8 +355,10 @@ def submit(problem):
     spin(False)
 
     # cache credentials
-    run("git -c credential.helper='cache --socket /tmp/submit50/socket' credential approve",
-        lines=["username={}".format(username), "password={}".format(password), "", ""])
+    run("git -c credential.helper='cache --socket /tmp/submit50/socket --timeout {}' credential approve"
+        .format(int(datetime.timedelta(weeks=2).total_seconds())),
+        lines=["username={}".format(username), "password={}".format(password), "", ""],
+        hide=True)
 
     # successful submission
     cprint("Submitted {}! See https://cs50.me/submissions/{}.".format(problem, branch), "green")
