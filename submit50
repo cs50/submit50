@@ -28,8 +28,7 @@ from pkg_resources import get_distribution, parse_version
 from threading import Thread
 
 ORG_NAME = "submit50"
-#__version__ = get_distribution("submit50").version
-__version__ = "2.2.0"
+__version__ = get_distribution("submit50").version
 timestamp = ""
 
 class Error(Exception):
@@ -75,38 +74,51 @@ def main():
         run.verbose = True
 
     # submit50 problem
-    elif len(args["args"]) == 1:
-        submit(args["args"][0])
+    submit(args["problem"])
 
     # kthxbai
     sys.exit(0)
 
 def authenticate():
-    # prompt for username
-    while True:
-        cprint("GitHub username:", end=" ", flush=True)
-        username = input().strip()
-        if username:
-            break
+    """Authenticate user."""
 
-    # prompt for password
-    while True:
-        cprint("GitHub password:", end=" ", flush=True)
-        password = str()
+    # check cache for credentials
+    credentials = run("git -c credential.helper='cache --socket /tmp/submit50/socket' credential fill", lines=[""]*3)
+    run("git credential-cache --socket /tmp/submit50/socket exit")
+
+    # prompt for username if not in cache
+    matches = re.search("^username=([^\r]+)\r?$", credentials, re.MULTILINE)
+    if matches:
+        username = matches.group(1)
+    else:
         while True:
-            ch = getch.getch()
-            if ch == "\n": # Enter
-                cprint()
+            cprint("GitHub username:", end=" ", flush=True)
+            username = input().strip()
+            if username:
                 break
-            elif ch == "\177": # DEL
-                if len(password) > 0:
-                    password = password[:-1]
-                    cprint("\b \b", end="", flush=True)
-            else:
-                password += ch
-                cprint("*", end="", flush=True)
-        if password:
-            break
+
+    # prompt for password if not in cache
+    matches = re.search("^password=([^\r]+)\r?$", credentials, re.MULTILINE)
+    if matches:
+        password = matches.group(1)
+    else:
+        while True:
+            cprint("GitHub password:", end=" ", flush=True)
+            password = str()
+            while True:
+                ch = getch.getch()
+                if ch == "\n": # Enter
+                    cprint()
+                    break
+                elif ch == "\177": # DEL
+                    if len(password) > 0:
+                        password = password[:-1]
+                        cprint("\b \b", end="", flush=True)
+                else:
+                    password += ch
+                    cprint("*", end="", flush=True)
+            if password:
+                break
 
     # authenticate user
     email = "{}@users.noreply.github.com".format(username)
@@ -128,6 +140,8 @@ def authenticate():
 
     # canonicalize (capitalization of) username, especially if user logged in via email address
     username = res.json()["login"]
+
+    # return credentials
     return (username, password, email)
     
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
@@ -145,7 +159,6 @@ def excepthook(type, value, tb):
     else:
         if run.verbose:
             traceback.print_tb(tb)
-        traceback.print_tb(tb)
         cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
     cprint("Submission cancelled.", "red")
 sys.excepthook = excepthook
@@ -157,7 +170,7 @@ def handler(number, frame):
     cprint("Submission cancelled.", "red")
     os._exit(0)
     
-def run(command, password=None, cwd=None, env=None):
+def run(command, cwd=None, env=None, lines=[], password=None):
     """Run a command."""
 
     # echo command
@@ -172,7 +185,7 @@ def run(command, password=None, cwd=None, env=None):
         }
 
     # spawn command
-    child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, timeout=None)
+    child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, ignore_sighup=True, timeout=None, echo=True)
 
     # send output of command to stdout only if run with --verbose
     if run.verbose:
@@ -180,8 +193,12 @@ def run(command, password=None, cwd=None, env=None):
 
     # wait for prompt, send password
     if password:
-        child.expect("Password.*:")
+        child.expect("Password for '.*': ")
         child.sendline(password)
+
+    # send lines of input
+    for line in lines:
+        child.sendline(line)
 
     # read output, check status
     command_output = child.read().strip()
@@ -239,7 +256,6 @@ def submit(problem):
     except Exception as e:
         if run.verbose:
             cprint(str(e))
-
         raise Error("Invalid problem. Did you mean to submit something else?") from None
 
     # check for missing files
@@ -333,6 +349,10 @@ def submit(problem):
 
     # stop spinner
     spin(False)
+
+    # cache credentials
+    run("git -c credential.helper='cache --socket /tmp/submit50/socket' credential approve",
+        lines=["username={}".format(username), "password={}".format(password), "", ""])
 
     # successful submission
     cprint("Submitted {}! See https://cs50.me/submissions/{}.".format(problem, branch), "green")
