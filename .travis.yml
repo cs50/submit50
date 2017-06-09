@@ -1,5 +1,7 @@
 language: python
-python: '3.4'
+python:
+- '2.7'
+- '3.4'
 branches:
   except: "/^v\\d/"
 install: true
@@ -7,18 +9,24 @@ script:
 - python setup.py sdist
 - python setup.py install
 - submit50 --help
-deploy:
-- provider: script
-  script: 'curl --fail --data "{ \"tag_name\": \"v$(python setup.py --version)\",
-    \"target_commitish\": \"$TRAVIS_COMMIT\", \"name\": \"v$(python setup.py --version)\"
-    }" --user bot50:$GITHUB_TOKEN https://api.github.com/repos/$TRAVIS_REPO_SLUG/releases'
-  on:
-    branch: master
-- provider: pypi
-  user: "$PYPI_USERNAME"
-  password: "$PYPI_PASSWORD"
-  on:
-    branch: master
+jobs:
+  include:
+  - stage: deploy
+    python: '3.4'
+    install: true
+    script: skip
+    deploy:
+    - provider: script
+      script: 'curl --fail --data "{ \"tag_name\": \"v$(python setup.py --version)\",
+        \"target_commitish\": \"$TRAVIS_COMMIT\", \"name\": \"v$(python setup.py --version)\"
+        }" --user bot50:$GITHUB_TOKEN https://api.github.com/repos/$TRAVIS_REPO_SLUG/releases'
+      on:
+        branch: master
+    - provider: pypi
+      user: "$PYPI_USERNAME"
+      password: "$PYPI_PASSWORD"
+      on:
+        branch: master
 notifications:
   slack:
     secure: BEHsqQe6Z7ja0+hJ2oApQAtAvdUijWf3BKDmOwcKPeTurpnSeKfQ0ocaJkwakvT7Uy237THPFVf4L5+TIHCpF4MpxjYQRZOfkbXyNdA8vm7ohuuC7jJk0UGks02FoXl65hG6ZaETYZVHqvUbCy7EpGu0LRi/hFCpzWDa12HPzxm9jDTXp5e2lvED+vuwZNI9VEoqdA1MLPSZp1TRpwY3OcQfVZ7U2NfT8nUIcpCcpEXsFYuhl+j/Xmae7CwBfRS//6T8vGbBDhuSqzeHGgr9209yuwQZ9nRiyrH8nAKrseTJCLFEDuDxFqgpBZ920Yuz9aPshjFYalWfBs48tSf/9x0pLdfzuZ3JvSLvIghXOlZlyG8ddLUsrIU/SDPl4eAv4z75k6SPGapSPew3e7S5r8Ihxlfylxx8FsBafMa5gkF/vcunLYHjkzlVLqqLU2qV7b755bj7cMvcPgcsCBnv+2huPgEKeaOodV85tlzOIX5YgLc/vjidmT3ILCycVXvElWxiuQdVEPTITTSBhPYR8z/+AXdjkIAFS7Fk6pnTUcIr8wGSkcGDRswIpR8NBB2cX4UCU50Fg9U84/FMIKdthDdYCWOpdBlrw+rkCrSlY0pns9IP6Pm9Lnq60uRD8LB7xcoVTdd23rGRKgHPU1M7ZdTwVVhQHQFYSIQf01IlLs0=

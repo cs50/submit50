@@ -1,8 +1,4 @@
 from setuptools import setup
-import sys
-
-if sys.version_info[0] < 3:
-    sys.exit("Sorry, Python 3 (or up) required!")
 
 setup(
     author="CS50",
@@ -14,7 +10,7 @@ setup(
         "Topic :: Utilities"
     ],
     description="This is submit50, with which you can submit solutions to problems for CS50.",
-    install_requires=["getch", "pexpect>=4.0", "requests", "termcolor"],
+    install_requires=["backports.shutil_get_terminal_size", "pexpect>=4.0", "requests", "six", "termcolor"],
     keywords=["submit", "submit50"],
     name="submit50",
     scripts=["submit50"],
