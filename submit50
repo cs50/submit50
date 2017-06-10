@@ -30,8 +30,7 @@ from pkg_resources import get_distribution, parse_version
 from threading import Thread
 
 ORG_NAME = "submit50"
-#__version__ = get_distribution("submit50").version
-__version__ = "2.2.0"
+__version__ = get_distribution("submit50").version
 timestamp = ""
 
 class Error(Exception):
