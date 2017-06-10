@@ -3,6 +3,8 @@
 import argparse
 import atexit
 import datetime
+import distutils
+import http.client
 import itertools
 import json
 import os
@@ -24,6 +26,7 @@ import traceback
 
 from backports.shutil_get_terminal_size import get_terminal_size
 from distutils.spawn import find_executable
+from distutils.version import StrictVersion
 from pkg_resources import get_distribution, parse_version
 from six.moves import urllib
 from threading import Thread
@@ -34,7 +37,7 @@ if sys.version_info < (2, 7):
 if sys.version_info.major == 2:
     input = raw_input
 
-ORG_NAME = "submit50"
+ORG = "submit50"
 __version__ = get_distribution("submit50").version
 timestamp = ""
 
@@ -82,9 +85,15 @@ def main():
     timestamp = datetime.datetime.strptime(headers["Date"], fmt)
     timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
 
-    # check for git
-    if not find_executable("git"):
-        sys.exit("Missing dependency. Install git.")
+    # check for git 2.7+, so that credential-cache--daemon ignores SIGHUP
+    # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
+    try:
+        version = run("git --version")
+        matches = re.search(r"^git version (\d+\.\d+\.\d+)$", version)
+        if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
+            sys.exit("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
+    except pexpect.exceptions.ExceptionPexpect:
+        sys.exit("You don't have git. Install git, then re-run submit50!.")
 
     # define command-line arguments
     parser = argparse.ArgumentParser(prog="submit50")
@@ -100,39 +109,62 @@ def main():
         run.verbose = True
 
     # submit50 problem
-    if args["problem"]:
-        submit(args["problem"])
+    submit(args["problem"])
 
     # kthxbai
     sys.exit(0)
 
 
 def authenticate():
-    # prompt for username
-    while True:
-        cprint("GitHub username:", end=" ", flush=True)
-        username = input().strip()
-        if username:
-            break
+    """Authenticate user."""
 
-    # prompt for password
-    while True:
-        cprint("GitHub password:", end=" ", flush=True)
-        password = str()
+    # cache credentials in ~/.git-credential-cache/submit50
+    cache = os.path.expanduser("~/.git-credential-cache")
+    try:
+        os.mkdir(cache, 0o700)
+    except:
+        pass
+    socket = os.path.join(cache, ORG)
+
+    # check cache for credentials
+    credentials = run("git -c credential.helper='cache --socket {}' credential fill".format(socket),
+                      lines=[""]*3,
+                      quiet=True)
+    run("git credential-cache --socket {} exit".format(socket))
+
+    # prompt for username if not in cache
+    matches = re.search("^username=([^\r]+)\r?$", credentials, re.MULTILINE)
+    if matches:
+        username = matches.group(1)
+    else:
         while True:
-            ch = getch()
-            if ch in ["\n", "\r"]:  # Enter
-                cprint()
+            cprint("GitHub username:", end=" ", flush=True)
+            username = input().strip()
+            if username:
                 break
-            elif ch == "\177":  # DEL
-                if len(password) > 0:
-                    password = password[:-1]
-                    cprint("\b \b", end="", flush=True)
-            else:
-                password += ch
-                cprint("*", end="", flush=True)
-        if password:
-            break
+
+    # prompt for password if not in cache
+    matches = re.search("^password=([^\r]+)\r?$", credentials, re.MULTILINE)
+    if matches:
+        password = matches.group(1)
+    else:
+        while True:
+            cprint("GitHub password:", end=" ", flush=True)
+            password = str()
+            while True:
+                ch = getch.getch()
+                if ch == "\n": # Enter
+                    cprint()
+                    break
+                elif ch == "\177": # DEL
+                    if len(password) > 0:
+                        password = password[:-1]
+                        cprint("\b \b", end="", flush=True)
+                else:
+                    password += ch
+                    cprint("*", end="", flush=True)
+            if password:
+                break
 
     # authenticate user
     email = "{}@users.noreply.github.com".format(username)
@@ -161,6 +193,15 @@ def authenticate():
     # canonicalize (capitalization of) username,
     # especially if user logged in via email address
     username = res.json()["login"]
+
+    # cache credentials for 1 week
+    timeout = int(datetime.timedelta(weeks=1).total_seconds())
+    run("git -c credential.helper='cache --socket {} --timeout {}' "
+        "-c credentialcache.ignoresighup=true credential approve".format(socket, timeout),
+        lines=["username={}".format(username), "password={}".format(password), "", ""],
+        quiet=True)
+
+    # return credentials
     return (username, password, email)
 
 
@@ -188,14 +229,10 @@ def excepthook(type, value, tb):
         cprint(str(value), "yellow")
     else:
         if run.verbose:
-            traceback.print_tb(tb)
-        traceback.print_tb(tb)
-        cprint("Sorry, something's wrong! " +
-               "Let sysadmins@cs50.harvard.edu know!",
-               "yellow")
+            traceback.print_exception(type, value, tb)
+        traceback.print_exception(type, value, tb)
+        cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
     cprint("Submission cancelled.", "red")
-
-
 sys.excepthook = excepthook
 
 
@@ -205,9 +242,8 @@ def handler(number, frame):
     print()
     cprint("Submission cancelled.", "red")
     os._exit(0)
-
-
-def run(command, password=None, cwd=None, env=None, err=""):
+    
+def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
     """Run a command."""
 
     # echo command
@@ -218,26 +254,29 @@ def run(command, password=None, cwd=None, env=None, err=""):
     if not env:
         env = {
             "GIT_DIR": run.GIT_DIR,
-            "GIT_WORK_TREE": run.GIT_WORK_TREE
+            "GIT_WORK_TREE": run.GIT_WORK_TREE,
+            "HOME": os.environ.get("HOME") or os.path.expanduser("~")
         }
 
     # spawn command
-    child = pexpect.spawn(command, cwd=cwd, env=env, timeout=None)
+    child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, ignore_sighup=True, timeout=None, echo=True)
 
-    # send output of command to stdout only if run with --verbose
-    if run.verbose:
-        child.logfile_read = sys.stdout.buffer
+    # send output of command to stdout only if run with --verbose (and not quieted by caller)
+    if run.verbose and not quiet:
+        child.logfile_read = sys.stdout
 
     # wait for prompt, send password
     if password:
-        try:
-            child.expect("Password.*:")
+        res = child.expect(["Password for '.*': ", pexpect.EOF])
+        if res == 0:
             child.sendline(password)
-        except Exception:
-            pass
+
+    # send lines of input
+    for line in lines:
+        child.sendline(line)
 
     # read output, check status
-    command_output = child.read().decode("utf-8").strip()
+    command_output = child.read().strip()
     child.close()
     if child.signalstatus is None and child.exitstatus != 0:
         e = Error(err)
@@ -301,7 +340,6 @@ def submit(problem):
     except Exception as e:
         if run.verbose:
             cprint(str(e))
-
         e = Error("Invalid problem. Did you mean to submit something else?")
         e.__cause__ = None
         raise e
@@ -329,16 +367,24 @@ def submit(problem):
     username, password, email = authenticate()
 
     # start spinner
+    spin("Authenticating")
+
+    # check for submit50 repository
+    res = requests.get("https://api.github.com/repos/{}/{}".format(ORG, username), auth=(username, password))
+    if res.status_code != 200:
+        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+
+    # stop spinner
+    spin(False)
+
+    # start spinner
     spin("Preparing")
 
     # clone submit50 repository
     repo = "https://{}@github.com/{}/{}".format(username, ORG_NAME, username)
     run("git clone --bare {} {}".format(
-        shlex.quote(repo), shlex.quote(run.GIT_DIR)),
-        password=password,
-        err="Looks like submit50 isn't enabled for your account yet. " +
-            "Log into https://cs50.me/ in a browser, " +
-            "click \"Authorize application\", then re-run submit50 here!")
+        shlex.quote("https://{}@github.com/{}/{}".format(username, ORG, username)), shlex.quote(run.GIT_DIR)),
+        password=password)
 
     # set options
     tag = "{}@{}".format(branch, timestamp)
@@ -427,10 +473,7 @@ def two_factor(username, password):
         code = input()
         if code:
             break
-    data = json.dumps(
-            {"scopes": ["repo", "user"],
-             "note": "{} {}".format(ORG_NAME, timestamp)}
-            )
+    data = json.dumps({"scopes": ["repo", "user"], "note": "{} {}".format(ORG, timestamp)})
     res = requests.post("https://api.github.com/authorizations",
                         auth=(username, password),
                         data=data,
