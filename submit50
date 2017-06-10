@@ -161,6 +161,9 @@ def authenticate():
                     if len(password) > 0:
                         password = password[:-1]
                         cprint("\b \b", end="", flush=True)
+                elif ch == "\3": # ctl-c
+                    cprint("^C")
+                    os.kill(os.getpid(), signal.SIGINT)
                 else:
                     password += ch
                     cprint("*", end="", flush=True)
