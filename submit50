@@ -28,6 +28,12 @@ from pkg_resources import get_distribution, parse_version
 from six.moves import urllib
 from threading import Thread
 
+# require python 2.7+
+if sys.version_info < (2, 7):
+    sys.exit("You have an old version of python. Install version 2.7 or higher.")
+if sys.version_info.major == 2:
+    input = raw_input
+
 ORG_NAME = "submit50"
 __version__ = get_distribution("submit50").version
 timestamp = ""
