@@ -354,10 +354,12 @@ def submit(problem):
     # stop spinner
     spin(False)
 
+    # cache credentials for 2 weeks
+    timeout = int(datetime.timedelta(weeks=2).total_seconds())
+
     # cache credentials
     run("git -c credential.helper='cache --socket /tmp/submit50/socket --timeout {}' "
-        .format(int(datetime.timedelta(weeks=2).total_seconds())) +
-        "-c credentialcache.ignore_sighub=true credential approve",
+        "-c credentialcache.ignoresighup=true credential approve".format(timeout),
         lines=["username={}".format(username), "password={}".format(password), "", ""],
         hide=True)
 
