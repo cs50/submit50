@@ -84,8 +84,7 @@ def main():
     # compute timestamp
     headers = requests.get("https://api.github.com/").headers
     global timestamp
-    fmt = "%a, %d %b %Y %H:%M:%S %Z"
-    timestamp = datetime.datetime.strptime(headers["Date"], fmt)
+    timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z")
     timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
 
     # check for git 2.7+, so that credential-cache--daemon ignores SIGHUP
@@ -159,7 +158,7 @@ def authenticate():
             password = str()
             while True:
                 ch = getch()
-                if ch == "\n": # Enter
+                if ch in ["\n", "\r"]: # Enter
                     cprint()
                     break
                 elif ch == "\177": # DEL
@@ -213,17 +212,17 @@ def authenticate():
 
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
+
     # assume 80 in case not running in a terminal
     columns, _ = shutil.get_terminal_size((80, 0))
 
     # only python3 supports "flush" keyword argument
-    if sys.version_info[0] < 3 and "flush" in kwargs:
+    if sys.version_info < (3, 0) and "flush" in kwargs:
         del kwargs["flush"]
 
+    # print text
     termcolor.cprint(textwrap.fill(text, columns),
-                     color=color,
-                     on_color=on_color,
-                     attrs=attrs, **kwargs)
+                     attrs=attrs, color=color, on_color=on_color, **kwargs)
 
 
 def excepthook(type, value, tb):
@@ -265,7 +264,10 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
         }
 
     # spawn command
-    child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, ignore_sighup=True, timeout=None, echo=True)
+    if sys.version_info < (3, 0):
+        child = pexpect.spawn(command, cwd=cwd, env=env, ignore_sighup=True, timeout=None)
+    else:
+        child = pexpect.spawnu(command, cwd=cwd, encoding="utf-8", env=env, ignore_sighup=True, timeout=None)
 
     # send output of command to stdout only if run with --verbose (and not quieted by caller)
     if run.verbose and not quiet:
@@ -387,7 +389,7 @@ def submit(problem):
     spin("Preparing")
 
     # clone submit50 repository
-    repo = "https://{}@github.com/{}/{}".format(username, ORG_NAME, username)
+    repo = "https://{}@github.com/{}/{}".format(username, ORG, username)
     run("git clone --bare {} {}".format(
         shlex.quote("https://{}@github.com/{}/{}".format(username, ORG, username)), shlex.quote(run.GIT_DIR)),
         password=password)
@@ -495,41 +497,41 @@ def two_factor(username, password):
 # https://stackoverflow.com/a/510364
 class _Getch:
     """Gets a single character from standard input."""
+
+    class _GetchUnix:
+        def __init__(self):
+            import tty
+            import sys
+
+        def __call__(self):
+            import sys
+            import tty
+            import termios
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                ch = sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            return ch
+
+    class _GetchWindows:
+        def __init__(self):
+            import msvcrt
+
+        def __call__(self):
+            import msvcrt
+            return msvcrt.getch()
+
     def __init__(self):
         try:
-            self.impl = _GetchWindows()
+            self.impl = _Getch._GetchWindows()
         except ImportError:
-            self.impl = _GetchUnix()
-
-    def __call__(self): return self.impl()
-
-
-class _GetchUnix:
-    def __init__(self):
-        import tty
-        import sys
+            self.impl = _Getch._GetchUnix()
 
     def __call__(self):
-        import sys
-        import tty
-        import termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-
-class _GetchWindows:
-    def __init__(self):
-        import msvcrt
-
-    def __call__(self):
-        import msvcrt
-        return msvcrt.getch()
+        return self.impl()
 
 
 getch = _Getch()
