@@ -3,6 +3,7 @@
 import argparse
 import atexit
 import datetime
+import distutils
 import getch
 import http.client
 import itertools
@@ -24,11 +25,13 @@ import time
 import traceback
 import urllib.request
 
+from distutils.version import StrictVersion
 from pkg_resources import get_distribution, parse_version
 from threading import Thread
 
 ORG_NAME = "submit50"
-__version__ = get_distribution("submit50").version
+#__version__ = get_distribution("submit50").version
+__version__ = "2.2.0"
 timestamp = ""
 
 class Error(Exception):
@@ -58,9 +61,17 @@ def main():
     timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z")
     timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
 
-    # check for git
-    if not shutil.which("git"):
-        sys.exit("Missing dependency. Install git.")
+    # check for git 2.7+, so that credential-cache--daemon ignores SIGHUP
+    # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
+    try:
+        version = run("git --version")
+        matches = re.search(r"^git version (\d+\.\d+\.\d+)$", version)
+        if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
+            sys.exit("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
+    except pexpect.exceptions.ExceptionPexpect:
+        sys.exit("You don't have git. Install git, then re-run submit50!.")
+
+    sys.exit()
 
     # define command-line arguments
     parser = argparse.ArgumentParser(prog="submit50")
