@@ -70,16 +70,12 @@ def main():
     # check version
     res = requests.get("https://cs50.me/version")
     if res.status_code != 200:
-        e = Error("You have an unknown version of submit50. " +
-                  "Email sysadmins@cs50.harvard.edu!")
-        e.__cause__ = None
-        raise e
+        raise Error("You have an unknown version of submit50. " +
+                    "Email sysadmins@cs50.harvard.edu!")
     version_required = res.text.strip()
     if parse_version(version_required) > parse_version(__version__):
-        e = Error("You have an old version of submit50. " +
-                  "Run update50, then re-run submit50!")
-        e.__cause__ = None
-        raise e
+        raise Error("You have an old version of submit50. " +
+                    "Run update50, then re-run submit50!")
 
     # compute timestamp
     headers = requests.get("https://api.github.com/").headers
@@ -185,15 +181,11 @@ def authenticate():
 
     # check if incorrect password
     if res.status_code == 401:
-        e = Error("Invalid username and/or password.")
-        e.__cause__ = None
-        raise e
+        raise Error("Invalid username and/or password.")
 
     # check for other error
     elif res.status_code != 200:
-        e = Error("Could not authenticate user.")
-        e.__cause__ = None
-        raise e
+        raise Error("Could not authenticate user.")
 
     # canonicalize (capitalization of) username,
     # especially if user logged in via email address
@@ -287,9 +279,7 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
     command_output = child.read().strip()
     child.close()
     if child.signalstatus is None and child.exitstatus != 0:
-        e = Error(err)
-        e.__cause__ = None
-        raise e
+        raise Error()
     return command_output
 
 
@@ -367,9 +357,7 @@ def submit(problem):
         cprint("You seem to be missing these files:")
         for pattern in missing:
             cprint(" {}".format(pattern))
-        e = Error("Ensure you have the required files before submitting.")
-        e.__cause__ = None
-        raise e
+        raise Error("Ensure you have the required files before submitting.")
 
     # authenticate user
     username, password, email = authenticate()
@@ -415,9 +403,7 @@ def submit(problem):
 
     # files that will be submitted
     if len(files) == 0:
-        e = Error("No files in this directory are expected for submission.")
-        e.__cause__ = None
-        raise e
+        raise Error("No files in this directory are expected for submission.")
     cprint("Files that will be submitted:", "yellow")
     for f in files:
         cprint("./{}".format(f), "yellow")
@@ -432,9 +418,7 @@ def submit(problem):
     cprint("Keeping in mind the course's policy on academic honesty, " +
            "are you sure you want to submit these files?", end=" ")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
-        e = Error("No files were submitted.")
-        e.__cause__ = None
-        raise e
+        raise Error("No files were submitted.")
 
     # start spinner
     spin("Submitting")
@@ -489,9 +473,7 @@ def two_factor(username, password):
     if res.status_code == 201 and "token" in res.json():
         return res.json()["token"]
     else:
-        e = Error("Could not complete two-factor authentication.")
-        e.__cause__ = None
-        raise e
+        raise Error("Could not complete two-factor authentication.")
 
 
 # https://stackoverflow.com/a/510364
@@ -500,13 +482,10 @@ class _Getch:
 
     class _GetchUnix:
         def __init__(self):
-            import tty
-            import sys
+            import tty, sys
 
         def __call__(self):
-            import sys
-            import tty
-            import termios
+            import sys, termios, tty
             fd = sys.stdin.fileno()
             old_settings = termios.tcgetattr(fd)
             try:
