@@ -29,7 +29,7 @@ from distutils.version import StrictVersion
 from pkg_resources import get_distribution, parse_version
 from threading import Thread
 
-ORG_NAME = "submit50"
+ORG = "submit50"
 __version__ = get_distribution("submit50").version
 timestamp = ""
 
@@ -309,7 +309,7 @@ def submit(problem):
     spin("Authenticating")
 
     # check for submit50 repository
-    res = requests.get("https://api.github.com/repos/{}/{}".format(ORG_NAME, username), auth=(username, password))
+    res = requests.get("https://api.github.com/repos/{}/{}".format(ORG, username), auth=(username, password))
     if res.status_code != 200:
         raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
 
@@ -321,7 +321,7 @@ def submit(problem):
 
     # clone submit50 repository
     run("git clone --bare {} {}".format(
-        shlex.quote("https://{}@github.com/{}/{}".format(username, ORG_NAME, username)), shlex.quote(run.GIT_DIR)),
+        shlex.quote("https://{}@github.com/{}/{}".format(username, ORG, username)), shlex.quote(run.GIT_DIR)),
         password=password)
 
     # set options
@@ -399,7 +399,7 @@ def two_factor(username, password):
         code = input()
         if code:
             break
-    data = json.dumps({"scopes": ["repo", "user"], "note": "{} {}".format(ORG_NAME, timestamp)})
+    data = json.dumps({"scopes": ["repo", "user"], "note": "{} {}".format(ORG, timestamp)})
     res = requests.post("https://api.github.com/authorizations",
         auth=(username, password),
         data=data,
