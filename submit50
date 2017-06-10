@@ -96,7 +96,7 @@ def authenticate():
         os.mkdir(cache, 0o700)
     except:
         pass
-    socket = os.path.join(cache, "submit50")
+    socket = os.path.join(cache, ORG)
 
     # check cache for credentials
     credentials = run("git -c credential.helper='cache --socket {}' credential fill".format(socket),
