@@ -64,7 +64,10 @@ def main():
     # clean up on normal exit
     atexit.register(teardown)
 
-    # check for version
+    # in case internet's slow, let user know we're connecting to server
+    spin("Connecting")
+
+    # check version
     res = requests.get("https://cs50.me/version")
     if res.status_code != 200:
         e = Error("You have an unknown version of submit50. " +
@@ -94,6 +97,9 @@ def main():
             sys.exit("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
     except pexpect.exceptions.ExceptionPexpect:
         sys.exit("You don't have git. Install git, then re-run submit50!.")
+
+    # done connecting (for now)
+    spin(False)
 
     # define command-line arguments
     parser = argparse.ArgumentParser(prog="submit50")
@@ -152,7 +158,7 @@ def authenticate():
             cprint("GitHub password:", end=" ", flush=True)
             password = str()
             while True:
-                ch = getch.getch()
+                ch = getch()
                 if ch == "\n": # Enter
                     cprint()
                     break
