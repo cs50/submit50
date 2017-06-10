@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import argparse
 import atexit
 import datetime
 import distutils
-import http.client
 import itertools
 import json
 import os
@@ -209,7 +208,7 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
 
     # assume 80 in case not running in a terminal
-    columns, _ = shutil.get_terminal_size((80, 0))
+    columns, _ = get_terminal_size((80, 0))
 
     # only python3 supports "flush" keyword argument
     if sys.version_info < (3, 0) and "flush" in kwargs:
