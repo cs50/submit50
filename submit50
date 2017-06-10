@@ -71,8 +71,6 @@ def main():
     except pexpect.exceptions.ExceptionPexpect:
         sys.exit("You don't have git. Install git, then re-run submit50!.")
 
-    sys.exit()
-
     # define command-line arguments
     parser = argparse.ArgumentParser(prog="submit50")
     parser.add_argument("-v", "--verbose", action="store_true", help="show commands being executed")
@@ -93,11 +91,19 @@ def main():
 def authenticate():
     """Authenticate user."""
 
+    # cache credentials in ~/.git-credential-cache/submit50
+    cache = os.path.expanduser("~/.git-credential-cache")
+    try:
+        os.mkdir(cache, 0o700)
+    except:
+        pass
+    socket = os.path.join(cache, "submit50")
+
     # check cache for credentials
-    credentials = run("git -c credential.helper='cache --socket /tmp/submit50/socket' credential fill",
+    credentials = run("git -c credential.helper='cache --socket {}' credential fill".format(socket),
                       lines=[""]*3,
-                      hide=True)
-    run("git credential-cache --socket /tmp/submit50/socket exit")
+                      quiet=True)
+    run("git credential-cache --socket {} exit".format(socket))
 
     # prompt for username if not in cache
     matches = re.search("^username=([^\r]+)\r?$", credentials, re.MULTILINE)
@@ -154,6 +160,13 @@ def authenticate():
     # canonicalize (capitalization of) username, especially if user logged in via email address
     username = res.json()["login"]
 
+    # cache credentials for 1 week
+    timeout = int(datetime.timedelta(weeks=1).total_seconds())
+    run("git -c credential.helper='cache --socket {} --timeout {}' "
+        "-c credentialcache.ignoresighup=true credential approve".format(socket, timeout),
+        lines=["username={}".format(username), "password={}".format(password), "", ""],
+        quiet=True)
+
     # return credentials
     return (username, password, email)
     
@@ -171,7 +184,7 @@ def excepthook(type, value, tb):
         cprint(str(value), "yellow")
     else:
         if run.verbose:
-            traceback.print_tb(tb)
+            traceback.print_exception(type, value, tb)
         cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
     cprint("Submission cancelled.", "red")
 sys.excepthook = excepthook
@@ -183,7 +196,7 @@ def handler(number, frame):
     cprint("Submission cancelled.", "red")
     os._exit(0)
     
-def run(command, cwd=None, env=None, lines=[], password=None, hide=False):
+def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
     """Run a command."""
 
     # echo command
@@ -201,8 +214,8 @@ def run(command, cwd=None, env=None, lines=[], password=None, hide=False):
     # spawn command
     child = pexpect.spawn(command, cwd=cwd, encoding="utf-8", env=env, ignore_sighup=True, timeout=None, echo=True)
 
-    # send output of command to stdout only if run with --verbose
-    if run.verbose and not hide:
+    # send output of command to stdout only if run with --verbose (and not quieted by caller)
+    if run.verbose and not quiet:
         child.logfile_read = sys.stdout
 
     # wait for prompt, send password
@@ -364,15 +377,6 @@ def submit(problem):
 
     # stop spinner
     spin(False)
-
-    # cache credentials for 2 weeks
-    timeout = int(datetime.timedelta(weeks=2).total_seconds())
-
-    # cache credentials
-    run("git -c credential.helper='cache --socket /tmp/submit50/socket --timeout {}' "
-        "-c credentialcache.ignoresighup=true credential approve".format(timeout),
-        lines=["username={}".format(username), "password={}".format(password), "", ""],
-        hide=True)
 
     # successful submission
     cprint("Submitted {}! See https://cs50.me/submissions/{}.".format(problem, branch), "green")
