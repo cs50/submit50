@@ -4,6 +4,12 @@ python:
 - '3.4'
 branches:
   except: "/^v\\d/"
+addons:
+  apt:
+    sources:
+    - sourceline: "ppa:git-core/ppa"
+    packages:
+    - git
 install: true
 script:
 - python setup.py sdist
