@@ -49,6 +49,49 @@ class Error(Exception):
     pass
 
 
+class _Getch:
+    """
+    Gets a single character from standard input.
+
+    https://stackoverflow.com/a/510364
+    """
+
+    class _GetchUnix:
+        def __init__(self):
+            import tty, sys
+
+        def __call__(self):
+            import sys, termios, tty
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                ch = sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            return ch
+
+    class _GetchWindows:
+        def __init__(self):
+            import msvcrt
+
+        def __call__(self):
+            import msvcrt
+            return msvcrt.getch()
+
+    def __init__(self):
+        try:
+            self.impl = _Getch._GetchWindows()
+        except ImportError:
+            self.impl = _Getch._GetchUnix()
+
+    def __call__(self):
+        return self.impl()
+
+
+getch = _Getch()
+
+
 # submit50
 def main():
 
@@ -465,45 +508,6 @@ def two_factor(username, password):
     else:
         raise Error("Could not complete two-factor authentication.")
 
-
-# https://stackoverflow.com/a/510364
-class _Getch:
-    """Gets a single character from standard input."""
-
-    class _GetchUnix:
-        def __init__(self):
-            import tty, sys
-
-        def __call__(self):
-            import sys, termios, tty
-            fd = sys.stdin.fileno()
-            old_settings = termios.tcgetattr(fd)
-            try:
-                tty.setraw(sys.stdin.fileno())
-                ch = sys.stdin.read(1)
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            return ch
-
-    class _GetchWindows:
-        def __init__(self):
-            import msvcrt
-
-        def __call__(self):
-            import msvcrt
-            return msvcrt.getch()
-
-    def __init__(self):
-        try:
-            self.impl = _Getch._GetchWindows()
-        except ImportError:
-            self.impl = _Getch._GetchUnix()
-
-    def __call__(self):
-        return self.impl()
-
-
-getch = _Getch()
 
 if __name__ == "__main__":
     main()
