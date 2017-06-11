@@ -62,7 +62,7 @@ def main():
     spin("Connecting")
 
     # check version
-    res = requests.get("https://cs50.me/version")
+    res = requests.get("https://cs50.me/versions/submit50")
     if res.status_code != 200:
         raise Error("You have an unknown version of submit50. " +
                     "Email sysadmins@cs50.harvard.edu!")
