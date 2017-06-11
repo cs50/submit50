@@ -1,5 +1,13 @@
 [![Build Status](https://travis-ci.org/cs50/submit50.svg?branch=master)](https://travis-ci.org/cs50/submit50)
 
+# Contributing
+
+```
+pip install -e .
+```
+
+TODO...
+
 # TODO
 
 * Client
