@@ -302,7 +302,7 @@ run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
 
 
-def spin(message):
+def spin(message=""):
     """Displays a spinning message."""
 
     # don't spin in verbose mode
@@ -315,7 +315,7 @@ def spin(message):
         spin.thread.join()
 
     # start spinning if message passed
-    if message:
+    if message != False:
         def spin_helper():
             spinner = itertools.cycle(["-", "\\", "|", "/"])
             sys.stdout.write(message + "... ")
