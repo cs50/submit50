@@ -13,7 +13,10 @@ setup(
     install_requires=["backports.shutil_get_terminal_size", "backports.shutil_which", "pexpect>=4.0", "requests", "six", "termcolor"],
     keywords=["submit", "submit50"],
     name="submit50",
-    scripts=["submit50"],
+    py_modules=["submit50"],
+    entry_points={
+        "console_scripts": ["submit50=submit50:main"]
+    },
     url="https://github.com/cs50/submit50",
     version="2.2.0"
 )
