@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+
+from __future__ import print_function
 
 import argparse
 import atexit
@@ -101,36 +103,8 @@ def main():
     # clean up on normal exit
     atexit.register(teardown)
 
-    # start spinner
-    spin("Connecting")
-
-    # check version
-    res = requests.get("https://cs50.me/versions/submit50")
-    if res.status_code != 200:
-        raise Error("You have an unknown version of submit50. " +
-                    "Email sysadmins@cs50.harvard.edu!")
-    version_required = res.text.strip()
-    if parse_version(version_required) > parse_version(get_distribution("submit50").version):
-        raise Error("You have an old version of submit50. " +
-                    "Run update50, then re-run submit50!")
-
-    # compute timestamp
-    global timestamp
-    headers = requests.get("https://api.github.com/").headers
-    timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z")
-    timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
-
-    # check for git 2.7+, so that credential-cache--daemon ignores SIGHUP
-    # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
-    if not which("git"):
-        raise Error("You don't have git. Install git, then re-run submit50!.")
-    version = run("git --version")
-    matches = re.search(r"^git version (\d+\.\d+\.\d+)$", version)
-    if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
-        raise Error("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
-
     # define command-line arguments
-    parser = argparse.ArgumentParser(prog="submit50")
+    parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose",
                         action="store_true",
                         help="show commands being executed")
@@ -143,13 +117,13 @@ def main():
         run.verbose = True
 
     # submit50 problem
-    submit(args["problem"])
+    submit("submit50", args["problem"])
 
     # kthxbai
     sys.exit(0)
 
 
-def authenticate():
+def authenticate(org):
     """Authenticate user."""
 
     # cache credentials in ~/.git-credential-cache/submit50
@@ -194,7 +168,7 @@ def authenticate():
                     if len(password) > 0:
                         password = password[:-1]
                         cprint("\b \b", end="", flush=True)
-                elif ch == "\3": # ctl-c
+                elif ch == "\3": # ctrl-c
                     cprint("^C")
                     os.kill(os.getpid(), signal.SIGINT)
                 else:
@@ -211,7 +185,7 @@ def authenticate():
     # check for 2-factor authentication
     # http://github3.readthedocs.io/en/develop/examples/oauth.html?highlight=token
     if "X-GitHub-OTP" in res.headers:
-        password = two_factor(username, password)
+        password = two_factor(org, username, password)
         res = requests.get("https://api.github.com/user",
                            auth=(username, password))
 
@@ -252,8 +226,8 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
         del kwargs["flush"]
 
     # print text
-    termcolor.cprint(textwrap.fill(text, columns),
-                     attrs=attrs, color=color, on_color=on_color, **kwargs)
+    termcolor.cprint(textwrap.fill(text, columns, drop_whitespace=False),
+                     color=color, on_color=on_color, attrs=attrs, **kwargs)
 
 
 def excepthook(type, value, tb):
@@ -266,7 +240,6 @@ def excepthook(type, value, tb):
     else:
         if run.verbose:
             traceback.print_exception(type, value, tb)
-        traceback.print_exception(type, value, tb)
         cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
     cprint("Submission cancelled.", "red")
 sys.excepthook = excepthook
@@ -274,8 +247,10 @@ sys.excepthook = excepthook
 
 def handler(number, frame):
     """Handle SIGINT."""
-    spin(False)
-    print()
+    if spin.spinning:
+        spin(False)
+    else:
+        cprint()
     cprint("Submission cancelled.", "red")
     os._exit(0)
     
@@ -291,7 +266,7 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
         env = {
             "GIT_DIR": run.GIT_DIR,
             "GIT_WORK_TREE": run.GIT_WORK_TREE,
-            "HOME": os.environ.get("HOME") or os.path.expanduser("~")
+            "HOME": os.path.expanduser("~")
         }
 
     # spawn command
@@ -360,11 +335,36 @@ def spin(message):
 spin.spinning = False
 
 
-def submit(problem):
+def submit(org, problem):
     """Submit problem."""
 
+    # require git 2.7+, so that credential-cache--daemon ignores SIGHUP
+    # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
+    if not which("git"):
+        raise Error("You don't have git. Install git, then re-run submit50!.")
+    version = subprocess.check_output(["git", "--version"]).decode("utf-8")
+    matches = re.search(r"^git version (\d+\.\d+\.\d+)$", version)
+    if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
+        raise Error("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
+
     # update spinner
-    spin("Verifying")
+    spin("Connecting")
+
+    # compute timestamp
+    global timestamp
+    headers = requests.get("https://api.github.com/").headers
+    timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z")
+    timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
+
+    # check version
+    res = requests.get("https://cs50.me/versions/submit50")
+    if res.status_code != 200:
+        raise Error("You have an unknown version of submit50. " +
+                    "Email sysadmins@cs50.harvard.edu!")
+    version_required = res.text.strip()
+    if parse_version(version_required) > parse_version(get_distribution("submit50").version):
+        raise Error("You have an old version of submit50. " +
+                    "Run update50, then re-run submit50!")
 
     # assume cs50/ problem if problem name begins with a year
     branch = problem
@@ -402,23 +402,24 @@ def submit(problem):
         raise Error("Ensure you have the required files before submitting.")
 
     # authenticate user
-    username, password, email = authenticate()
+    username, password, email = authenticate(org)
 
     # update spinner
     spin("Authenticating")
 
     # check for submit50 repository
-    res = requests.get("https://api.github.com/repos/{}/{}".format(ORG, username), auth=(username, password))
+    res = requests.get("https://api.github.com/repos/{}/{}".format(org, username), auth=(username, password))
     if res.status_code != 200:
-        raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+        raise Error("Looks like submit50 isn't enabled for your account yet. " +
+                    "Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
 
     # update spinner
     spin("Preparing")
 
     # clone submit50 repository
-    repo = "https://{}@github.com/{}/{}".format(username, ORG, username)
+    repo = "https://{}@github.com/{}/{}".format(username, org, username)
     run("git clone --bare {} {}".format(
-        shlex.quote("https://{}@github.com/{}/{}".format(username, ORG, username)), shlex.quote(run.GIT_DIR)),
+        shlex.quote("https://{}@github.com/{}/{}".format(username, org, username)), shlex.quote(run.GIT_DIR)),
         password=password)
 
     # set options
@@ -488,7 +489,7 @@ def teardown():
             pass
 
 
-def two_factor(username, password):
+def two_factor(org, username, password):
     """Get one-time authentication code."""
     # send authentication request
     requests.post("https://api.github.com/authorizations",
@@ -498,7 +499,7 @@ def two_factor(username, password):
         code = input()
         if code:
             break
-    data = json.dumps({"scopes": ["repo", "user"], "note": "{} {}".format(ORG, timestamp)})
+    data = json.dumps({"scopes": ["repo", "user"], "note": "{} {}".format(org, timestamp)})
     res = requests.post("https://api.github.com/authorizations",
                         auth=(username, password),
                         data=data,
