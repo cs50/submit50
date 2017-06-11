@@ -39,9 +39,9 @@ if sys.version_info < (3, 0):
 if not hasattr(shlex, "quote"):
     shlex.quote = pipes.quote
 
+# globals
 ORG = "submit50"
-__version__ = get_distribution("submit50").version
-timestamp = ""
+timestamp = None
 
 
 class Error(Exception):
@@ -110,13 +110,13 @@ def main():
         raise Error("You have an unknown version of submit50. " +
                     "Email sysadmins@cs50.harvard.edu!")
     version_required = res.text.strip()
-    if parse_version(version_required) > parse_version(__version__):
+    if parse_version(version_required) > parse_version(get_distribution("submit50").version):
         raise Error("You have an old version of submit50. " +
                     "Run update50, then re-run submit50!")
 
     # compute timestamp
-    headers = requests.get("https://api.github.com/").headers
     global timestamp
+    headers = requests.get("https://api.github.com/").headers
     timestamp = datetime.datetime.strptime(headers["Date"], "%a, %d %b %Y %H:%M:%S %Z")
     timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
 
@@ -364,7 +364,7 @@ def submit(problem):
     """Submit problem."""
 
     # update spinner
-    spin("Preparing")
+    spin("Verifying")
 
     # assume cs50/ problem if problem name begins with a year
     branch = problem
