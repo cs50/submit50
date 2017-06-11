@@ -34,20 +34,14 @@ from threading import Thread
 # require python 2.7+
 if sys.version_info < (2, 7):
     sys.exit("You have an old version of python. Install version 2.7 or higher.")
-if sys.version_info.major == 2:
+if sys.version_info < (3, 0):
     input = raw_input
+if not hasattr(shlex, "quote"):
+    shlex.quote = pipes.quote
 
 ORG = "submit50"
 __version__ = get_distribution("submit50").version
 timestamp = ""
-
-# ensure compatibility with Python 2
-try:
-    input = raw_input
-except NameError:
-    pass
-if not hasattr(shlex, "quote"):
-    shlex.quote = pipes.quote
 
 
 class Error(Exception):
@@ -64,7 +58,7 @@ def main():
     # clean up on normal exit
     atexit.register(teardown)
 
-    # in case internet's slow, let user know we're connecting to server
+    # start spinner
     spin("Connecting")
 
     # check version
@@ -91,9 +85,6 @@ def main():
     matches = re.search(r"^git version (\d+\.\d+\.\d+)$", version)
     if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
         raise Error("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
-
-    # done connecting (for now)
-    spin(False)
 
     # define command-line arguments
     parser = argparse.ArgumentParser(prog="submit50")
@@ -206,6 +197,9 @@ def authenticate():
 
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
+
+    # stop spinner (if spinning)
+    spin(False)
 
     # assume 80 in case not running in a terminal
     columns, _ = get_terminal_size((80, 0))
@@ -326,6 +320,9 @@ spin.spinning = False
 def submit(problem):
     """Submit problem."""
 
+    # update spinner
+    spin("Preparing")
+
     # assume cs50/ problem if problem name begins with a year
     branch = problem
     if problem.split("/")[0].isdigit():
@@ -364,7 +361,7 @@ def submit(problem):
     # authenticate user
     username, password, email = authenticate()
 
-    # start spinner
+    # update spinner
     spin("Authenticating")
 
     # check for submit50 repository
@@ -372,10 +369,7 @@ def submit(problem):
     if res.status_code != 200:
         raise Error("Looks like submit50 isn't enabled for your account yet. Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
 
-    # stop spinner
-    spin(False)
-
-    # start spinner
+    # update spinner
     spin("Preparing")
 
     # clone submit50 repository
@@ -400,9 +394,6 @@ def submit(problem):
     files = run("git ls-files").split()
     other = run("git ls-files --other").split()
 
-    # stop spinner
-    spin(False)
-
     # files that will be submitted
     if len(files) == 0:
         raise Error("No files in this directory are expected for submission.")
@@ -422,7 +413,7 @@ def submit(problem):
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         raise Error("No files were submitted.")
 
-    # start spinner
+    # restart spinner
     spin("Submitting")
 
     # push branch
@@ -434,9 +425,6 @@ def submit(problem):
     hash = run("git commit-tree HEAD^{{tree}} -m '{}'".format(timestamp))
     hash = hash.strip()
     run("git push origin {}:refs/tags/{}".format(hash, tag), password=password)
-
-    # stop spinner
-    spin(False)
 
     # successful submission
     cprint("Submitted {}! ".format(problem) +
