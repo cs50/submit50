@@ -237,6 +237,8 @@ def excepthook(type, value, tb):
     teardown()
     if type is Error and str(value):
         cprint(str(value), "yellow")
+    elif type is requests.exceptions.ConnectionError:
+        cprint("Could not connect to GitHub.", "yellow")
     else:
         if run.verbose:
             traceback.print_exception(type, value, tb)
