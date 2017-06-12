@@ -307,6 +307,8 @@ def spin(message=""):
 
     # don't spin in verbose mode
     if run.verbose:
+        if message != False:
+            print(message + "...")
         return
 
     # stop spinning if already spinning
