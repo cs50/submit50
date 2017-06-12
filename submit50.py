@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 from __future__ import print_function
 
@@ -253,7 +253,7 @@ def handler(number, frame):
         cprint()
     cprint("Submission cancelled.", "red")
     os._exit(0)
-    
+
 def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
     """Run a command."""
 
