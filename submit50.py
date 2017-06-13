@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import print_function
 
 import argparse
@@ -12,6 +10,7 @@ import os
 import pexpect
 import pipes
 import re
+import readline
 import requests
 import select
 import shlex
@@ -134,30 +133,46 @@ def authenticate(org):
         pass
     socket = os.path.join(cache, ORG)
 
-    # check cache for credentials
+    # check cache, then config for credentials
     credentials = run("git -c credential.helper='cache --socket {}' credential fill".format(socket),
                       lines=[""]*3,
                       quiet=True)
     run("git credential-cache --socket {} exit".format(socket))
-
-    # prompt for username if not in cache
-    matches = re.search("^username=([^\r]+)\r?$", credentials, re.MULTILINE)
+    matches = re.search("^username=([^\r]+)\r\npassword=([^\r]+)\r?$", credentials, re.MULTILINE)
     if matches:
         username = matches.group(1)
+        password = matches.group(2)
     else:
+        try:
+            username = run("git config --global credential.https://github.com/submit50.username")
+        except:
+            username = None
+        password = None
+
+    def rlinput(prompt, prefill=""):
+        """
+        Input function that uses a prefill value and advanced line editing.
+
+        https://stackoverflow.com/a/2533142
+        """
+        readline.set_startup_hook(lambda: readline.insert_text(prefill))
+        try:
+            return input(prompt)
+        finally:
+           readline.set_startup_hook()
+
+    # prompt for credentials
+    if not password:
+
+        # prompt for username, prefilling if possible
         while True:
-            cprint("GitHub username:", end=" ", flush=True)
-            username = input().strip()
+            username = rlinput("GitHub username: ", username).strip()
             if username:
                 break
 
-    # prompt for password if not in cache
-    matches = re.search("^password=([^\r]+)\r?$", credentials, re.MULTILINE)
-    if matches:
-        password = matches.group(1)
-    else:
+        # prompt for password
         while True:
-            cprint("GitHub password:", end=" ", flush=True)
+            print("GitHub password: ", end="", flush=True)
             password = str()
             while True:
                 ch = getch()
@@ -169,7 +184,7 @@ def authenticate(org):
                         password = password[:-1]
                         cprint("\b \b", end="", flush=True)
                 elif ch == "\3": # ctrl-c
-                    cprint("^C")
+                    cprint("^C", end="")
                     os.kill(os.getpid(), signal.SIGINT)
                 else:
                     password += ch
@@ -208,6 +223,10 @@ def authenticate(org):
         lines=["username={}".format(username), "password={}".format(password), "", ""],
         quiet=True)
 
+    # store username on disk
+    run("git config --global credential.https://github.com/{}.username {}".format(ORG, username))
+    run("git config --global credential.https://github.com/{}.useHttpPath true".format(ORG, username))
+
     # return credentials
     return (username, password, email)
 
@@ -244,11 +263,14 @@ def excepthook(type, value, tb):
             traceback.print_exception(type, value, tb)
         cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
     cprint("Submission cancelled.", "red")
+
+
 sys.excepthook = excepthook
 
 
 def handler(number, frame):
     """Handle SIGINT."""
+    os.system("stty sane") # in case signalled from input_with_prefill
     if spin.spinning:
         spin(False)
     else:
