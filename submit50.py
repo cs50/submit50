@@ -438,8 +438,7 @@ def submit(org, problem):
         repo = "git@github.com:{}/{}.git".format(org, username)
         with open(os.devnull, "w") as DEVNULL:
             spin(False)
-            returncode = subprocess.call(["ssh", "git@github.com"], stderr=DEVNULL)
-            assert returncode == 1
+            assert subprocess.call(["ssh", "git@github.com"], stderr=DEVNULL) == 1 # successfully authenticated
 
     # authenticate user via HTTPS
     except:
