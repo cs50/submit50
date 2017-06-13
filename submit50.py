@@ -162,10 +162,12 @@ def authenticate(org):
            readline.set_startup_hook()
 
     # prompt for credentials
+    spin(False) # because not using cprint herein
     if not password:
 
         # prompt for username, prefilling if possible
         while True:
+            spin(False)
             username = rlinput("GitHub username: ", username).strip()
             if username:
                 break
@@ -177,18 +179,18 @@ def authenticate(org):
             while True:
                 ch = getch()
                 if ch in ["\n", "\r"]: # Enter
-                    cprint()
+                    print()
                     break
                 elif ch == "\177": # DEL
                     if len(password) > 0:
                         password = password[:-1]
-                        cprint("\b \b", end="", flush=True)
+                        print("\b \b", end="", flush=True)
                 elif ch == "\3": # ctrl-c
-                    cprint("^C", end="")
+                    print("^C", end="")
                     os.kill(os.getpid(), signal.SIGINT)
                 else:
                     password += ch
-                    cprint("*", end="", flush=True)
+                    print("*", end="", flush=True)
             if password:
                 break
 
@@ -222,10 +224,6 @@ def authenticate(org):
         "-c credentialcache.ignoresighup=true credential approve".format(socket, timeout),
         lines=["username={}".format(username), "password={}".format(password), "", ""],
         quiet=True)
-
-    # store username on disk
-    run("git config --global credential.https://github.com/{}.username {}".format(ORG, username))
-    run("git config --global credential.https://github.com/{}.useHttpPath true".format(ORG, username))
 
     # return credentials
     return (username, password, email)
@@ -327,7 +325,7 @@ run.verbose = False
 
 
 def spin(message=""):
-    """Displays a spinning message."""
+    """Display a spinning message."""
 
     # don't spin in verbose mode
     if run.verbose:
