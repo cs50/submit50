@@ -452,8 +452,13 @@ def submit(org, problem):
     try:
         run("git clone --bare {} {}".format(shlex.quote(repo), shlex.quote(run.GIT_DIR)), password=password)
     except:
-        e = Error("Looks like submit50 isn't enabled for your account yet. " +
-                  "Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+        if password:
+            e = Error("Looks like submit50 isn't enabled for your account yet. " +
+                      "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 here!")
+        else:
+            e = Error("Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet enabled for your account. " +
+                      "Double-check ~/.gitconfig and then log into https://cs50.me/ in a browser, " +
+                      "click \"Authorize application\" if prompted, and re-run submit50 here.")
         e.__cause__ = None
         raise e
 
