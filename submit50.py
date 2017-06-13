@@ -369,7 +369,7 @@ def submit(org, problem):
     if not which("git"):
         raise Error("You don't have git. Install git, then re-run submit50!.")
     version = subprocess.check_output(["git", "--version"]).decode("utf-8")
-    matches = re.search(r"^git version (\d+\.\d+\.\d+)$", version)
+    matches = re.search(r"^git version (\d+\.\d+\.\d+).*$", version)
     if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
         raise Error("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
 
