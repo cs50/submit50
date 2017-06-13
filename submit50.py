@@ -432,6 +432,7 @@ def submit(org, problem):
 
     # authenticate user via SSH
     try:
+        assert which("ssh")
         username, password = run("git config --global credential.https://github.com/submit50.username", quiet=True), None
         email = "{}@users.noreply.github.com".format(username)
         repo = "git@github.com:{}/{}.git".format(org, username)
