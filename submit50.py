@@ -52,7 +52,7 @@ class Error(Exception):
 
 class _Getch:
     """
-    Gets a single character from standard input.
+    Get a single character from standard input.
 
     https://stackoverflow.com/a/510364
     """
@@ -236,7 +236,8 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     spin(False)
 
     # assume 80 in case not running in a terminal
-    columns, _ = get_terminal_size((80, 0))
+    columns, _ = get_terminal_size()
+    if columns == 0: columns = 80 # because get_terminal_size's default fallback doesn't work in pipes
 
     # only python3 supports "flush" keyword argument
     if sys.version_info < (3, 0) and "flush" in kwargs:
@@ -276,12 +277,13 @@ def handler(number, frame):
     cprint("Submission cancelled.", "red")
     os._exit(0)
 
+
 def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
     """Run a command."""
 
     # echo command
     if run.verbose:
-        cprint(command)
+        cprint(command, attrs=["bold"])
 
     # include GIT_DIR and GIT_WORK_TREE in env
     if not env:
@@ -425,26 +427,35 @@ def submit(org, problem):
             cprint(" {}".format(pattern))
         raise Error("Ensure you have the required files before submitting.")
 
-    # authenticate user
-    username, password, email = authenticate(org)
-
     # update spinner
     spin("Authenticating")
 
-    # check for submit50 repository
-    res = requests.get("https://api.github.com/repos/{}/{}".format(org, username), auth=(username, password))
-    if res.status_code != 200:
-        raise Error("Looks like submit50 isn't enabled for your account yet. " +
-                    "Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+    # authenticate user via SSH
+    try:
+        username, password = run("git config --global credential.https://github.com/submit50.username", quiet=True), None
+        email = "{}@users.noreply.github.com".format(username)
+        repo = "git@github.com:{}/{}.git".format(org, username)
+        with open(os.devnull, "w") as DEVNULL:
+            spin(False)
+            returncode = subprocess.call(["ssh", "git@github.com"], stderr=DEVNULL)
+            assert returncode == 1
+
+    # authenticate user via HTTPS
+    except:
+        username, password, email = authenticate(org)
+        repo = "https://{}@github.com/{}/{}".format(username, org, username)
 
     # update spinner
     spin("Preparing")
 
-    # clone submit50 repository
-    repo = "https://{}@github.com/{}/{}".format(username, org, username)
-    run("git clone --bare {} {}".format(
-        shlex.quote("https://{}@github.com/{}/{}".format(username, org, username)), shlex.quote(run.GIT_DIR)),
-        password=password)
+    # clone repository
+    try:
+        run("git clone --bare {} {}".format(shlex.quote(repo), shlex.quote(run.GIT_DIR)), password=password)
+    except:
+        e = Error("Looks like submit50 isn't enabled for your account yet. " +
+                  "Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+        e.__cause__ = None
+        raise e
 
     # set options
     tag = "{}@{}".format(branch, timestamp)
@@ -465,9 +476,9 @@ def submit(org, problem):
     # files that will be submitted
     if len(files) == 0:
         raise Error("No files in this directory are expected for submission.")
-    cprint("Files that will be submitted:", "yellow")
+    cprint("Files that will be submitted:", "green")
     for f in files:
-        cprint("./{}".format(f), "yellow")
+        cprint("./{}".format(f), "green")
 
     # files that won't be submitted
     if len(other) != 0:
