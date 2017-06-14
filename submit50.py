@@ -504,12 +504,6 @@ def submit(org, problem):
     run("git commit --allow-empty --message='{}'".format(timestamp))
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
 
-    # push tag
-    # http://stackoverflow.com/a/23486788
-    hash = run("git commit-tree HEAD^{{tree}} -m '{}'".format(timestamp))
-    hash = hash.strip()
-    run("git push origin {}:refs/tags/{}".format(hash, tag), password=password)
-
     # successful submission
     cprint("Submitted {}! ".format(problem) +
            "See https://cs50.me/submissions/{}.".format(branch),
