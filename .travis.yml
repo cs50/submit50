@@ -12,8 +12,7 @@ addons:
     - git
 install: true
 script:
-- python setup.py sdist
-- python setup.py install
+- pip install .
 - submit50 --help
 jobs:
   include:
