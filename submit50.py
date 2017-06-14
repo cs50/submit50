@@ -342,7 +342,7 @@ def spin(message=""):
 
     # start spinning if message passed
     if message != False:
-        def spin_helper():
+        def spin_helper(): # https://stackoverflow.com/a/4995896
             spinner = itertools.cycle(["-", "\\", "|", "/"])
             sys.stdout.write(message + "... ")
             sys.stdout.flush()
