@@ -2,5 +2,6 @@
 !.gitignore
 !.travis.yml
 __pycache__
+build/
 *.egg-info/
 dist/
