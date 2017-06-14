@@ -1,4 +1,16 @@
+from os.path import isfile
 from setuptools import setup
+from setuptools.command.install import install
+from subprocess import call
+from sys import platform, version_info
+
+class Certs(install):
+    def run(self):
+        install.run(self)
+        if platform == "darwin" and version_info >= (3, 6):
+            INSTALL_CERTS = "/Applications/Python 3.6/Install Certificates.command"
+            if not isfile(INSTALL_CERTS) or call(INSTALL_CERTS) != 0:
+                raise Error("Error installing certificates.")
 
 setup(
     author="CS50",
@@ -14,9 +26,10 @@ setup(
     keywords=["submit", "submit50"],
     name="submit50",
     py_modules=["submit50"],
+    cmdclass={"install": Certs},
     entry_points={
         "console_scripts": ["submit50=submit50:main"]
     },
     url="https://github.com/cs50/submit50",
-    version="2.2.0"
+    version="2.3.0"
 )
