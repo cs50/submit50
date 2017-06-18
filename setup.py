@@ -19,7 +19,7 @@ def install_certs(cmd):
             INSTALL_CERTS = \
                 "/Applications/Python 3.6/Install Certificates.command"
             if not isfile(INSTALL_CERTS) or call(INSTALL_CERTS) != 0:
-                raise Error("Error installing certificates.")
+                raise RuntimeError("Error installing certificates.")
         orig_run(self)
 
     cmd.run = run
