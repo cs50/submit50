@@ -9,7 +9,6 @@ import json
 import os
 import pexpect
 import pipes
-import pypijson
 import re
 import readline
 import requests
@@ -120,7 +119,8 @@ def main():
 
     # check for newer version on PyPi
     if distribution:
-        pypi = pypijson.get("submit50")
+        res = requests.get("https://pypi.python.org/pypi/submit50/json")
+        pypi = res.json() if res.status_code == 200 else None
         version = StrictVersion(distribution.version)
         if pypi and not args["no_autoupdate"] or StrictVersion(pypi["info"]["version"]) > version:
 
