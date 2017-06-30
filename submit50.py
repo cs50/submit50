@@ -289,7 +289,7 @@ def excepthook(type, value, tb):
     cprint("Submission cancelled.", "red")
 
 
-# sys.excepthook = excepthook
+sys.excepthook = excepthook
 
 
 def handler(number, frame):
