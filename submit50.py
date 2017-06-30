@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import print_function
 
 import argparse
@@ -12,6 +10,7 @@ import os
 import pexpect
 import pipes
 import re
+import readline
 import requests
 import select
 import shlex
@@ -53,7 +52,7 @@ class Error(Exception):
 
 class _Getch:
     """
-    Gets a single character from standard input.
+    Get a single character from standard input.
 
     https://stackoverflow.com/a/510364
     """
@@ -134,46 +133,64 @@ def authenticate(org):
         pass
     socket = os.path.join(cache, ORG)
 
-    # check cache for credentials
+    # check cache, then config for credentials
     credentials = run("git -c credential.helper='cache --socket {}' credential fill".format(socket),
                       lines=[""]*3,
                       quiet=True)
     run("git credential-cache --socket {} exit".format(socket))
-
-    # prompt for username if not in cache
-    matches = re.search("^username=([^\r]+)\r?$", credentials, re.MULTILINE)
+    matches = re.search("^username=([^\r]+)\r\npassword=([^\r]+)\r?$", credentials, re.MULTILINE)
     if matches:
         username = matches.group(1)
+        password = matches.group(2)
     else:
+        try:
+            username = run("git config --global credential.https://github.com/submit50.username")
+        except:
+            username = None
+        password = None
+
+    def rlinput(prompt, prefill=""):
+        """
+        Input function that uses a prefill value and advanced line editing.
+
+        https://stackoverflow.com/a/2533142
+        """
+        readline.set_startup_hook(lambda: readline.insert_text(prefill))
+        try:
+            return input(prompt)
+        finally:
+           readline.set_startup_hook()
+
+    # prompt for credentials
+    spin(False) # because not using cprint herein
+    if not password:
+
+        # prompt for username, prefilling if possible
         while True:
-            cprint("GitHub username:", end=" ", flush=True)
-            username = input().strip()
+            spin(False)
+            username = rlinput("GitHub username: ", username).strip()
             if username:
                 break
 
-    # prompt for password if not in cache
-    matches = re.search("^password=([^\r]+)\r?$", credentials, re.MULTILINE)
-    if matches:
-        password = matches.group(1)
-    else:
+        # prompt for password
         while True:
-            cprint("GitHub password:", end=" ", flush=True)
+            print("GitHub password: ", end="", flush=True)
             password = str()
             while True:
                 ch = getch()
                 if ch in ["\n", "\r"]: # Enter
-                    cprint()
+                    print()
                     break
                 elif ch == "\177": # DEL
                     if len(password) > 0:
                         password = password[:-1]
-                        cprint("\b \b", end="", flush=True)
+                        print("\b \b", end="", flush=True)
                 elif ch == "\3": # ctrl-c
-                    cprint("^C")
+                    print("^C", end="")
                     os.kill(os.getpid(), signal.SIGINT)
                 else:
                     password += ch
-                    cprint("*", end="", flush=True)
+                    print("*", end="", flush=True)
             if password:
                 break
 
@@ -219,7 +236,8 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     spin(False)
 
     # assume 80 in case not running in a terminal
-    columns, _ = get_terminal_size((80, 0))
+    columns, _ = get_terminal_size()
+    if columns == 0: columns = 80 # because get_terminal_size's default fallback doesn't work in pipes
 
     # only python3 supports "flush" keyword argument
     if sys.version_info < (3, 0) and "flush" in kwargs:
@@ -244,11 +262,14 @@ def excepthook(type, value, tb):
             traceback.print_exception(type, value, tb)
         cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
     cprint("Submission cancelled.", "red")
+
+
 sys.excepthook = excepthook
 
 
 def handler(number, frame):
     """Handle SIGINT."""
+    os.system("stty sane") # in case signalled from input_with_prefill
     if spin.spinning:
         spin(False)
     else:
@@ -256,12 +277,13 @@ def handler(number, frame):
     cprint("Submission cancelled.", "red")
     os._exit(0)
 
+
 def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
     """Run a command."""
 
     # echo command
     if run.verbose:
-        cprint(command)
+        cprint(command, attrs=["bold"])
 
     # include GIT_DIR and GIT_WORK_TREE in env
     if not env:
@@ -305,7 +327,7 @@ run.verbose = False
 
 
 def spin(message=""):
-    """Displays a spinning message."""
+    """Display a spinning message."""
 
     # don't spin in verbose mode
     if run.verbose:
@@ -320,7 +342,7 @@ def spin(message=""):
 
     # start spinning if message passed
     if message != False:
-        def spin_helper():
+        def spin_helper(): # https://stackoverflow.com/a/4995896
             spinner = itertools.cycle(["-", "\\", "|", "/"])
             sys.stdout.write(message + "... ")
             sys.stdout.flush()
@@ -347,7 +369,7 @@ def submit(org, problem):
     if not which("git"):
         raise Error("You don't have git. Install git, then re-run submit50!.")
     version = subprocess.check_output(["git", "--version"]).decode("utf-8")
-    matches = re.search(r"^git version (\d+\.\d+\.\d+)$", version)
+    matches = re.search(r"^git version (\d+\.\d+\.\d+).*$", version)
     if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
         raise Error("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
 
@@ -405,26 +427,40 @@ def submit(org, problem):
             cprint(" {}".format(pattern))
         raise Error("Ensure you have the required files before submitting.")
 
-    # authenticate user
-    username, password, email = authenticate(org)
-
     # update spinner
     spin("Authenticating")
 
-    # check for submit50 repository
-    res = requests.get("https://api.github.com/repos/{}/{}".format(org, username), auth=(username, password))
-    if res.status_code != 200:
-        raise Error("Looks like submit50 isn't enabled for your account yet. " +
-                    "Log into https://cs50.me/ in a browser, click \"Authorize application\", then re-run submit50 here!")
+    # authenticate user via SSH
+    try:
+        assert which("ssh")
+        username, password = run("git config --global credential.https://github.com/submit50.username", quiet=True), None
+        email = "{}@users.noreply.github.com".format(username)
+        repo = "git@github.com:{}/{}.git".format(org, username)
+        with open(os.devnull, "w") as DEVNULL:
+            spin(False)
+            assert subprocess.call(["ssh", "git@github.com"], stderr=DEVNULL) == 1 # successfully authenticated
+
+    # authenticate user via HTTPS
+    except:
+        username, password, email = authenticate(org)
+        repo = "https://{}@github.com/{}/{}".format(username, org, username)
 
     # update spinner
     spin("Preparing")
 
-    # clone submit50 repository
-    repo = "https://{}@github.com/{}/{}".format(username, org, username)
-    run("git clone --bare {} {}".format(
-        shlex.quote("https://{}@github.com/{}/{}".format(username, org, username)), shlex.quote(run.GIT_DIR)),
-        password=password)
+    # clone repository
+    try:
+        run("git clone --bare {} {}".format(shlex.quote(repo), shlex.quote(run.GIT_DIR)), password=password)
+    except:
+        if password:
+            e = Error("Looks like submit50 isn't enabled for your account yet. " +
+                      "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 here!")
+        else:
+            e = Error("Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet enabled for your account. " +
+                      "Double-check ~/.gitconfig and then log into https://cs50.me/ in a browser, " +
+                      "click \"Authorize application\" if prompted, and re-run submit50 here.")
+        e.__cause__ = None
+        raise e
 
     # set options
     tag = "{}@{}".format(branch, timestamp)
@@ -445,9 +481,9 @@ def submit(org, problem):
     # files that will be submitted
     if len(files) == 0:
         raise Error("No files in this directory are expected for submission.")
-    cprint("Files that will be submitted:", "yellow")
+    cprint("Files that will be submitted:", "green")
     for f in files:
-        cprint("./{}".format(f), "yellow")
+        cprint("./{}".format(f), "green")
 
     # files that won't be submitted
     if len(other) != 0:
@@ -467,12 +503,6 @@ def submit(org, problem):
     # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
-
-    # push tag
-    # http://stackoverflow.com/a/23486788
-    hash = run("git commit-tree HEAD^{{tree}} -m '{}'".format(timestamp))
-    hash = hash.strip()
-    run("git push origin {}:refs/tags/{}".format(hash, tag), password=password)
 
     # successful submission
     cprint("Submitted {}! ".format(problem) +
