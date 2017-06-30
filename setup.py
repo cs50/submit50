@@ -48,7 +48,7 @@ setup(
         problems for CS50.",
     install_requires=[
         "backports.shutil_get_terminal_size", "backports.shutil_which",
-        "pexpect>=4.0", "requests", "six", "termcolor"
+        "pexpect>=4.0", "pypijson", "requests", "six", "termcolor"
     ],
     keywords=["submit", "submit50"],
     name="submit50",
