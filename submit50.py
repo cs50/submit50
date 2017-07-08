@@ -107,7 +107,7 @@ def main():
     parser.add_argument("-v", "--verbose",
                         action="store_true",
                         help="show commands being executed")
-    parser.add_argument("--no-autoupdate", action="store_true")
+    parser.add_argument("--no-upgrade", action="store_true")
     parser.add_argument("problem", help="problem to submit")
     args = vars(parser.parse_args())
 
@@ -122,7 +122,7 @@ def main():
         res = requests.get("https://pypi.python.org/pypi/submit50/json")
         pypi = res.json() if res.status_code == 200 else None
         version = StrictVersion(distribution.version)
-        if pypi and not args["no_autoupdate"] or StrictVersion(pypi["info"]["version"]) > version:
+        if pypi and not args["no_upgrade"] or StrictVersion(pypi["info"]["version"]) > version:
 
             # update submit50
             pip = "pip3" if sys.version_info >= (3, 0) else "pip"
@@ -131,9 +131,9 @@ def main():
             # if update succeeded, re-run submit50
             if status == 0:
                 submit50 = os.path.realpath(__file__)
-                os.execv(submit50, sys.argv + ["--no-autoupdate"])
+                os.execv(submit50, sys.argv + ["--no-upgrade"])
             else:
-                print("Warning: Could not update submit50.", file=sys.stderr)
+                cprint("Could not update submit50.", "yellow", file=sys.stderr)
 
     # submit50 -v
     # submit50 --verbose
