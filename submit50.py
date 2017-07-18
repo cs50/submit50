@@ -361,8 +361,17 @@ def spin(message=""):
 spin.spinning = False
 
 
-def submit(org, problem):
+def submit(org, problem, prompts=None):
     """Submit problem."""
+
+    if prompts == None:
+        prompts = {
+            "confirmation": "Keeping in mind the course's policy on academic honesty, are you sure you want to submit these files?",
+            "submitting": "Submitting",
+            "files_submit": "Files that will be submitted:",
+            "files_no_submit": "Files that won't be submitted:",
+            "print_success": True
+        }
 
     # require git 2.7+, so that credential-cache--daemon ignores SIGHUP
     # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
@@ -453,12 +462,12 @@ def submit(org, problem):
         run("git clone --bare {} {}".format(shlex.quote(repo), shlex.quote(run.GIT_DIR)), password=password)
     except:
         if password:
-            e = Error("Looks like submit50 isn't enabled for your account yet. " +
-                      "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 here!")
+            e = Error("Looks like {} isn't enabled for your account yet. ".format(org) +
+                      "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run {} here!".format(org))
         else:
-            e = Error("Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet enabled for your account. " +
+            e = Error("Looks like you have the wrong username in ~/.gitconfig or {} isn't yet enabled for your account. ".format(org) +
                       "Double-check ~/.gitconfig and then log into https://cs50.me/ in a browser, " +
-                      "click \"Authorize application\" if prompted, and re-run submit50 here.")
+                      "click \"Authorize application\" if prompted, and re-run {} here.".format(org))
         e.__cause__ = None
         raise e
 
@@ -481,33 +490,35 @@ def submit(org, problem):
     # files that will be submitted
     if len(files) == 0:
         raise Error("No files in this directory are expected for submission.")
-    cprint("Files that will be submitted:", "green")
+    cprint(prompts["files_submit"], "green")
     for f in files:
         cprint("./{}".format(f), "green")
 
     # files that won't be submitted
     if len(other) != 0:
-        cprint("Files that won't be submitted:", "yellow")
+        cprint(prompts["files_no_submit"], "yellow")
         for f in other:
             cprint("./{}".format(f), "yellow")
 
     # prompt for academic honesty
-    cprint("Keeping in mind the course's policy on academic honesty, " +
-           "are you sure you want to submit these files?", end=" ")
+    cprint(prompts["confirmation"], end=" ")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
         raise Error("No files were submitted.")
 
     # restart spinner
-    spin("Submitting")
+    spin(prompts["submitting"])
 
     # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
+    commit_hash = run("git rev-parse HEAD")
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
 
     # successful submission
-    cprint("Submitted {}! ".format(problem) +
-           "See https://cs50.me/submissions/{}.".format(branch),
-           "green")
+    if prompts["print_success"]:
+        cprint("Submitted {}! ".format(problem) +
+               "See https://cs50.me/submissions/{}.".format(branch),
+               "green")
+    return username, commit_hash
 
 
 submit.EXCLUDE = None
