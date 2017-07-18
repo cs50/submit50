@@ -512,6 +512,7 @@ def submit(org, problem, prompts=None):
     run("git commit --allow-empty --message='{}'".format(timestamp))
     commit_hash = run("git rev-parse HEAD")
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
+    spin(False)
 
     # successful submission
     if prompts["print_success"]:
