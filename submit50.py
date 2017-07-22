@@ -33,7 +33,7 @@ from pkg_resources import get_distribution, parse_version
 from six.moves import urllib
 from threading import Thread
 
-# internationalization
+# Internationalization
 gettext.bindtextdomain("messages", os.path.join(sys.path[0], "locale"))
 gettext.textdomain("messages")
 _ = gettext.gettext
@@ -242,7 +242,7 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     spin(False)
 
     # assume 80 in case not running in a terminal
-    columns, _ = get_terminal_size()
+    columns, lines = get_terminal_size()
     if columns == 0: columns = 80 # because get_terminal_size's default fallback doesn't work in pipes
 
     # only python3 supports "flush" keyword argument
