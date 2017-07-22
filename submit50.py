@@ -4,8 +4,10 @@ import argparse
 import atexit
 import datetime
 import distutils
+import gettext
 import itertools
 import json
+import locale
 import os
 import pexpect
 import pipes
@@ -32,15 +34,20 @@ from pkg_resources import get_distribution, parse_version
 from six.moves import urllib
 from threading import Thread
 
+# internationalization
+gettext.bindtextdomain("messages", os.path.join(sys.path[0], "locale"))
+gettext.textdomain("messages")
+_ = gettext.gettext
+
+# globals
 # require python 2.7+
 if sys.version_info < (2, 7):
-    sys.exit("You have an old version of python. Install version 2.7 or higher.")
+    sys.exit(_("You have an old version of python. Install version 2.7 or higher."))
 if sys.version_info < (3, 0):
     input = raw_input
 if not hasattr(shlex, "quote"):
     shlex.quote = pipes.quote
 
-# globals
 ORG = "submit50"
 timestamp = None
 
@@ -106,8 +113,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose",
                         action="store_true",
-                        help="show commands being executed")
-    parser.add_argument("problem", help="problem to submit")
+                        help=_("show commands being executed"))
+    parser.add_argument("problem", help=_("problem to submit"))
     args = vars(parser.parse_args())
 
     # submit50 -v
@@ -168,13 +175,13 @@ def authenticate(org):
         # prompt for username, prefilling if possible
         while True:
             spin(False)
-            username = rlinput("GitHub username: ", username).strip()
+            username = rlinput(_("GitHub username: "), username).strip()
             if username:
                 break
 
         # prompt for password
         while True:
-            print("GitHub password: ", end="", flush=True)
+            print(_("GitHub password: "), end="", flush=True)
             password = str()
             while True:
                 ch = getch()
@@ -208,11 +215,11 @@ def authenticate(org):
 
     # check if incorrect password
     if res.status_code == 401:
-        raise Error("Invalid username and/or password.")
+        raise Error(_("Invalid username and/or password."))
 
     # check for other error
     elif res.status_code != 200:
-        raise Error("Could not authenticate user.")
+        raise Error(_("Could not authenticate user."))
 
     # canonicalize (capitalization of) username,
     # especially if user logged in via email address
@@ -256,12 +263,12 @@ def excepthook(type, value, tb):
     if type is Error and str(value):
         cprint(str(value), "yellow")
     elif type is requests.exceptions.ConnectionError:
-        cprint("Could not connect to GitHub.", "yellow")
+        cprint(_("Could not connect to GitHub."), "yellow")
     else:
         if run.verbose:
             traceback.print_exception(type, value, tb)
-        cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
-    cprint("Submission cancelled.", "red")
+        cprint(_("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), "yellow")
+    cprint(_("Submission cancelled."), "red")
 
 
 sys.excepthook = excepthook
@@ -274,7 +281,7 @@ def handler(number, frame):
         spin(False)
     else:
         cprint()
-    cprint("Submission cancelled.", "red")
+    cprint(_("Submission cancelled."), "red")
     os._exit(0)
 
 
@@ -367,11 +374,11 @@ def submit(org, problem):
     # require git 2.7+, so that credential-cache--daemon ignores SIGHUP
     # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
     if not which("git"):
-        raise Error("You don't have git. Install git, then re-run submit50!.")
+        raise Error(_("You don't have git. Install git, then re-run submit50!."))
     version = subprocess.check_output(["git", "--version"]).decode("utf-8")
     matches = re.search(r"^git version (\d+\.\d+\.\d+).*$", version)
     if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
-        raise Error("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
+        raise Error(_("You have an old version of git. Install version 2.7 or later, then re-run submit50!"))
 
     # update spinner
     spin("Connecting")
@@ -385,12 +392,12 @@ def submit(org, problem):
     # check version
     res = requests.get("https://cs50.me/versions/submit50")
     if res.status_code != 200:
-        raise Error("You have an unknown version of submit50. " +
-                    "Email sysadmins@cs50.harvard.edu!")
+        raise Error(_("You have an unknown version of submit50. "
+                      "Email sysadmins@cs50.harvard.edu!"))
     version_required = res.text.strip()
     if parse_version(version_required) > parse_version(get_distribution("submit50").version):
-        raise Error("You have an old version of submit50. " +
-                    "Run update50, then re-run submit50!")
+        raise Error(_("You have an old version of submit50. "
+                      "Run update50, then re-run submit50!"))
 
     # assume cs50/ problem if problem name begins with a year
     branch = problem
@@ -398,7 +405,7 @@ def submit(org, problem):
         branch = os.path.join("cs50", problem)
 
     # ensure problem exists
-    _, submit.EXCLUDE = tempfile.mkstemp()
+    TODO, submit.EXCLUDE = tempfile.mkstemp()
     url = "https://cs50.me/excludes/{}/".format(branch)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
@@ -406,7 +413,7 @@ def submit(org, problem):
     except Exception as e:
         if run.verbose:
             cprint(str(e))
-        e = Error("Invalid problem. Did you mean to submit something else?")
+        e = Error(_("Invalid problem. Did you mean to submit something else?"))
         e.__cause__ = None
         raise e
 
@@ -422,13 +429,13 @@ def submit(org, problem):
             elif not os.path.isfile(pattern):
                 missing.append(pattern)
     if missing:
-        cprint("You seem to be missing these files:")
+        cprint(_("You seem to be missing these files:"))
         for pattern in missing:
             cprint(" {}".format(pattern))
-        raise Error("Ensure you have the required files before submitting.")
+        raise Error(_("Ensure you have the required files before submitting."))
 
     # update spinner
-    spin("Authenticating")
+    spin(_("Authenticating"))
 
     # authenticate user via SSH
     try:
@@ -446,19 +453,19 @@ def submit(org, problem):
         repo = "https://{}@github.com/{}/{}".format(username, org, username)
 
     # update spinner
-    spin("Preparing")
+    spin(_("Preparing"))
 
     # clone repository
     try:
         run("git clone --bare {} {}".format(shlex.quote(repo), shlex.quote(run.GIT_DIR)), password=password)
     except:
         if password:
-            e = Error("Looks like submit50 isn't enabled for your account yet. " +
-                      "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 here!")
+            e = Error(_("Looks like submit50 isn't enabled for your account yet. "
+                        "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 here!"))
         else:
-            e = Error("Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet enabled for your account. " +
-                      "Double-check ~/.gitconfig and then log into https://cs50.me/ in a browser, " +
-                      "click \"Authorize application\" if prompted, and re-run submit50 here.")
+            e = Error(_("Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet enabled for your account. "
+                        "Double-check ~/.gitconfig and then log into https://cs50.me/ in a browser, "
+                        "click \"Authorize application\" if prompted, and re-run submit50 here."))
         e.__cause__ = None
         raise e
 
@@ -480,33 +487,33 @@ def submit(org, problem):
 
     # files that will be submitted
     if len(files) == 0:
-        raise Error("No files in this directory are expected for submission.")
-    cprint("Files that will be submitted:", "green")
+        raise Error(_("No files in this directory are expected for submission."))
+    cprint(_("Files that will be submitted:"), "green")
     for f in files:
         cprint("./{}".format(f), "green")
 
     # files that won't be submitted
     if len(other) != 0:
-        cprint("Files that won't be submitted:", "yellow")
+        cprint(_("Files that won't be submitted:"), "yellow")
         for f in other:
             cprint("./{}".format(f), "yellow")
 
     # prompt for academic honesty
-    cprint("Keeping in mind the course's policy on academic honesty, " +
-           "are you sure you want to submit these files?", end=" ")
+    cprint(_("Keeping in mind the course's policy on academic honesty, "
+             "are you sure you want to submit these files?"), end=" ")
     if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
-        raise Error("No files were submitted.")
+        raise Error(_("No files were submitted."))
 
     # restart spinner
-    spin("Submitting")
+    spin(_("Submitting"))
 
     # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
 
     # successful submission
-    cprint("Submitted {}! ".format(problem) +
-           "See https://cs50.me/submissions/{}.".format(branch),
+    cprint(_("Submitted {}! "
+             "See https://cs50.me/submissions/{}.").format(problem, branch),
            "green")
 
 
@@ -541,7 +548,7 @@ def two_factor(org, username, password):
     if res.status_code == 201 and "token" in res.json():
         return res.json()["token"]
     else:
-        raise Error("Could not complete two-factor authentication.")
+        raise Error(_("Could not complete two-factor authentication."))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,133 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: submit50.py:46
+msgid "You have an old version of python. Install version 2.7 or higher."
+msgstr ""
+
+#: submit50.py:117
+msgid "show commands being executed"
+msgstr ""
+
+#: submit50.py:118
+msgid "problem to submit"
+msgstr ""
+
+#: submit50.py:179
+msgid "GitHub username: "
+msgstr "Nombre de usuario de GitHub: "
+
+#: submit50.py:185
+msgid "Contraseña de GitHub: "
+msgstr ""
+
+#: submit50.py:219
+msgid "Invalid username and/or password."
+msgstr ""
+
+#: submit50.py:223
+msgid "Could not authenticate user."
+msgstr ""
+
+#: submit50.py:267
+msgid "Could not connect to GitHub."
+msgstr ""
+
+#: submit50.py:271
+msgid "Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"
+msgstr ""
+
+#: submit50.py:272 submit50.py:285
+msgid "Submission cancelled."
+msgstr ""
+
+#: submit50.py:378
+msgid "You don't have git. Install git, then re-run submit50!."
+msgstr ""
+
+#: submit50.py:382
+msgid ""
+"You have an old version of git. Install version 2.7 or later, then re-run "
+"submit50!"
+msgstr ""
+
+#: submit50.py:396
+msgid ""
+"You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!"
+msgstr ""
+
+#: submit50.py:400
+msgid ""
+"You have an old version of submit50. Run update50, then re-run submit50!"
+msgstr ""
+
+#: submit50.py:417
+msgid "Invalid problem. Did you mean to submit something else?"
+msgstr ""
+
+#: submit50.py:433
+msgid "You seem to be missing these files:"
+msgstr ""
+
+#: submit50.py:436
+msgid "Ensure you have the required files before submitting."
+msgstr ""
+
+#: submit50.py:439
+msgid "Authenticating"
+msgstr ""
+
+#: submit50.py:457
+msgid "Preparing"
+msgstr ""
+
+#: submit50.py:464
+msgid ""
+"Looks like submit50 isn't enabled for your account yet. Log into https://"
+"cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 "
+"here!"
+msgstr ""
+
+#: submit50.py:467
+msgid ""
+"Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet "
+"enabled for your account. Double-check ~/.gitconfig and then log into "
+"https://cs50.me/ in a browser, click \"Authorize application\" if prompted, "
+"and re-run submit50 here."
+msgstr ""
+
+#: submit50.py:491
+msgid "No files in this directory are expected for submission."
+msgstr ""
+
+#: submit50.py:492
+msgid "Files that will be submitted:"
+msgstr ""
+
+#: submit50.py:498
+msgid "Files that won't be submitted:"
+msgstr ""
+
+#: submit50.py:503
+msgid ""
+"Keeping in mind the course's policy on academic honesty, are you sure you "
+"want to submit these files?"
+msgstr ""
+
+#: submit50.py:506
+msgid "No files were submitted."
+msgstr ""
+
+#: submit50.py:509
+msgid "Submitting"
+msgstr ""
+
+#: submit50.py:516
+msgid "Submitted {}! See https://cs50.me/submissions/{}."
+msgstr ""
+
+#: submit50.py:552
+msgid "Could not complete two-factor authentication."
+msgstr ""
