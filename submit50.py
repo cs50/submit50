@@ -7,7 +7,6 @@ import distutils
 import gettext
 import itertools
 import json
-import locale
 import os
 import pexpect
 import pipes
