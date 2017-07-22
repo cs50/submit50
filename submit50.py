@@ -404,7 +404,7 @@ def submit(org, problem):
         branch = os.path.join("cs50", problem)
 
     # ensure problem exists
-    TODO, submit.EXCLUDE = tempfile.mkstemp()
+    file, submit.EXCLUDE = tempfile.mkstemp()
     url = "https://cs50.me/excludes/{}/".format(branch)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
