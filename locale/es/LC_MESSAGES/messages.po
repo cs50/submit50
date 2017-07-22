@@ -20,8 +20,8 @@ msgid "GitHub username: "
 msgstr "Nombre de usuario de GitHub: "
 
 #: submit50.py:185
-msgid "Contraseña de GitHub: "
-msgstr ""
+msgid "GitHub password: "
+msgstr "Contraseña de GitHub: "
 
 #: submit50.py:219
 msgid "Invalid username and/or password."
