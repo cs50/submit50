@@ -49,3 +49,8 @@ pip install -e .
 ```
 
 TODO
+
+# References
+
+- https://books.google.com/books?id=kQom0WiUbZQC&pg=PA215&lpg=PA215&dq=python+gettext+class&source=bl&ots=mttyXZyZan&sig=OENd8tbqVpxWIpRIWrE84hQY8jo&hl=en&sa=X&ved=0ahUKEwjTnY3WmJzVAhWJMj4KHR_PBR8Q6AEIWTAH#v=onepage&q=python%20gettext%20class&f=false
+- https://stackoverflow.com/questions/7496156/gettext-how-to-update-po-and-pot-files-after-the-source-is-modified
