@@ -3,94 +3,94 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: submit50.py:46
+#: submit50.py:44
 msgid "You have an old version of python. Install version 2.7 or higher."
 msgstr ""
 
-#: submit50.py:117
+#: submit50.py:115
 msgid "show commands being executed"
 msgstr ""
 
-#: submit50.py:118
+#: submit50.py:116
 msgid "problem to submit"
 msgstr ""
 
-#: submit50.py:179
+#: submit50.py:177
 msgid "GitHub username: "
 msgstr "Nombre de usuario de GitHub: "
 
-#: submit50.py:185
+#: submit50.py:183
 msgid "GitHub password: "
 msgstr "Contraseña de GitHub: "
 
-#: submit50.py:219
+#: submit50.py:217
 msgid "Invalid username and/or password."
 msgstr ""
 
-#: submit50.py:223
+#: submit50.py:221
 msgid "Could not authenticate user."
 msgstr ""
 
-#: submit50.py:267
+#: submit50.py:265
 msgid "Could not connect to GitHub."
 msgstr ""
 
-#: submit50.py:271
+#: submit50.py:269
 msgid "Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"
 msgstr ""
 
-#: submit50.py:272 submit50.py:285
+#: submit50.py:270 submit50.py:283
 msgid "Submission cancelled."
 msgstr ""
 
-#: submit50.py:378
+#: submit50.py:376
 msgid "You don't have git. Install git, then re-run submit50!."
 msgstr ""
 
-#: submit50.py:382
+#: submit50.py:380
 msgid ""
 "You have an old version of git. Install version 2.7 or later, then re-run "
 "submit50!"
 msgstr ""
 
-#: submit50.py:396
+#: submit50.py:394
 msgid ""
 "You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!"
 msgstr ""
 
-#: submit50.py:400
+#: submit50.py:398
 msgid ""
 "You have an old version of submit50. Run update50, then re-run submit50!"
 msgstr ""
 
-#: submit50.py:417
+#: submit50.py:415
 msgid "Invalid problem. Did you mean to submit something else?"
 msgstr ""
 
-#: submit50.py:433
+#: submit50.py:431
 msgid "You seem to be missing these files:"
 msgstr ""
 
-#: submit50.py:436
+#: submit50.py:434
 msgid "Ensure you have the required files before submitting."
 msgstr ""
 
-#: submit50.py:439
+#: submit50.py:437
 msgid "Authenticating"
 msgstr ""
 
-#: submit50.py:457
+#: submit50.py:455
 msgid "Preparing"
 msgstr ""
 
-#: submit50.py:464
+#: submit50.py:462
 msgid ""
 "Looks like submit50 isn't enabled for your account yet. Log into https://"
 "cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 "
 "here!"
 msgstr ""
 
-#: submit50.py:467
+#: submit50.py:465
 msgid ""
 "Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet "
 "enabled for your account. Double-check ~/.gitconfig and then log into "
@@ -98,36 +98,32 @@ msgid ""
 "and re-run submit50 here."
 msgstr ""
 
-#: submit50.py:491
+#: submit50.py:489
 msgid "No files in this directory are expected for submission."
 msgstr ""
 
-#: submit50.py:492
+#: submit50.py:490
 msgid "Files that will be submitted:"
 msgstr ""
 
-#: submit50.py:498
+#: submit50.py:496
 msgid "Files that won't be submitted:"
 msgstr ""
 
-#: submit50.py:503
+#: submit50.py:501
 msgid ""
 "Keeping in mind the course's policy on academic honesty, are you sure you "
-"want to submit these files?"
+"want to submit these files? "
 msgstr ""
 
-#: submit50.py:506
-msgid "No files were submitted."
-msgstr ""
-
-#: submit50.py:509
+#: submit50.py:507
 msgid "Submitting"
 msgstr ""
 
-#: submit50.py:516
+#: submit50.py:514
 msgid "Submitted {}! See https://cs50.me/submissions/{}."
 msgstr ""
 
-#: submit50.py:552
+#: submit50.py:550
 msgid "Could not complete two-factor authentication."
 msgstr ""
