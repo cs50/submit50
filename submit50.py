@@ -274,6 +274,7 @@ def handler(number, frame):
         spin(False)
     else:
         cprint()
+    teardown()
     cprint("Submission cancelled.", "red")
     os._exit(0)
 
@@ -451,10 +452,6 @@ def submit(org, problem):
     # clone repository
     try:
         run("git clone --bare {} {}".format(shlex.quote(repo), shlex.quote(run.GIT_DIR)), password=password)
-        try:
-            run("git checkout {} .gitattributes".format(branch))
-        except Error:
-            pass
     except:
         if password:
             e = Error("Looks like submit50 isn't enabled for your account yet. " +
@@ -465,6 +462,12 @@ def submit(org, problem):
                       "click \"Authorize application\" if prompted, and re-run submit50 here.")
         e.__cause__ = None
         raise e
+
+    # check out .gitattributes, if any
+    if os.path.isfile(".gitattributes"):
+        submit.ATTRIBUTES = ".gitattributes.{}".format(round(time.time()))
+        os.rename(".gitattributes", submit.ATTRIBUTES)
+    run("git checkout --force {} .gitattributes".format(branch))
 
     # set options
     tag = "{}@{}".format(branch, timestamp)
@@ -486,7 +489,7 @@ def submit(org, problem):
 
     # get file lists
     files = run("git ls-files").split()
-    other = run("git ls-files --other").split()
+    other = run("git ls-files --exclude-standard --other").split()
 
     # check for large files > 100 MB (and huge files > 2 GB)
     # https://help.github.com/articles/conditions-for-large-files/
@@ -545,11 +548,22 @@ def submit(org, problem):
            "green")
 
 
+submit.ATTRIBUTES = None
 submit.EXCLUDE = None
 
 
 def teardown():
-    """Delete temporary directory and temporary file."""
+    """Delete temporary directory and temporary file, restore any attributes."""
+    if os.path.isfile(".gitattributes"):
+        try:
+            os.remove(".gitattributes")
+        except Exception:
+            pass
+    if submit.ATTRIBUTES:
+        try:
+            os.rename(submit.ATTRIBUTES, ".gitattributes")
+        except Exception:
+            pass
     shutil.rmtree(run.GIT_DIR, ignore_errors=True)
     if submit.EXCLUDE:
         try:
