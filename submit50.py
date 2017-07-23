@@ -498,10 +498,10 @@ def submit(org, problem):
             cprint("./{}".format(f), "yellow")
 
     # prompt for academic honesty
-    cprint(_("Keeping in mind the course's policy on academic honesty, "
-             "are you sure you want to submit these files?"), end=" ")
-    if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
-        raise Error(_("No files were submitted."))
+    answer = input(_("Keeping in mind the course's policy on academic honesty, "
+                     "are you sure you want to submit these files? "))
+    if not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
+        raise Error("No files were submitted.")
 
     # restart spinner
     spin(_("Submitting"))
