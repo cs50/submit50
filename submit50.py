@@ -463,7 +463,7 @@ def submit(org, problem):
         e.__cause__ = None
         raise e
 
-    # check out .gitattributes, if any
+    # check out .gitattributes, if any, temporarily shadowing student's, if any
     if os.path.isfile(".gitattributes"):
         submit.ATTRIBUTES = ".gitattributes.{}".format(round(time.time()))
         os.rename(".gitattributes", submit.ATTRIBUTES)
