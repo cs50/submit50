@@ -344,7 +344,7 @@ def progress(message=""):
 
     # display dots if message passed
     if message != False:
-        def progress_helper(): # https://stackoverflow.com/a/4995896
+        def progress_helper():
             sys.stdout.write(message + "...")
             sys.stdout.flush()
             while progress.progressing:
