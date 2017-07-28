@@ -125,19 +125,19 @@ def main():
 def authenticate(org):
     """Authenticate user."""
 
-    # cache credentials in ~/.git-credential-cache/submit50
+    # cache credentials in ~/.git-credential-cache/:org
     cache = os.path.expanduser("~/.git-credential-cache")
     try:
         os.mkdir(cache, 0o700)
     except:
         pass
-    socket = os.path.join(cache, ORG)
+    authenticate.SOCKET = os.path.join(cache, ORG)
 
     # check cache, then config for credentials
-    credentials = run("git -c credential.helper='cache --socket {}' credential fill".format(socket),
+    credentials = run("git -c credential.helper='cache --socket {}' credential fill".format(authenticate.SOCKET),
                       lines=[""]*3,
                       quiet=True)
-    run("git credential-cache --socket {} exit".format(socket))
+    run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
     matches = re.search("^username=([^\r]+)\r\npassword=([^\r]+)\r?$", credentials, re.MULTILINE)
     if matches:
         username = matches.group(1)
@@ -221,12 +221,15 @@ def authenticate(org):
     # cache credentials for 1 week
     timeout = int(datetime.timedelta(weeks=1).total_seconds())
     run("git -c credential.helper='cache --socket {} --timeout {}' "
-        "-c credentialcache.ignoresighup=true credential approve".format(socket, timeout),
+        "-c credentialcache.ignoresighup=true credential approve".format(authenticate.SOCKET, timeout),
         lines=["username={}".format(username), "password={}".format(password), "", ""],
         quiet=True)
 
     # return credentials
     return (username, password, email)
+
+
+authenticate.SOCKET = None
 
 
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
@@ -261,6 +264,10 @@ def excepthook(type, value, tb):
         if run.verbose:
             traceback.print_exception(type, value, tb)
         cprint("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!", "yellow")
+    try:
+        run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
+    except Exception:
+        pass
     cprint("Submission cancelled.", "red")
 
 
@@ -274,6 +281,10 @@ def handler(number, frame):
         progress(False)
     else:
         cprint()
+    try:
+        run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
+    except Exception:
+        pass
     teardown()
     cprint("Submission cancelled.", "red")
     os._exit(0)
