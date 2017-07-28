@@ -274,6 +274,7 @@ def handler(number, frame):
         progress(False)
     else:
         cprint()
+    teardown()
     cprint("Submission cancelled.", "red")
     os._exit(0)
 
@@ -365,7 +366,7 @@ def submit(org, problem):
     # require git 2.7+, so that credential-cache--daemon ignores SIGHUP
     # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
     if not which("git"):
-        raise Error("You don't have git. Install git, then re-run submit50!.")
+        raise Error("You don't have git. Install git, then re-run submit50!")
     version = subprocess.check_output(["git", "--version"]).decode("utf-8")
     matches = re.search(r"^git version (\d+\.\d+\.\d+).*$", version)
     if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
@@ -461,6 +462,12 @@ def submit(org, problem):
         e.__cause__ = None
         raise e
 
+    # check out .gitattributes, if any, temporarily shadowing student's, if any
+    if os.path.isfile(".gitattributes"):
+        submit.ATTRIBUTES = ".gitattributes.{}".format(round(time.time()))
+        os.rename(".gitattributes", submit.ATTRIBUTES)
+    run("git checkout --force {} .gitattributes".format(branch))
+
     # set options
     tag = "{}@{}".format(branch, timestamp)
     run("git config user.email {}".format(shlex.quote(email)))
@@ -470,12 +477,43 @@ def submit(org, problem):
     # patterns of file names to exclude
     run("git config core.excludesFile {}".format(shlex.quote(submit.EXCLUDE)))
 
+    # blocklist for git-lfs
+    # https://github.com/git-lfs/git-lfs/blob/master/commands/command_track.go
+    with open("{}/info/exclude".format(run.GIT_DIR), "w") as file:
+        file.write(".git*\n")
+        file.write(".lfs*\n")
+
     # adds, modifies, and removes index entries to match the working tree
     run("git add --all")
 
     # get file lists
     files = run("git ls-files").split()
-    other = run("git ls-files --other").split()
+    other = run("git ls-files --exclude-standard --other").split()
+
+    # check for large files > 100 MB (and huge files > 2 GB)
+    # https://help.github.com/articles/conditions-for-large-files/
+    # https://help.github.com/articles/about-git-large-file-storage/
+    large, huge = [], []
+    for file in files:
+        size = os.path.getsize(file)
+        if size > (100 * 1024 * 1024):
+            large.append(file)
+        elif size > (2 * 1024 * 1024 * 1024):
+            huge.append(file)
+    if len(huge) > 0:
+        raise Error("These files are too large to be submitted:\n{}\n"
+                    "Remove these files from your directory "
+                    "and then re-run submit50!".format("\n".join(huge)))
+    elif len(large) > 0:
+        if not which("git-lfs"):
+            raise Error("These files are too large to be submitted:\n{}\n"
+                        "Install git-lfs (or remove these files from your directory) "
+                        "and then re-run submit50!".format("\n".join(large)))
+        run("git lfs install --local")
+        run("git config credential.helper cache") # for pre-push hook
+        for file in large:
+            run("git lfs track {}".format(file))
+        run("git add --force .gitattributes")
 
     # files that will be submitted
     if len(files) == 0:
@@ -509,11 +547,22 @@ def submit(org, problem):
            "green")
 
 
+submit.ATTRIBUTES = None
 submit.EXCLUDE = None
 
 
 def teardown():
-    """Delete temporary directory and temporary file."""
+    """Delete temporary directory and temporary file, restore any attributes."""
+    if os.path.isfile(".gitattributes"):
+        try:
+            os.remove(".gitattributes")
+        except Exception:
+            pass
+    if submit.ATTRIBUTES:
+        try:
+            os.rename(submit.ATTRIBUTES, ".gitattributes")
+        except Exception:
+            pass
     shutil.rmtree(run.GIT_DIR, ignore_errors=True)
     if submit.EXCLUDE:
         try:
