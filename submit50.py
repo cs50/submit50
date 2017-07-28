@@ -28,7 +28,7 @@ from backports.shutil_get_terminal_size import get_terminal_size
 from backports.shutil_which import which
 from distutils.spawn import find_executable
 from distutils.version import StrictVersion
-from pkg_resources import get_distribution, parse_version
+from pkg_resources import DistributionNotFound, get_distribution, parse_version
 from six.moves import urllib
 from threading import Thread
 
@@ -107,8 +107,33 @@ def main():
     parser.add_argument("-v", "--verbose",
                         action="store_true",
                         help="show commands being executed")
+    parser.add_argument("--no-upgrade", action="store_true")
     parser.add_argument("problem", help="problem to submit")
     args = vars(parser.parse_args())
+
+    # check if installed as a package
+    try:
+        distribution = get_distribution("submit50")
+    except DistributionNotFound:
+        distribution = None
+
+    # check for newer version on PyPi
+    if distribution:
+        res = requests.get("https://pypi.python.org/pypi/submit50/json")
+        pypi = res.json() if res.status_code == 200 else None
+        version = StrictVersion(distribution.version)
+        if pypi and not args["no_upgrade"] or StrictVersion(pypi["info"]["version"]) > version:
+
+            # update submit50
+            pip = "pip3" if sys.version_info >= (3, 0) else "pip"
+            status = subprocess.call([pip, "install", "--upgrade", "submit50"])
+
+            # if update succeeded, re-run submit50
+            if status == 0:
+                submit50 = os.path.realpath(__file__)
+                os.execv(submit50, sys.argv + ["--no-upgrade"])
+            else:
+                cprint("Could not update submit50.", "yellow", file=sys.stderr)
 
     # submit50 -v
     # submit50 --verbose
