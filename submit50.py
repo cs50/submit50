@@ -162,12 +162,12 @@ def authenticate(org):
            readline.set_startup_hook()
 
     # prompt for credentials
-    spin(False) # because not using cprint herein
+    progress(False) # because not using cprint herein
     if not password:
 
         # prompt for username, prefilling if possible
         while True:
-            spin(False)
+            progress(False)
             username = rlinput("GitHub username: ", username).strip()
             if username:
                 break
@@ -235,8 +235,8 @@ authenticate.SOCKET = None
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
 
-    # stop spinner (if spinning)
-    spin(False)
+    # update progress
+    progress(False)
 
     # assume 80 in case not running in a terminal
     columns, _ = get_terminal_size()
@@ -254,7 +254,7 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
 def excepthook(type, value, tb):
     """Report an exception."""
     excepthook.ignore = False
-    spin(False)
+    progress(False)
     teardown()
     if type is Error and str(value):
         cprint(str(value), "yellow")
@@ -277,14 +277,15 @@ sys.excepthook = excepthook
 def handler(number, frame):
     """Handle SIGINT."""
     os.system("stty sane") # in case signalled from input_with_prefill
-    if spin.spinning:
-        spin(False)
+    if progress.progressing:
+        progress(False)
     else:
         cprint()
     try:
         run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
     except Exception:
         pass
+    teardown()
     cprint("Submission cancelled.", "red")
     os._exit(0)
 
@@ -337,39 +338,37 @@ run.GIT_WORK_TREE = os.getcwd()
 run.verbose = False
 
 
-def spin(message=""):
-    """Display a spinning message."""
+def progress(message=""):
+    """Display a progress bar as dots."""
 
-    # don't spin in verbose mode
+    # don't show in verbose mode
     if run.verbose:
         if message != False:
             print(message + "...")
         return
 
-    # stop spinning if already spinning
-    if spin.spinning:
-        spin.spinning = False
-        spin.thread.join()
+    # stop progressing if already progressing
+    if progress.progressing:
+        progress.progressing = False
+        progress.thread.join()
+        sys.stdout.write("\n")
+        sys.stdout.flush()
 
-    # start spinning if message passed
+    # display dots if message passed
     if message != False:
-        def spin_helper(): # https://stackoverflow.com/a/4995896
-            spinner = itertools.cycle(["-", "\\", "|", "/"])
-            sys.stdout.write(message + "... ")
+        def progress_helper():
+            sys.stdout.write(message + "...")
             sys.stdout.flush()
-            while spin.spinning:
-                sys.stdout.write(next(spinner))
+            while progress.progressing:
+                sys.stdout.write(".")
                 sys.stdout.flush()
-                sys.stdout.write("\b")
-                time.sleep(0.1)
-            sys.stdout.write("\033[2K\r")
-            sys.stdout.flush()
-        spin.spinning = True
-        spin.thread = Thread(target=spin_helper)
-        spin.thread.start()
+                time.sleep(0.5)
+        progress.progressing = True
+        progress.thread = Thread(target=progress_helper)
+        progress.thread.start()
 
 
-spin.spinning = False
+progress.progressing = False
 
 
 def submit(org, problem):
@@ -378,14 +377,15 @@ def submit(org, problem):
     # require git 2.7+, so that credential-cache--daemon ignores SIGHUP
     # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
     if not which("git"):
-        raise Error("You don't have git. Install git, then re-run submit50!.")
+        raise Error("You don't have git. Install git, then re-run submit50!")
     version = subprocess.check_output(["git", "--version"]).decode("utf-8")
     matches = re.search(r"^git version (\d+\.\d+\.\d+).*$", version)
     if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
-        raise Error("You have an old version of git. Install version 2.7 or later, then re-run submit50!")
+        raise Error("You have an old version of git. Install version 2.7 or later, " +
+                    "then re-run submit50!")
 
-    # update spinner
-    spin("Connecting")
+    # update progress
+    progress("Connecting")
 
     # compute timestamp
     global timestamp
@@ -438,8 +438,8 @@ def submit(org, problem):
             cprint(" {}".format(pattern))
         raise Error("Ensure you have the required files before submitting.")
 
-    # update spinner
-    spin("Authenticating")
+    # update progress
+    progress("Authenticating")
 
     # authenticate user via SSH
     try:
@@ -448,7 +448,7 @@ def submit(org, problem):
         email = "{}@users.noreply.github.com".format(username)
         repo = "git@github.com:{}/{}.git".format(org, username)
         with open(os.devnull, "w") as DEVNULL:
-            spin(False)
+            progress(False)
             assert subprocess.call(["ssh", "git@github.com"], stderr=DEVNULL) == 1 # successfully authenticated
 
     # authenticate user via HTTPS
@@ -456,8 +456,8 @@ def submit(org, problem):
         username, password, email = authenticate(org)
         repo = "https://{}@github.com/{}/{}".format(username, org, username)
 
-    # update spinner
-    spin("Preparing")
+    # update progress
+    progress("Preparing")
 
     # clone repository
     try:
@@ -473,6 +473,12 @@ def submit(org, problem):
         e.__cause__ = None
         raise e
 
+    # check out .gitattributes, if any, temporarily shadowing student's, if any
+    if os.path.isfile(".gitattributes"):
+        submit.ATTRIBUTES = ".gitattributes.{}".format(round(time.time()))
+        os.rename(".gitattributes", submit.ATTRIBUTES)
+    run("git checkout --force {} .gitattributes".format(branch))
+
     # set options
     tag = "{}@{}".format(branch, timestamp)
     run("git config user.email {}".format(shlex.quote(email)))
@@ -482,12 +488,43 @@ def submit(org, problem):
     # patterns of file names to exclude
     run("git config core.excludesFile {}".format(shlex.quote(submit.EXCLUDE)))
 
+    # blocklist for git-lfs
+    # https://github.com/git-lfs/git-lfs/blob/master/commands/command_track.go
+    with open("{}/info/exclude".format(run.GIT_DIR), "w") as file:
+        file.write(".git*\n")
+        file.write(".lfs*\n")
+
     # adds, modifies, and removes index entries to match the working tree
     run("git add --all")
 
     # get file lists
     files = run("git ls-files").split()
-    other = run("git ls-files --other").split()
+    other = run("git ls-files --exclude-standard --other").split()
+
+    # check for large files > 100 MB (and huge files > 2 GB)
+    # https://help.github.com/articles/conditions-for-large-files/
+    # https://help.github.com/articles/about-git-large-file-storage/
+    large, huge = [], []
+    for file in files:
+        size = os.path.getsize(file)
+        if size > (100 * 1024 * 1024):
+            large.append(file)
+        elif size > (2 * 1024 * 1024 * 1024):
+            huge.append(file)
+    if len(huge) > 0:
+        raise Error("These files are too large to be submitted:\n{}\n"
+                    "Remove these files from your directory "
+                    "and then re-run submit50!".format("\n".join(huge)))
+    elif len(large) > 0:
+        if not which("git-lfs"):
+            raise Error("These files are too large to be submitted:\n{}\n"
+                        "Install git-lfs (or remove these files from your directory) "
+                        "and then re-run submit50!".format("\n".join(large)))
+        run("git lfs install --local")
+        run("git config credential.helper cache") # for pre-push hook
+        for file in large:
+            run("git lfs track {}".format(file))
+        run("git add --force .gitattributes")
 
     # files that will be submitted
     if len(files) == 0:
@@ -503,13 +540,13 @@ def submit(org, problem):
             cprint("./{}".format(f), "yellow")
 
     # prompt for academic honesty
-    cprint("Keeping in mind the course's policy on academic honesty, " +
-           "are you sure you want to submit these files?", end=" ")
-    if not re.match("^\s*(?:y|yes)\s*$", input(), re.I):
+    answer = input("Keeping in mind the course's policy on academic honesty, " +
+                   "are you sure you want to submit these files? ")
+    if not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
         raise Error("No files were submitted.")
 
-    # restart spinner
-    spin("Submitting")
+    # update progress
+    progress("Submitting")
 
     # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
@@ -521,11 +558,22 @@ def submit(org, problem):
            "green")
 
 
+submit.ATTRIBUTES = None
 submit.EXCLUDE = None
 
 
 def teardown():
-    """Delete temporary directory and temporary file."""
+    """Delete temporary directory and temporary file, restore any attributes."""
+    if os.path.isfile(".gitattributes"):
+        try:
+            os.remove(".gitattributes")
+        except Exception:
+            pass
+    if submit.ATTRIBUTES:
+        try:
+            os.rename(submit.ATTRIBUTES, ".gitattributes")
+        except Exception:
+            pass
     shutil.rmtree(run.GIT_DIR, ignore_errors=True)
     if submit.EXCLUDE:
         try:
