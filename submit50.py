@@ -174,7 +174,7 @@ def authenticate(org):
         # prompt for username, prefilling if possible
         while True:
             progress(False)
-            username = rlinput("GitHub username: ", username).strip()
+            username = rlinput(_("GitHub username: "), username).strip()
             if username:
                 break
 
@@ -444,7 +444,7 @@ def submit(org, problem):
         raise Error(_("Ensure you have the required files before submitting."))
 
     # update progress
-    progress("Authenticating")
+    progress(_("Authenticating"))
 
     # authenticate user via SSH
     try:
