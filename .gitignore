@@ -5,3 +5,4 @@ __pycache__
 build/
 *.egg-info/
 dist/
+locale/*/LC_MESSAGES/*.mo
