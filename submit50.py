@@ -501,7 +501,7 @@ def submit(org, problem):
     answer = input(_("Keeping in mind the course's policy on academic honesty, "
                      "are you sure you want to submit these files? "))
     if not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
-        raise Error("No files were submitted.")
+        raise Error(_("No files were submitted."))
 
     # restart spinner
     spin(_("Submitting"))
