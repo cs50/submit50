@@ -1,0 +1,142 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: submit50.py:44
+msgid "You have an old version of python. Install version 2.7 or higher."
+msgstr "Tienes una versión antigua de python. Instala la versión 2.7 o superior."
+
+#: submit50.py:115
+msgid "show commands being executed"
+msgstr "mostrar comandos que se están ejecutando"
+
+#: submit50.py:116
+msgid "problem to submit"
+msgstr "problema para entregar"
+
+#: submit50.py:177
+msgid "GitHub username: "
+msgstr "Nombre de usuario de GitHub: "
+
+#: submit50.py:183
+msgid "GitHub password: "
+msgstr "Contraseña de GitHub: "
+
+#: submit50.py:217
+msgid "Invalid username and/or password."
+msgstr "Nombre de usuario y / o contraseña es inválido."
+
+#: submit50.py:221
+msgid "Could not authenticate user."
+msgstr "No se pudo autenticar usuario."
+
+#: submit50.py:265
+msgid "Could not connect to GitHub."
+msgstr "No se pudo conectar a GitHub"
+
+#: submit50.py:269
+msgid "Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"
+msgstr "¡Lo siento, algo está mal! ¡Déjale saber a sysadmins@cs50.harvard.edu!"
+
+#: submit50.py:270 submit50.py:283
+msgid "Submission cancelled."
+msgstr "La entrega se canceló."
+
+#: submit50.py:376
+msgid "You don't have git. Install git, then re-run submit50!."
+msgstr "No tienes git. ¡Instala git, y luego vuelve a ejecutar submit50!"
+
+#: submit50.py:380
+msgid ""
+"You have an old version of git. Install version 2.7 or later, then re-run "
+"submit50!"
+msgstr ""
+"Tienes una versión antigua de git. ¡Instala la versión 2.7 o superior, y vuelve a ejecutar 
+"submit50!"
+
+#: submit50.py:394
+msgid ""
+"You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!"
+msgstr ""
+"Tienes una versión desconocida de submit50. ¡Escríbele a sysadmins@cs50.harvard.edu!"
+
+#: submit50.py:398
+msgid ""
+"You have an old version of submit50. Run update50, then re-run submit50!"
+msgstr ""
+"Tienes una versión antigua de submit50. ¡Ejecuta update50, y luego vuelve a ejecutar submit50!"
+
+#: submit50.py:415
+msgid "Invalid problem. Did you mean to submit something else?"
+msgstr "El problema no es válido. ¿Quisiste entregar algo más?"
+
+#: submit50.py:431
+msgid "You seem to be missing these files:"
+msgstr "Parece que faltan estos archivos:"
+
+#: submit50.py:434
+msgid "Ensure you have the required files before submitting."
+msgstr "Asegúrate de tener los archivos necesarios antes de entregar."
+
+#: submit50.py:437
+msgid "Authenticating"
+msgstr "Autenticando"
+
+#: submit50.py:455
+msgid "Preparing"
+msgstr "Preparando"
+
+#: submit50.py:462
+msgid ""
+"Looks like submit50 isn't enabled for your account yet. Log into https://"
+"cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 "
+"here!"
+msgstr ""
+"Parece que submit50 todavía no está habilitado para tu cuenta. Inicie sesión en https://"
+"cs50.me/ en un navegador, haga clic en \"Autorizar la aplicación\", y vuelva a ejecutar submit50 "
+"¡aquí!"
+
+#: submit50.py:465
+msgid ""
+"Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet "
+"enabled for your account. Double-check ~/.gitconfig and then log into "
+"https://cs50.me/ in a browser, click \"Authorize application\" if prompted, "
+"and re-run submit50 here."
+msgstr ""
+"Parece que tienes el nombre de usuario incorrecto en ~ /.gitconfig o submit50 aún no está "
+"habilitado para tu cuenta. Vuelve a chequear ~/.gitconfig y luego ingresa en "
+"https://cs50.me/ en un navegador, haga clic en \"Autorizar aplicación\" si se te solicita, "
+"y vuelve a ejecutar submit50 aquí."
+
+#: submit50.py:489
+msgid "No files in this directory are expected for submission."
+msgstr "Ningún archivo en este directorio se espera para la entrega."
+
+#: submit50.py:490
+msgid "Files that will be submitted:"
+msgstr "Archivos que se van a entregar:"
+
+#: submit50.py:496
+msgid "Files that won't be submitted:"
+msgstr "Archivos que no se van a entregar:"
+
+#: submit50.py:501
+msgid ""
+"Keeping in mind the course's policy on academic honesty, are you sure you "
+"want to submit these files? "
+msgstr ""
+"Teniendo en cuenta la política de honestidad académica del curso, ¿estás seguro que "
+"quieres enviar estos archivos? "
+
+#: submit50.py:507
+msgid "Submitting"
+msgstr "Entregando"
+
+#: submit50.py:514
+msgid "Submitted {}! See https://cs50.me/submissions/{}."
+msgstr "¡Se entregó {}! Puedes ver https://cs50.me/submissions/{}."
+
+#: submit50.py:550
+msgid "Could not complete two-factor authentication."
+msgstr "No se pudo completar la autenticación de dos factores."
