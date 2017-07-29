@@ -380,6 +380,11 @@ progress.progressing = False
 def submit(org, problem):
     """Submit problem."""
 
+    # check announcements
+    res = requests.get("https://cs50.me/status/submit50")
+    if res.status_code == 200 and res.text:
+        raise Error(res.text)
+
     # require git 2.7+, so that credential-cache--daemon ignores SIGHUP
     # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
     if not which("git"):
