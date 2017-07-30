@@ -420,7 +420,12 @@ def submit(org, problem):
 
     # ensure problem exists
     file, submit.EXCLUDE = tempfile.mkstemp()
-    url = "https://cs50.me/excludes/{}/".format(branch)
+    branch = branch.rstrip("@cs50/checks")
+    try:
+        slug, src = branch.split("@", 1)
+    except ValueError:
+        slug, src = branch, "cs50/checks"
+    url = "https://raw.githubusercontent.com/{}/master/{}/submit50/exclude".format(src, slug)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
         lines = open(submit.EXCLUDE)
