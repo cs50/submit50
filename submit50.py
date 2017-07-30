@@ -377,7 +377,7 @@ def progress(message=""):
 progress.progressing = False
 
 
-def submit(org, problem):
+def submit(org, branch):
     """Submit problem."""
 
     # check announcements
@@ -412,11 +412,6 @@ def submit(org, problem):
     if parse_version(version_required) > parse_version(get_distribution("submit50").version):
         raise Error(_("You have an old version of submit50. "
                       "Run update50, then re-run {}!".format(org)))
-
-    # assume cs50/ problem if problem name begins with a year
-    branch = problem
-    if problem.split("/")[0].isdigit():
-        branch = os.path.join("cs50", problem)
 
     # ensure problem exists
     file, submit.EXCLUDE = tempfile.mkstemp()
@@ -568,8 +563,7 @@ def submit(org, problem):
 
     # successful submission
     if org == "submit50":
-        cprint(_("Submitted {}! "
-                 "See https://cs50.me/submissions/{}.").format(problem, branch),
+        cprint(_("Submitted {}! See https://cs50.me/submissions.").format(branch),
                "green")
 
 
