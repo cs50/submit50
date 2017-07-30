@@ -423,7 +423,7 @@ def submit(org, problem):
     # separate branch into problem slug and source repo
     branch = branch.rstrip("@cs50/checks")
     try:
-        slug, src = branch.split("@", 1)
+        slug, src = branch.split("@")
     except ValueError:
         slug, src = branch, "cs50/checks"
 
