@@ -382,8 +382,8 @@ def submit(org, problem):
 
     # check announcements
     res = requests.get("https://cs50.me/status/submit50")
-    if res.status_code == 200 and res.text:
-        raise Error(res.text)
+    if res.status_code == 200 and res.text.strip():
+        raise Error(res.text.strip())
 
     # require git 2.7+, so that credential-cache--daemon ignores SIGHUP
     # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
