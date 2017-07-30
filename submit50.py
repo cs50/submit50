@@ -522,14 +522,14 @@ def submit(org, problem):
         elif size > (2 * 1024 * 1024 * 1024):
             huge.append(file)
     if len(huge) > 0:
-        raise Error("These files are too large to be submitted:\n{}\n"
-                    "Remove these files from your directory "
-                    "and then re-run {}!".format("\n".join(huge), org))
+        raise Error(_("These files are too large to be submitted:\n{}\n"
+                      "Remove these files from your directory "
+                      "and then re-run {}!").format("\n".join(huge), org))
     elif len(large) > 0:
         if not which("git-lfs"):
-            raise Error("These files are too large to be submitted:\n{}\n"
-                        "Install git-lfs (or remove these files from your directory) "
-                        "and then re-run {}!".format("\n".join(large), org))
+            raise Error(_("These files are too large to be submitted:\n{}\n"
+                          "Install git-lfs (or remove these files from your directory) "
+                          "and then re-run {}!").format("\n".join(large), org))
         run("git lfs install --local")
         run("git config credential.helper cache") # for pre-push hook
         for file in large:
