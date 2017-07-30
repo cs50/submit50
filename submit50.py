@@ -418,13 +418,16 @@ def submit(org, problem):
     if problem.split("/")[0].isdigit():
         branch = os.path.join("cs50", problem)
 
-    # ensure problem exists
     file, submit.EXCLUDE = tempfile.mkstemp()
+
+    # separate branch into problem slug and source repo
     branch = branch.rstrip("@cs50/checks")
     try:
         slug, src = branch.split("@", 1)
     except ValueError:
         slug, src = branch, "cs50/checks"
+
+    # ensure problem exists
     url = "https://raw.githubusercontent.com/{}/master/{}/submit50/exclude".format(src, slug)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
