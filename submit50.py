@@ -487,7 +487,10 @@ def submit(org, problem):
     if os.path.isfile(".gitattributes"):
         submit.ATTRIBUTES = ".gitattributes.{}".format(round(time.time()))
         os.rename(".gitattributes", submit.ATTRIBUTES)
-    run("git checkout --force {} .gitattributes".format(branch))
+    try:
+        run("git checkout --force {} .gitattributes".format(branch))
+    except Exception:
+        pass
 
     # set options
     tag = "{}@{}".format(branch, timestamp)
