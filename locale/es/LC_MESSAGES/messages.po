@@ -149,7 +149,7 @@ msgstr "Entregando"
 
 #: submit50.py:568
 msgid "Submitted {}! See https://cs50.me/submissions."
-msgstr "¡Se entregó {}! Puedes ver https://cs50.me/submissions/."
+msgstr "¡Se entregó {}! Puedes ver https://cs50.me/submissions."
 
 #: submit50.py:615
 msgid "Could not complete two-factor authentication."
