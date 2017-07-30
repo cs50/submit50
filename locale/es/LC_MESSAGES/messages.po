@@ -45,8 +45,8 @@ msgid "Submission cancelled."
 msgstr "La entrega se canceló."
 
 #: submit50.py:386
-msgid "You don't have git. Install git, then re-run submit50!"
-msgstr "No tienes git. ¡Instala git, y luego vuelve a ejecutar submit50!"
+msgid "You don't have git. Install git, then re-run {}!"
+msgstr "No tienes git. ¡Instala git, y luego vuelve a ejecutar {}!"
 
 #: submit50.py:390
 msgid ""
@@ -65,10 +65,10 @@ msgstr ""
 
 #: submit50.py:408
 msgid ""
-"You have an old version of submit50. Run update50, then re-run submit50!"
+"You have an old version of submit50. Run update50, then re-run {}!"
 msgstr ""
 "Tienes una versión antigua de submit50. ¡Ejecuta update50, y luego vuelve a "
-"ejecutar submit50!"
+"ejecutar {}!"
 
 #: submit50.py:425
 msgid "Invalid problem. Did you mean to submit something else?"
@@ -92,25 +92,25 @@ msgstr "Preparando"
 
 #: submit50.py:472
 msgid ""
-"Looks like submit50 isn't enabled for your account yet. Log into https://"
+"Looks like {} isn't enabled for your account yet. Log into https://"
 "cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 "
 "here!"
 msgstr ""
-"Parece que submit50 todavía no está habilitado para tu cuenta. Inicie sesión "
+"Parece que {} todavía no está habilitado para tu cuenta. Inicie sesión "
 "en https://cs50.me/ en un navegador, haga clic en \"Autorizar la aplicación"
 "\", y vuelva a ejecutar submit50 ¡aquí!"
 
 #: submit50.py:475
 msgid ""
-"Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet "
+"Looks like you have the wrong username in ~/.gitconfig or {} isn't yet "
 "enabled for your account. Double-check ~/.gitconfig and then log into "
 "https://cs50.me/ in a browser, click \"Authorize application\" if prompted, "
-"and re-run submit50 here."
+"and re-run {} here."
 msgstr ""
 "Parece que tienes el nombre de usuario incorrecto en ~ /.gitconfig o "
-"submit50 aún no está habilitado para tu cuenta. Vuelve a chequear ~/."
+"{} aún no está habilitado para tu cuenta. Vuelve a chequear ~/."
 "gitconfig y luego ingresa en https://cs50.me/ en un navegador, haga clic en "
-"\"Autorizar aplicación\" si se te solicita, y vuelve a ejecutar submit50 "
+"\"Autorizar aplicación\" si se te solicita, y vuelve a ejecutar {} "
 "aquí."
 
 #: submit50.py:536
