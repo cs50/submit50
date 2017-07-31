@@ -377,7 +377,7 @@ def progress(message=""):
 progress.progressing = False
 
 
-def submit(org, problem):
+def submit(org, branch):
     """Submit problem."""
 
     # check announcements
@@ -388,11 +388,11 @@ def submit(org, problem):
     # require git 2.7+, so that credential-cache--daemon ignores SIGHUP
     # https://github.com/git/git/blob/v2.7.0/credential-cache--daemon.c
     if not which("git"):
-        raise Error(_("You don't have git. Install git, then re-run submit50!"))
+        raise Error(_("You don't have git. Install git, then re-run {}!".format(org)))
     version = subprocess.check_output(["git", "--version"]).decode("utf-8")
     matches = re.search(r"^git version (\d+\.\d+\.\d+).*$", version)
     if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
-        raise Error(_("You have an old version of git. Install version 2.7 or later, then re-run submit50!"))
+        raise Error(_("You have an old version of git. Install version 2.7 or later, then re-run {}!".format(org)))
 
     # update progress
     progress("Connecting")
@@ -411,16 +411,20 @@ def submit(org, problem):
     version_required = res.text.strip()
     if parse_version(version_required) > parse_version(get_distribution("submit50").version):
         raise Error(_("You have an old version of submit50. "
-                      "Run update50, then re-run submit50!"))
+                      "Run update50, then re-run {}!".format(org)))
 
-    # assume cs50/ problem if problem name begins with a year
-    branch = problem
-    if problem.split("/")[0].isdigit():
-        branch = os.path.join("cs50", problem)
+    file, submit.EXCLUDE = tempfile.mkstemp()
+
+    # separate branch into problem slug and source repo
+    check_repo = "@cs50/checks"
+    branch = branch if not branch.endswith(check_repo) else branch[:-len(check_repo)]
+    try:
+        slug, src = branch.split("@")
+    except ValueError:
+        slug, src = branch, "cs50/checks"
 
     # ensure problem exists
-    file, submit.EXCLUDE = tempfile.mkstemp()
-    url = "https://cs50.me/excludes/{}/".format(branch)
+    url = "https://raw.githubusercontent.com/{}/master/{}/submit50/exclude".format(src, slug)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
         lines = open(submit.EXCLUDE)
@@ -474,12 +478,12 @@ def submit(org, problem):
         run("git clone --bare {} {}".format(shlex.quote(repo), shlex.quote(run.GIT_DIR)), password=password)
     except:
         if password:
-            e = Error(_("Looks like submit50 isn't enabled for your account yet. "
-                        "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run submit50 here!"))
+            e = Error(_("Looks like {} isn't enabled for your account yet. "
+                        "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run {} here!".format(org, org)))
         else:
-            e = Error(_("Looks like you have the wrong username in ~/.gitconfig or submit50 isn't yet enabled for your account. "
+            e = Error(_("Looks like you have the wrong username in ~/.gitconfig or {} isn't yet enabled for your account. "
                         "Double-check ~/.gitconfig and then log into https://cs50.me/ in a browser, "
-                        "click \"Authorize application\" if prompted, and re-run submit50 here."))
+                        "click \"Authorize application\" if prompted, and re-run {} here.".format(org, org)))
         e.__cause__ = None
         raise e
 
@@ -525,14 +529,14 @@ def submit(org, problem):
         elif size > (2 * 1024 * 1024 * 1024):
             huge.append(file)
     if len(huge) > 0:
-        raise Error("These files are too large to be submitted:\n{}\n"
-                    "Remove these files from your directory "
-                    "and then re-run submit50!".format("\n".join(huge)))
+        raise Error(_("These files are too large to be submitted:\n{}\n"
+                      "Remove these files from your directory "
+                      "and then re-run {}!").format("\n".join(huge), org))
     elif len(large) > 0:
         if not which("git-lfs"):
-            raise Error("These files are too large to be submitted:\n{}\n"
-                        "Install git-lfs (or remove these files from your directory) "
-                        "and then re-run submit50!".format("\n".join(large)))
+            raise Error(_("These files are too large to be submitted:\n{}\n"
+                          "Install git-lfs (or remove these files from your directory) "
+                          "and then re-run {}!").format("\n".join(large), org))
         run("git lfs install --local")
         run("git config credential.helper cache") # for pre-push hook
         for file in large:
@@ -542,33 +546,38 @@ def submit(org, problem):
     # files that will be submitted
     if len(files) == 0:
         raise Error(_("No files in this directory are expected for submission."))
-    cprint(_("Files that will be submitted:"), "green")
-    for f in files:
-        cprint("./{}".format(f), "green")
 
-    # files that won't be submitted
-    if len(other) != 0:
-        cprint(_("Files that won't be submitted:"), "yellow")
-        for f in other:
-            cprint("./{}".format(f), "yellow")
+    if org == "submit50":
+        cprint(_("Files that will be submitted:"), "green")
+        for f in files:
+            cprint("./{}".format(f), "green")
 
-    # prompt for academic honesty
-    answer = input(_("Keeping in mind the course's policy on academic honesty, "
-                     "are you sure you want to submit these files? "))
-    if not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
-        raise Error(_("No files were submitted."))
+        # files that won't be submitted
+        if len(other) != 0:
+            cprint(_("Files that won't be submitted:"), "yellow")
+            for f in other:
+                cprint("./{}".format(f), "yellow")
+
+        answer = input(_("Keeping in mind the course's policy on academic honesty, "
+                         "are you sure you want to submit these files? "))
+        if not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
+            raise Error(_("No files were submitted."))
 
     # update progress
-    progress(_("Submitting"))
+    progress(_("Submitting" if org == "submit50" else "Uploading"))
 
     # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
+    commit_hash = run("git rev-parse HEAD")
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
 
     # successful submission
-    cprint(_("Submitted {}! "
-             "See https://cs50.me/submissions/{}.").format(problem, branch),
-           "green")
+    if org == "submit50":
+        cprint(_("Submitted {}! See https://cs50.me/submissions.").format(branch),
+               "green")
+
+    progress(False)
+    return username, commit_hash
 
 
 submit.ATTRIBUTES = None
