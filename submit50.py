@@ -416,7 +416,8 @@ def submit(org, branch):
     file, submit.EXCLUDE = tempfile.mkstemp()
 
     # separate branch into problem slug and source repo
-    branch = branch.rstrip("@cs50/checks")
+    check_repo = "@cs50/checks"
+    branch = branch if not branch.endswith(check_repo) else branch[:-len(check_repo)]
     try:
         slug, src = branch.split("@")
     except ValueError:
