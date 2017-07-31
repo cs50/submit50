@@ -559,12 +559,16 @@ def submit(org, branch):
 
     # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
+    commit_hash = run("git rev-parse HEAD")
     run("git push origin 'refs/heads/{}'".format(branch), password=password)
 
     # successful submission
     if org == "submit50":
         cprint(_("Submitted {}! See https://cs50.me/submissions.").format(branch),
                "green")
+
+    progress(False)
+    return username, commit_hash
 
 
 submit.ATTRIBUTES = None
