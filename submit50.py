@@ -413,9 +413,17 @@ def submit(org, branch):
         raise Error(_("You have an old version of submit50. "
                       "Run update50, then re-run {}!".format(org)))
 
-    # ensure problem exists
     file, submit.EXCLUDE = tempfile.mkstemp()
-    url = "https://cs50.me/excludes/{}/".format(branch)
+
+    # separate branch into problem slug and source repo
+    branch = branch.rstrip("@cs50/checks")
+    try:
+        slug, src = branch.split("@")
+    except ValueError:
+        slug, src = branch, "cs50/checks"
+
+    # ensure problem exists
+    url = "https://raw.githubusercontent.com/{}/master/{}/submit50/exclude".format(src, slug)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
         lines = open(submit.EXCLUDE)
