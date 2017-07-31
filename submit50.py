@@ -180,7 +180,8 @@ def authenticate(org):
 
         # prompt for password
         while True:
-            print(_("GitHub password: "), end="", flush=True)
+            print(_("GitHub password: "), end="")
+            sys.stdout.flush()
             password = str()
             while True:
                 ch = getch()
@@ -190,13 +191,15 @@ def authenticate(org):
                 elif ch == "\177": # DEL
                     if len(password) > 0:
                         password = password[:-1]
-                        print("\b \b", end="", flush=True)
+                        print("\b \b", end="")
+                        sys.stdout.flush()
                 elif ch == "\3": # ctrl-c
                     print("^C", end="")
                     os.kill(os.getpid(), signal.SIGINT)
                 else:
                     password += ch
-                    print("*", end="", flush=True)
+                    print("*", end="")
+                    sys.stdout.flush()
             if password:
                 break
 
@@ -247,10 +250,6 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     # assume 80 in case not running in a terminal
     columns, lines = get_terminal_size()
     if columns == 0: columns = 80 # because get_terminal_size's default fallback doesn't work in pipes
-
-    # only python3 supports "flush" keyword argument
-    if sys.version_info < (3, 0) and "flush" in kwargs:
-        del kwargs["flush"]
 
     # print text
     termcolor.cprint(textwrap.fill(text, columns, drop_whitespace=False),
@@ -610,7 +609,8 @@ def two_factor(org, username, password):
     requests.post("https://api.github.com/authorizations",
                   auth=(username, password))
     while True:
-        cprint("Authentication code:", end=" ", flush=True)
+        cprint("Authentication code:", end=" ")
+        sys.stdout.flush()
         code = input()
         if code:
             break
