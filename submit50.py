@@ -269,10 +269,11 @@ def excepthook(type, value, tb):
         if run.verbose:
             traceback.print_exception(type, value, tb)
         cprint(_("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), "yellow")
-    try:
-        run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
-    except Exception:
-        pass
+    if authenticate.SOCKET: # not set when using SSH
+        try:
+            run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
+        except Exception:
+            pass
     cprint(_("Submission cancelled."), "red")
 
 
@@ -309,6 +310,10 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
             "GIT_WORK_TREE": run.GIT_WORK_TREE,
             "HOME": os.path.expanduser("~")
         }
+        if os.getenv("SSH_AGENT_PID"):
+            env["SSH_AGENT_PID"] = os.getenv("SSH_AGENT_PID")
+        if os.getenv("SSH_AUTH_SOCK"):
+            env["SSH_AUTH_SOCK"] = os.getenv("SSH_AUTH_SOCK")
 
     # spawn command
     if sys.version_info < (3, 0):
