@@ -275,10 +275,11 @@ def excepthook(type, value, tb):
         if run.verbose:
             traceback.print_exception(type, value, tb)
         cprint(_("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), "yellow")
-    try:
-        run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
-    except Exception:
-        pass
+    if authenticate.SOCKET: # not set when using SSH
+        try:
+            run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
+        except Exception:
+            pass
     cprint(_("Submission cancelled."), "red")
 
 
@@ -315,6 +316,10 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
             "GIT_WORK_TREE": run.GIT_WORK_TREE,
             "HOME": os.path.expanduser("~")
         }
+        if os.getenv("SSH_AGENT_PID"):
+            env["SSH_AGENT_PID"] = os.getenv("SSH_AGENT_PID")
+        if os.getenv("SSH_AUTH_SOCK"):
+            env["SSH_AUTH_SOCK"] = os.getenv("SSH_AUTH_SOCK")
 
     # spawn command
     if sys.version_info < (3, 0):
@@ -462,13 +467,21 @@ def submit(org, branch):
 
     # authenticate user via SSH
     try:
+
+        # require ssh
         assert which("ssh")
+
+        # require GitHub username in ~/.gitconfig
         username, password = run("git config --global credential.https://github.com/submit50.username", quiet=True), None
         email = "{}@users.noreply.github.com".format(username)
         repo = "git@github.com:{}/{}.git".format(org, username)
-        with open(os.devnull, "w") as DEVNULL:
-            progress(False)
-            assert subprocess.call(["ssh", "git@github.com"], stderr=DEVNULL) == 1 # successfully authenticated
+        progress(False)
+
+        # require ssh-agent
+        child = pexpect.spawn("ssh git@github.com")
+        i = child.expect(["Enter passphrase for key", pexpect.EOF])
+        child.close()
+        assert i != 0
 
     # authenticate user via HTTPS
     except:
