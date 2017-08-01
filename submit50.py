@@ -174,9 +174,12 @@ def authenticate(org):
         # prompt for username, prefilling if possible
         while True:
             progress(False)
-            username = rlinput(_("GitHub username: "), username).strip()
-            if username:
-                break
+            try:
+                username = rlinput(_("GitHub username: "), username).strip()
+                if username:
+                    break
+            except EOFError:
+                print()
 
         # prompt for password
         while True:
@@ -196,6 +199,9 @@ def authenticate(org):
                 elif ch == "\3": # ctrl-c
                     print("^C", end="")
                     os.kill(os.getpid(), signal.SIGINT)
+                elif ch == "\4": # ctrl-d
+                    print()
+                    break
                 else:
                     password += ch
                     print("*", end="")
@@ -546,8 +552,10 @@ def submit(org, branch):
     if len(files) == 0:
         raise Error(_("No files in this directory are expected for submission."))
 
+    # prompts for submit50
     if org == "submit50":
-        cprint(_("Files that will be submitted:"), "green")
+        if len(files) == 1:
+            cprint(_("Files that will be submitted:"), "green")
         for f in files:
             cprint("./{}".format(f), "green")
 
@@ -557,13 +565,21 @@ def submit(org, branch):
             for f in other:
                 cprint("./{}".format(f), "yellow")
 
-        answer = input(_("Keeping in mind the course's policy on academic honesty, "
-                         "are you sure you want to submit these files? "))
-        if not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
+        # prompt for honesty
+        try:
+            answer = input(_("Keeping in mind the course's policy on academic honesty, "
+                             "are you sure you want to submit these files? "))
+        except EOFError:
+            answer = None
+            print()
+        if not answer or not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
             raise Error(_("No files were submitted."))
 
     # update progress
-    progress(_("Submitting" if org == "submit50" else "Uploading"))
+    if org == "submit50":
+        progress(_("Submitting"))
+    else:
+        progress(_("Uploading"))
 
     # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
@@ -574,7 +590,6 @@ def submit(org, branch):
     if org == "submit50":
         cprint(_("Submitted {}! See https://cs50.me/submissions.").format(branch),
                "green")
-
     progress(False)
     return username, commit_hash
 

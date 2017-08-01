@@ -37,7 +37,7 @@ Source: https://stackoverflow.com/a/7497395
 echo "" > messages.po
 find . -type f -iname "*.py" | xgettext -j -f -
 msgmerge -N locale/XX/LC_MESSAGES/messages.po messages.po > new.po
-mv new.po messages.po
+mv -f new.po messages.po
 msgfmt messages.po
 mv -f messages.mo messages.po locale/XX/LC_MESSAGES/
 ```
