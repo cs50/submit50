@@ -461,13 +461,21 @@ def submit(org, branch):
 
     # authenticate user via SSH
     try:
+
+        # require ssh
         assert which("ssh")
+
+        # require GitHub username in ~/.gitconfig
         username, password = run("git config --global credential.https://github.com/submit50.username", quiet=True), None
         email = "{}@users.noreply.github.com".format(username)
         repo = "git@github.com:{}/{}.git".format(org, username)
-        with open(os.devnull, "w") as DEVNULL:
-            progress(False)
-            assert subprocess.call(["ssh", "git@github.com"], stderr=DEVNULL) == 1 # successfully authenticated
+        progress(False)
+
+        # require ssh-agent
+        child = pexpect.spawn("ssh git@github.com")
+        i = child.expect(["Enter passphrase for key", pexpect.EOF])
+        child.close()
+        assert i != 0
 
     # authenticate user via HTTPS
     except:
