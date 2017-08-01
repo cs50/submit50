@@ -5,8 +5,7 @@ msgstr ""
 
 #: submit50.py:44
 msgid "You have an old version of python. Install version 2.7 or higher."
-msgstr ""
-"Tienes una versión antigua de python. Instala la versión 2.7 o superior."
+msgstr "Tienes una versión antigua de python. Instala la versión 2.7 o superior."
 
 #: submit50.py:115
 msgid "show commands being executed"
@@ -26,7 +25,7 @@ msgstr "Contraseña de GitHub: "
 
 #: submit50.py:223
 msgid "Invalid username and/or password."
-msgstr "Nombre de usuario y / o contraseña es inválido."
+msgstr "Nombre de usuario y/o contraseña es inválido."
 
 #: submit50.py:227
 msgid "Could not authenticate user."
@@ -34,7 +33,7 @@ msgstr "No se pudo autenticar usuario."
 
 #: submit50.py:274
 msgid "Could not connect to GitHub."
-msgstr "No se pudo conectar a GitHub"
+msgstr "No se pudo conectar a GitHub."
 
 #: submit50.py:278
 msgid "Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"
@@ -53,7 +52,7 @@ msgid ""
 "You have an old version of git. Install version 2.7 or later, then re-run {}!"
 msgstr ""
 "Tienes una versión antigua de git. ¡Instala la versión 2.7 o superior, y "
-"vuelve a ejecutar submit50!"
+"vuelve a ejecutar {}!"
 
 #: submit50.py:415
 msgid ""
@@ -64,8 +63,7 @@ msgstr ""
 
 #: submit50.py:419
 msgid "You have an old version of submit50. Run update50, then re-run {}!"
-msgstr ""
-"Tienes una versión antigua de submit50. ¡Ejecuta update50, y luego vuelve a "
+msgstr "Tienes una versión antigua de submit50. ¡Ejecuta update50, y luego vuelve a "
 "ejecutar {}!"
 
 #: submit50.py:440
@@ -95,7 +93,7 @@ msgid ""
 msgstr ""
 "Parece que {} todavía no está habilitado para tu cuenta. ¡Inicie sesión en "
 "https://cs50.me/ en un navegador, haga clic en \"Authorize application"
-"\", y vuelva a ejecutar submit50 aquí!"
+"\", y vuelve a ejecutar {} aquí!"
 
 #: submit50.py:490
 msgid ""
@@ -104,10 +102,10 @@ msgid ""
 "https://cs50.me/ in a browser, click \"Authorize application\" if prompted, "
 "and re-run {} here."
 msgstr ""
-"Parece que tienes el nombre de usuario incorrecto en ~ /.gitconfig o {} aún "
+"Parece que tienes el nombre de usuario incorrecto en ~/.gitconfig o {} aún "
 "no está habilitado para tu cuenta. Vuelve a chequear ~/.gitconfig y luego "
-"ingresa en https://cs50.me/ en un navegador, haga clic en \"Autorizar "
-"aplicación\" si se te solicita, y vuelve a ejecutar {} aquí."
+"ingresa en https://cs50.me/ en un navegador, haga clic en \"Authorize "
+"application\" si se te solicita, y vuelve a ejecutar {} aquí."
 
 #: submit50.py:538
 msgid ""
@@ -115,6 +113,9 @@ msgid ""
 "{}\n"
 "Remove these files from your directory and then re-run {}!"
 msgstr ""
+"Estos archivos son demasiado grandes para ser entregados:\n"
+"{}\n"
+"¡Quita estos archivos de tu directorio y luego vuelve a ejecutar: {}!"
 
 #: submit50.py:543
 msgid ""
@@ -123,6 +124,10 @@ msgid ""
 "Install git-lfs (or remove these files from your directory) and then re-run "
 "{}!"
 msgstr ""
+"Estos archivos son demasiado grandes para ser entregados:\n"
+"{}\n"
+"Instala git-lfs (o quita estos archivos de tu directorio) y luego vuelve a ejecutar "
+"{}!"
 
 #: submit50.py:554
 msgid "No files in this directory are expected for submission."
@@ -146,7 +151,7 @@ msgstr ""
 
 #: submit50.py:577
 msgid "No files were submitted."
-msgstr ""
+msgstr "No se ha entregado ningún archivo."
 
 #: submit50.py:581
 msgid "Submitting"
@@ -154,7 +159,7 @@ msgstr "Entregando"
 
 #: submit50.py:583
 msgid "Uploading"
-msgstr ""
+msgstr "Subiendo"
 
 #: submit50.py:592
 msgid "Submitted {}! See https://cs50.me/submissions."
