@@ -237,7 +237,9 @@ authenticate.SOCKET = None
 
 
 def clear_credentials():
+    """Clear git credential cache """
     run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
+    # OSX will sometimes store git credentials in the keyring. Try to remove them
     try:
         run("git credential-osxkeychain erase", lines=["host=github.com", "protocol=https", ""])
     except Error:
