@@ -10,6 +10,7 @@ import json
 import os
 import pexpect
 import pipes
+import platform
 import re
 import readline
 import requests
@@ -140,15 +141,14 @@ def authenticate(org):
     authenticate.SOCKET = os.path.join(cache, ORG)
 
     # check cache
-    spawn = pexpect.spawn if sys.version_info < (3, 0) else pexpect.spawnu
-    child = spawn("git -c credential.helper='cache --socket {}' credential fill".format(authenticate.SOCKET))
+    child = pexpect.spawn("git -c credential.helper='cache --socket {}' credential fill".format(authenticate.SOCKET))
     child.sendline("")
-    if child.expect(["Username:", pexpect.EOF]):
+    if child.expect(["Username:", "Password:", pexpect.EOF]) == 2:
         clear_credentials()
         username, password = re.search("username=([^\r]+)\r\npassword=([^\r]+)", child.before, re.MULTILINE).groups()
     else:
         try:
-            username = run("git config --global credential.https://github.com/submit50.username")
+            username = run("git config --global credential.https://github.com/submit50.username", quiet=True)
         except Error:
             username = None
         password = None
@@ -249,11 +249,11 @@ authenticate.SOCKET = None
 def clear_credentials():
     """Clear git credential cache """
     run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
-    # OSX will sometimes store git credentials in the keyring. Try to remove them
-    try:
-        run("git credential-osxkeychain erase", lines=["host=github.com", "protocol=https", ""])
-    except Error:
-        pass
+    if platform.system() == "Darwin":
+        try:
+            run("git credential-osxkeychain erase", lines=["host=github.com", "protocol=https", ""])
+        except Error:
+            pass
 
 
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
@@ -486,9 +486,9 @@ def submit(org, branch):
 
         # require ssh-agent
         child = pexpect.spawn("ssh git@github.com")
-        i = child.expect(["Enter passphrase for key", pexpect.EOF])
+        i = child.expect(["Enter passphrase for key", "Are you sure you want to continue connecting", pexpect.EOF])
         child.close()
-        assert i != 0
+        assert i == 2
 
     # authenticate user via HTTPS
     except:
