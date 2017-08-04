@@ -139,21 +139,22 @@ def authenticate(org):
         pass
     authenticate.SOCKET = os.path.join(cache, ORG)
 
-    # check cache, then config for credentials
-    credentials = run("git -c credential.helper='cache --socket {}' credential fill".format(authenticate.SOCKET),
-                      lines=[""]*3,
-                      quiet=True)
-    run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
-    matches = re.search("^username=([^\r]+)\r\npassword=([^\r]+)\r?$", credentials, re.MULTILINE)
-    if matches:
-        username = matches.group(1)
-        password = matches.group(2)
+    spawn = pexpect.spawn if sys.version_info < (3, 0) else pexpect.spawnu
+    child = spawn("git -c credential.helper='cache --socket {}' credential fill".format(authenticate.SOCKET))
+    child.sendline("")
+
+    if child.expect(["Username:", pexpect.EOF]):
+        # Credentials are already cached
+        clear_credentials()
+        username, password = re.search("username=([^\r]+)\r\npassword=([^\r]+)", child.before, re.MULTILINE).groups()
     else:
+        # No cached credentials found
         try:
             username = run("git config --global credential.https://github.com/submit50.username")
-        except:
+        except Error:
             username = None
         password = None
+    child.close()
 
     def rlinput(prompt, prefill=""):
         """
@@ -174,9 +175,12 @@ def authenticate(org):
         # prompt for username, prefilling if possible
         while True:
             progress(False)
-            username = rlinput(_("GitHub username: "), username).strip()
-            if username:
-                break
+            try:
+                username = rlinput(_("GitHub username: "), username).strip()
+                if username:
+                    break
+            except EOFError:
+                print()
 
         # prompt for password
         while True:
@@ -196,6 +200,9 @@ def authenticate(org):
                 elif ch == "\3": # ctrl-c
                     print("^C", end="")
                     os.kill(os.getpid(), signal.SIGINT)
+                elif ch == "\4": # ctrl-d
+                    print()
+                    break
                 else:
                     password += ch
                     print("*", end="")
@@ -241,6 +248,16 @@ def authenticate(org):
 authenticate.SOCKET = None
 
 
+def clear_credentials():
+    """Clear git credential cache """
+    run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
+    # OSX will sometimes store git credentials in the keyring. Try to remove them
+    try:
+        run("git credential-osxkeychain erase", lines=["host=github.com", "protocol=https", ""])
+    except Error:
+        pass
+
+
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
 
@@ -271,24 +288,23 @@ def excepthook(type, value, tb):
         cprint(_("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), "yellow")
     if authenticate.SOCKET: # not set when using SSH
         try:
-            run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
+            clear_credentials()
         except Exception:
             pass
-    cprint(_("Submission cancelled."), "red")
-
+        cprint(_("Submission cancelled."), "red")
 
 sys.excepthook = excepthook
 
 
 def handler(number, frame):
     """Handle SIGINT."""
-    os.system("stty sane") # in case signalled from input_with_prefill
+    os.system("stty sane 2> {}".format(os.devnull)) # in case signalled from input_with_prefill
     if progress.progressing:
         progress(False)
     else:
         cprint()
     try:
-        run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
+        clear_credentials()
     except Exception:
         pass
     teardown()
@@ -296,7 +312,7 @@ def handler(number, frame):
     os._exit(0)
 
 
-def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
+def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeout=None):
     """Run a command."""
 
     # echo command
@@ -317,9 +333,9 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
 
     # spawn command
     if sys.version_info < (3, 0):
-        child = pexpect.spawn(command, cwd=cwd, env=env, ignore_sighup=True, timeout=None)
+        child = pexpect.spawn(command, cwd=cwd, env=env, ignore_sighup=True, timeout=timeout)
     else:
-        child = pexpect.spawnu(command, cwd=cwd, encoding="utf-8", env=env, ignore_sighup=True, timeout=None)
+        child = pexpect.spawnu(command, cwd=cwd, encoding="utf-8", env=env, ignore_sighup=True, timeout=timeout)
 
     # send output of command to stdout only if run with --verbose (and not quieted by caller)
     if run.verbose and not quiet:
@@ -558,8 +574,10 @@ def submit(org, branch):
     if len(files) == 0:
         raise Error(_("No files in this directory are expected for submission."))
 
+    # prompts for submit50
     if org == "submit50":
-        cprint(_("Files that will be submitted:"), "green")
+        if len(files) == 1:
+            cprint(_("Files that will be submitted:"), "green")
         for f in files:
             cprint("./{}".format(f), "green")
 
@@ -569,13 +587,21 @@ def submit(org, branch):
             for f in other:
                 cprint("./{}".format(f), "yellow")
 
-        answer = input(_("Keeping in mind the course's policy on academic honesty, "
-                         "are you sure you want to submit these files? "))
-        if not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
+        # prompt for honesty
+        try:
+            answer = input(_("Keeping in mind the course's policy on academic honesty, "
+                             "are you sure you want to submit these files? "))
+        except EOFError:
+            answer = None
+            print()
+        if not answer or not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
             raise Error(_("No files were submitted."))
 
     # update progress
-    progress(_("Submitting" if org == "submit50" else "Uploading"))
+    if org == "submit50":
+        progress(_("Submitting"))
+    else:
+        progress(_("Uploading"))
 
     # push branch
     run("git commit --allow-empty --message='{}'".format(timestamp))
@@ -586,7 +612,6 @@ def submit(org, branch):
     if org == "submit50":
         cprint(_("Submitted {}! See https://cs50.me/submissions.").format(branch),
                "green")
-
     progress(False)
     return username, commit_hash
 
