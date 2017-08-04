@@ -113,7 +113,7 @@ def main():
     parser.add_argument("-v", "--verbose",
                         action="store_true",
                         help=_("show commands being executed"))
-    parser.add_argument("problem", help=_("problem to submit"))
+    parser.add_argument("slug", help=_("prescribed identifier of work to submit"))
     args = vars(parser.parse_args())
 
     # submit50 -v
@@ -121,8 +121,8 @@ def main():
     if args["verbose"]:
         run.verbose = True
 
-    # submit50 problem
-    submit("submit50", args["problem"])
+    # submit50 slug
+    submit("submit50", args["slug"])
 
     # kthxbai
     sys.exit(0)
@@ -327,8 +327,8 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False):
 
     # wait for prompt, send password
     if password:
-        res = child.expect(["Password for '.*': ", pexpect.EOF])
-        if res == 0:
+        i = child.expect(["Password for '.*': ", pexpect.EOF])
+        if i == 0:
             child.sendline(password)
 
     # send lines of input
@@ -382,7 +382,7 @@ progress.progressing = False
 
 
 def submit(org, branch):
-    """Submit problem."""
+    """Submit work."""
 
     # check announcements
     res = requests.get("https://cs50.me/status/submit50")
@@ -417,9 +417,7 @@ def submit(org, branch):
         raise Error(_("You have an old version of submit50. "
                       "Run update50, then re-run {}!".format(org)))
 
-    file, submit.EXCLUDE = tempfile.mkstemp()
-
-    # separate branch into problem slug and source repo
+    # separate branch into slug and repo
     check_repo = "@cs50/checks"
     branch = branch if not branch.endswith(check_repo) else branch[:-len(check_repo)]
     try:
@@ -427,7 +425,8 @@ def submit(org, branch):
     except ValueError:
         slug, src = branch, "cs50/checks"
 
-    # ensure problem exists
+    # ensure slug exists
+    file, submit.EXCLUDE = tempfile.mkstemp()
     url = "https://raw.githubusercontent.com/{}/master/{}/submit50/exclude".format(src, slug)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
@@ -435,7 +434,7 @@ def submit(org, branch):
     except Exception as e:
         if run.verbose:
             cprint(str(e))
-        e = Error(_("Invalid problem. Did you mean to submit something else?"))
+        e = Error(_("Invalid slug. Did you mean to submit something else?"))
         e.__cause__ = None
         raise e
 
