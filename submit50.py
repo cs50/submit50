@@ -441,7 +441,7 @@ def submit(org, branch):
 
     # ensure slug exists
     file, submit.EXCLUDE = tempfile.mkstemp()
-    url = "https://raw.githubusercontent.com/{}/master/{}/submit50/exclude".format(src, slug)
+    url = "https://github.com/{}/raw/master/{}/submit50/exclude".format(src, slug)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
         lines = open(submit.EXCLUDE)
