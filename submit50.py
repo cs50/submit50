@@ -139,16 +139,14 @@ def authenticate(org):
         pass
     authenticate.SOCKET = os.path.join(cache, ORG)
 
+    # check cache
     spawn = pexpect.spawn if sys.version_info < (3, 0) else pexpect.spawnu
     child = spawn("git -c credential.helper='cache --socket {}' credential fill".format(authenticate.SOCKET))
     child.sendline("")
-
     if child.expect(["Username:", pexpect.EOF]):
-        # Credentials are already cached
         clear_credentials()
         username, password = re.search("username=([^\r]+)\r\npassword=([^\r]+)", child.before, re.MULTILINE).groups()
     else:
-        # No cached credentials found
         try:
             username = run("git config --global credential.https://github.com/submit50.username")
         except Error:
