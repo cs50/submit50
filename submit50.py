@@ -540,8 +540,8 @@ def submit(org, branch):
     run("git add --all")
 
     # get file lists
-    files = run("git ls-files").split()
-    other = run("git ls-files --exclude-standard --other").split()
+    files = run("git ls-files").splitlines()
+    other = run("git ls-files --exclude-standard --other").splitlines()
 
     # check for large files > 100 MB (and huge files > 2 GB)
     # https://help.github.com/articles/conditions-for-large-files/
