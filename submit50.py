@@ -588,7 +588,7 @@ def submit(org, branch):
         # prompt for honesty
         try:
             answer = input(_("Keeping in mind the course's policy on academic honesty, "
-                             "are you sure you want to submit these files? "))
+                             "are you sure you want to submit these files (yes/no)? "))
         except EOFError:
             answer = None
             print()

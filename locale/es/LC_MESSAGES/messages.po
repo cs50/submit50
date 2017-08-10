@@ -146,10 +146,10 @@ msgstr "Archivos que no se van a entregar:"
 #: submit50.py:590
 msgid ""
 "Keeping in mind the course's policy on academic honesty, are you sure you "
-"want to submit these files? "
+"want to submit these files (yes/no)? "
 msgstr ""
 "Teniendo en cuenta la política de honestidad académica del curso, ¿estás "
-"seguro que quieres enviar estos archivos? "
+"seguro que quieres enviar estos archivos (yes/no)? "
 
 #: submit50.py:596
 msgid "No files were submitted."
