@@ -61,5 +61,5 @@ setup(
         "console_scripts": ["submit50=submit50:main"]
     },
     url="https://github.com/cs50/submit50",
-    version="2.4.1"
+    version="2.4.2"
 )
