@@ -10,6 +10,7 @@ import json
 import os
 import pexpect
 import pipes
+import platform
 import re
 import readline
 import requests
@@ -65,10 +66,13 @@ class _Getch:
 
     class _GetchUnix:
         def __init__(self):
-            import tty, sys
+            import tty
+            import sys
 
         def __call__(self):
-            import sys, termios, tty
+            import sys
+            import termios
+            import tty
             fd = sys.stdin.fileno()
             old_settings = termios.tcgetattr(fd)
             try:
@@ -113,7 +117,7 @@ def main():
     parser.add_argument("-v", "--verbose",
                         action="store_true",
                         help=_("show commands being executed"))
-    parser.add_argument("problem", help=_("problem to submit"))
+    parser.add_argument("slug", help=_("prescribed identifier of work to submit"))
     args = vars(parser.parse_args())
 
     # submit50 -v
@@ -121,8 +125,8 @@ def main():
     if args["verbose"]:
         run.verbose = True
 
-    # submit50 problem
-    submit("submit50", args["problem"])
+    # submit50 slug
+    submit("submit50", args["slug"])
 
     # kthxbai
     sys.exit(0)
@@ -135,22 +139,21 @@ def authenticate(org):
     cache = os.path.expanduser("~/.git-credential-cache")
     try:
         os.mkdir(cache, 0o700)
-    except:
+    except BaseException:
         pass
     authenticate.SOCKET = os.path.join(cache, ORG)
 
     spawn = pexpect.spawn if sys.version_info < (3, 0) else pexpect.spawnu
-    child = spawn("git -c credential.helper='cache --socket {}' credential fill".format(authenticate.SOCKET))
+    child = spawn(
+        "git -c credential.helper='cache --socket {}' credential fill".format(authenticate.SOCKET))
     child.sendline("")
-
-    if child.expect(["Username:", pexpect.EOF]):
-        # Credentials are already cached
+    if child.expect(["Username:", "Password:", pexpect.EOF]) == 2:
         clear_credentials()
-        username, password = re.search("username=([^\r]+)\r\npassword=([^\r]+)", child.before, re.MULTILINE).groups()
+        username, password = re.search(
+            "username=([^\r]+)\r\npassword=([^\r]+)", child.before, re.MULTILINE).groups()
     else:
-        # No cached credentials found
         try:
-            username = run("git config --global credential.https://github.com/submit50.username")
+            username = run("git config --global credential.https://github.com/submit50.username", quiet=True)
         except Error:
             username = None
         password = None
@@ -166,10 +169,10 @@ def authenticate(org):
         try:
             return input(prompt)
         finally:
-           readline.set_startup_hook()
+            readline.set_startup_hook()
 
     # prompt for credentials
-    progress(False) # because not using cprint herein
+    progress(False)  # because not using cprint herein
     if not password:
 
         # prompt for username, prefilling if possible
@@ -189,18 +192,18 @@ def authenticate(org):
             password = str()
             while True:
                 ch = getch()
-                if ch in ["\n", "\r"]: # Enter
+                if ch in ["\n", "\r"]:  # Enter
                     print()
                     break
-                elif ch == "\177": # DEL
+                elif ch == "\177":  # DEL
                     if len(password) > 0:
                         password = password[:-1]
                         print("\b \b", end="")
                         sys.stdout.flush()
-                elif ch == "\3": # ctrl-c
+                elif ch == "\3":  # ctrl-c
                     print("^C", end="")
                     os.kill(os.getpid(), signal.SIGINT)
-                elif ch == "\4": # ctrl-d
+                elif ch == "\4":  # ctrl-d
                     print()
                     break
                 else:
@@ -251,11 +254,11 @@ authenticate.SOCKET = None
 def clear_credentials():
     """Clear git credential cache """
     run("git credential-cache --socket {} exit".format(authenticate.SOCKET))
-    # OSX will sometimes store git credentials in the keyring. Try to remove them
-    try:
-        run("git credential-osxkeychain erase", lines=["host=github.com", "protocol=https", ""])
-    except Error:
-        pass
+    if platform.system() == "Darwin":
+        try:
+            run("git credential-osxkeychain erase", lines=["host=github.com", "protocol=https", ""])
+        except Error:
+            pass
 
 
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
@@ -266,7 +269,8 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
 
     # assume 80 in case not running in a terminal
     columns, lines = get_terminal_size()
-    if columns == 0: columns = 80 # because get_terminal_size's default fallback doesn't work in pipes
+    if columns == 0:
+        columns = 80  # because get_terminal_size's default fallback doesn't work in pipes
 
     # print text
     termcolor.cprint(textwrap.fill(text, columns, drop_whitespace=False),
@@ -286,19 +290,20 @@ def excepthook(type, value, tb):
         if run.verbose:
             traceback.print_exception(type, value, tb)
         cprint(_("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), "yellow")
-    if authenticate.SOCKET: # not set when using SSH
+    if authenticate.SOCKET:  # not set when using SSH
         try:
             clear_credentials()
         except Exception:
             pass
         cprint(_("Submission cancelled."), "red")
 
+
 sys.excepthook = excepthook
 
 
 def handler(number, frame):
     """Handle SIGINT."""
-    os.system("stty sane 2> {}".format(os.devnull)) # in case signalled from input_with_prefill
+    os.system("stty sane 2> {}".format(os.devnull))  # in case signalled from input_with_prefill
     if progress.progressing:
         progress(False)
     else:
@@ -335,7 +340,13 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeo
     if sys.version_info < (3, 0):
         child = pexpect.spawn(command, cwd=cwd, env=env, ignore_sighup=True, timeout=timeout)
     else:
-        child = pexpect.spawnu(command, cwd=cwd, encoding="utf-8", env=env, ignore_sighup=True, timeout=timeout)
+        child = pexpect.spawnu(
+            command,
+            cwd=cwd,
+            encoding="utf-8",
+            env=env,
+            ignore_sighup=True,
+            timeout=timeout)
 
     # send output of command to stdout only if run with --verbose (and not quieted by caller)
     if run.verbose and not quiet:
@@ -343,8 +354,8 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeo
 
     # wait for prompt, send password
     if password:
-        res = child.expect(["Password for '.*': ", pexpect.EOF])
-        if res == 0:
+        i = child.expect(["Password for '.*': ", pexpect.EOF])
+        if i == 0:
             child.sendline(password)
 
     # send lines of input
@@ -369,7 +380,7 @@ def progress(message=""):
 
     # don't show in verbose mode
     if run.verbose:
-        if message != False:
+        if message:
             print(message + "...")
         return
 
@@ -381,7 +392,7 @@ def progress(message=""):
         sys.stdout.flush()
 
     # display dots if message passed
-    if message != False:
+    if message:
         def progress_helper():
             sys.stdout.write(message + "...")
             sys.stdout.flush()
@@ -398,7 +409,7 @@ progress.progressing = False
 
 
 def submit(org, branch):
-    """Submit problem."""
+    """Submit work."""
 
     # check announcements
     res = requests.get("https://cs50.me/status/submit50")
@@ -412,7 +423,8 @@ def submit(org, branch):
     version = subprocess.check_output(["git", "--version"]).decode("utf-8")
     matches = re.search(r"^git version (\d+\.\d+\.\d+).*$", version)
     if not matches or StrictVersion(matches.group(1)) < StrictVersion("2.7.0"):
-        raise Error(_("You have an old version of git. Install version 2.7 or later, then re-run {}!".format(org)))
+        raise Error(
+            _("You have an old version of git. Install version 2.7 or later, then re-run {}!".format(org)))
 
     # update progress
     progress("Connecting")
@@ -433,9 +445,7 @@ def submit(org, branch):
         raise Error(_("You have an old version of submit50. "
                       "Run update50, then re-run {}!".format(org)))
 
-    file, submit.EXCLUDE = tempfile.mkstemp()
-
-    # separate branch into problem slug and source repo
+    # separate branch into slug and repo
     check_repo = "@cs50/checks"
     branch = branch if not branch.endswith(check_repo) else branch[:-len(check_repo)]
     try:
@@ -443,15 +453,16 @@ def submit(org, branch):
     except ValueError:
         slug, src = branch, "cs50/checks"
 
-    # ensure problem exists
-    url = "https://raw.githubusercontent.com/{}/master/{}/submit50/exclude".format(src, slug)
+    # ensure slug exists
+    file, submit.EXCLUDE = tempfile.mkstemp()
+    url = "https://github.com/{}/raw/master/{}/submit50/exclude".format(src, slug)
     try:
         urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
         lines = open(submit.EXCLUDE)
     except Exception as e:
         if run.verbose:
             cprint(str(e))
-        e = Error(_("Invalid problem. Did you mean to submit something else?"))
+        e = Error(_("Invalid slug. Did you mean to submit something else?"))
         e.__cause__ = None
         raise e
 
@@ -482,19 +493,20 @@ def submit(org, branch):
         assert which("ssh")
 
         # require GitHub username in ~/.gitconfig
-        username, password = run("git config --global credential.https://github.com/submit50.username", quiet=True), None
+        username, password = run(
+            "git config --global credential.https://github.com/submit50.username", quiet=True), None
         email = "{}@users.noreply.github.com".format(username)
         repo = "git@github.com:{}/{}.git".format(org, username)
         progress(False)
 
         # require ssh-agent
         child = pexpect.spawn("ssh git@github.com")
-        i = child.expect(["Enter passphrase for key", pexpect.EOF])
+        i = child.expect(["Enter passphrase for key", "Are you sure you want to continue connecting", pexpect.EOF])
         child.close()
-        assert i != 0
+        assert i == 2
 
     # authenticate user via HTTPS
-    except:
+    except BaseException:
         username, password, email = authenticate(org)
         repo = "https://{}@github.com/{}/{}".format(username, org, username)
 
@@ -503,8 +515,9 @@ def submit(org, branch):
 
     # clone repository
     try:
-        run("git clone --bare {} {}".format(shlex.quote(repo), shlex.quote(run.GIT_DIR)), password=password)
-    except:
+        run("git clone --bare {} {}".format(shlex.quote(repo),
+                                            shlex.quote(run.GIT_DIR)), password=password)
+    except BaseException:
         if password:
             e = Error(_("Looks like {} isn't enabled for your account yet. "
                         "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run {} here!".format(org, org)))
@@ -543,8 +556,8 @@ def submit(org, branch):
     run("git add --all")
 
     # get file lists
-    files = run("git ls-files").split()
-    other = run("git ls-files --exclude-standard --other").split()
+    files = run("git ls-files").splitlines()
+    other = run("git ls-files --exclude-standard --other").splitlines()
 
     # check for large files > 100 MB (and huge files > 2 GB)
     # https://help.github.com/articles/conditions-for-large-files/
@@ -566,7 +579,7 @@ def submit(org, branch):
                           "Install git-lfs (or remove these files from your directory) "
                           "and then re-run {}!").format("\n".join(large), org))
         run("git lfs install --local")
-        run("git config credential.helper cache") # for pre-push hook
+        run("git config credential.helper cache")  # for pre-push hook
         for file in large:
             run("git lfs track {}".format(file))
         run("git add --force .gitattributes")
@@ -591,7 +604,7 @@ def submit(org, branch):
         # prompt for honesty
         try:
             answer = input(_("Keeping in mind the course's policy on academic honesty, "
-                             "are you sure you want to submit these files? "))
+                             "are you sure you want to submit these files (yes/no)? "))
         except EOFError:
             answer = None
             print()

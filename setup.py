@@ -7,7 +7,8 @@ from sys import platform, version_info
 
 
 def install_certs(cmd):
-    """Decorator for classes subclassing one of setuptools commands.
+    """
+    Decorator for classes subclassing one of setuptools commands.
 
     Installs certificates before installing the package when running
     Python >= 3.6 on Mac OS.
@@ -16,8 +17,7 @@ def install_certs(cmd):
 
     def run(self):
         if platform == "darwin" and version_info >= (3, 6):
-            INSTALL_CERTS = \
-                "/Applications/Python 3.6/Install Certificates.command"
+            INSTALL_CERTS = "/Applications/Python 3.6/Install Certificates.command"
             if not isfile(INSTALL_CERTS) or call(INSTALL_CERTS) != 0:
                 raise RuntimeError("Error installing certificates.")
         orig_run(self)
@@ -34,6 +34,7 @@ class CustomDevelop(develop):
 @install_certs
 class CustomInstall(install):
     pass
+
 
 setup(
     author="CS50",
@@ -61,5 +62,5 @@ setup(
         "console_scripts": ["submit50=submit50:main"]
     },
     url="https://github.com/cs50/submit50",
-    version="2.4.1"
+    version="2.4.2"
 )
