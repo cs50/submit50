@@ -520,7 +520,8 @@ def submit(org, branch):
     except BaseException:
         if password:
             e = Error(_("Looks like {} isn't enabled for your account yet. "
-                        "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run {} here!".format(org, org)))
+                        "Log into https://cs50.me/ in a browser, click \"Authorize application\", and re-run {} here!"
+                        "If you've already done so, see cs50.ly/authorize for more info!".format(org, org)))
         else:
             e = Error(_("Looks like you have the wrong username in ~/.gitconfig or {} isn't yet enabled for your account. "
                         "Double-check ~/.gitconfig and then log into https://cs50.me/ in a browser, "
