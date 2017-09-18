@@ -466,9 +466,11 @@ def submit(org, branch):
         e.__cause__ = None
         raise e
     if slug.startswith("/") and slug.endswith("/"):
-        raise Error(_("Invalid slug. Did you mean {}, without the slashes?".format(slug.strip("/"))))
-    elif slug.startswith("/") or slug.endswith("/"):
-        raise Error(_("Invalid slug. Did you mean {}, without the slash?".format(slug.strip("/"))))
+        raise Error(_("Invalid slug. Did you mean {}, without the leading and trailing slashes?".format(slug.strip("/"))))
+    elif slug.startswith("/"):
+        raise Error(_("Invalid slug. Did you mean {}, without the leading slash?".format(slug.strip("/"))))
+    elif slug.endswith("/"):
+        raise Error(_("Invalid slug. Did you mean {}, without the trailing slash?".format(slug.strip("/"))))
 
     # check for missing files
     missing = []
