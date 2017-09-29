@@ -35,7 +35,7 @@ from six.moves import urllib
 from threading import Thread
 
 # Internationalization
-gettext.bindtextdomain("messages", os.path.join(sys.path[0], "locale"))
+gettext.bindtextdomain("messages", os.path.join(sys.prefix, "submit50/locale"))
 gettext.textdomain("messages")
 _ = gettext.gettext
 
