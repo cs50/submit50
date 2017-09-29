@@ -79,5 +79,5 @@ problems for CS50.",
     },
     data_files=create_mo_files(),
     url="https://github.com/cs50/submit50",
-    version="2.4.4"
+    version="2.4.5"
 )
