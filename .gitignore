@@ -1,4 +1,5 @@
 .*
+*.mo
 !.gitignore
 !.travis.yml
 __pycache__

@@ -35,7 +35,7 @@ from six.moves import urllib
 from threading import Thread
 
 # Internationalization
-gettext.bindtextdomain("messages", os.path.join(sys.path[0], "locale"))
+gettext.bindtextdomain("messages", os.path.join(sys.prefix, "submit50/locale"))
 gettext.textdomain("messages")
 _ = gettext.gettext
 
@@ -48,7 +48,6 @@ if sys.version_info < (3, 0):
 if not hasattr(shlex, "quote"):
     shlex.quote = pipes.quote
 
-ORG = "submit50"
 timestamp = None
 
 
@@ -141,7 +140,7 @@ def authenticate(org):
         os.mkdir(cache, 0o700)
     except BaseException:
         pass
-    authenticate.SOCKET = os.path.join(cache, ORG)
+    authenticate.SOCKET = os.path.join(cache, "submit50")
 
     spawn = pexpect.spawn if sys.version_info < (3, 0) else pexpect.spawnu
     child = spawn(
@@ -313,9 +312,10 @@ def handler(number, frame):
     except Exception:
         pass
     teardown()
-    cprint(_("Submission cancelled."), "red")
+    cprint(_("{} cancelled.".format(handler.type.capitalize())), "red")
     os._exit(0)
 
+handler.type = "submission"
 
 def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeout=None):
     """Run a command."""
