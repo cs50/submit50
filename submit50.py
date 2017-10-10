@@ -331,8 +331,6 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeo
             env["SSH_AUTH_SOCK"] = os.getenv("SSH_AUTH_SOCK")
 
     # spawn command
-    print("ENV:")
-    print(env)
     if sys.version_info < (3, 0):
         child = pexpect.spawn(command, cwd=cwd, env=env, ignore_sighup=True, timeout=timeout)
     else:
