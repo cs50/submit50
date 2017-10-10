@@ -562,32 +562,47 @@ def submit(org, branch):
     run("git add --all")
 
     # get file lists
-    files = run("git -c core.quotepath=off ls-files").splitlines()
-    other = run("git -c core.quotepath=off ls-files --exclude-standard --other").splitlines()
+    files = run("git ls-files").splitlines()
+    others = run("git ls-files --exclude-standard --other").splitlines()
+
+    # unescape any octal codes in lists
+    # https://stackoverflow.com/a/46650050/5156190
+    def unescape(s):
+        if s.startswith('"') and s.endswith('"'):
+            return (
+                    s.replace('"', '')
+                    .encode("latin1")
+                    .decode("unicode-escape")
+                    .encode("latin1")
+                    .decode("utf8")
+                )
+        return s
+    files = [unescape(file) for file in files]
+    others = [unescape(other) for other in others]
 
     # check for large files > 100 MB (and huge files > 2 GB)
     # https://help.github.com/articles/conditions-for-large-files/
     # https://help.github.com/articles/about-git-large-file-storage/
-    large, huge = [], []
+    larges, huges = [], []
     for file in files:
         size = os.path.getsize(file)
         if size > (100 * 1024 * 1024):
-            large.append(file)
+            larges.append(file)
         elif size > (2 * 1024 * 1024 * 1024):
-            huge.append(file)
-    if len(huge) > 0:
+            huges.append(file)
+    if len(huges) > 0:
         raise Error(_("These files are too large to be submitted:\n{}\n"
                       "Remove these files from your directory "
-                      "and then re-run {}!").format("\n".join(huge), org))
-    elif len(large) > 0:
+                      "and then re-run {}!").format("\n".join(huges), org))
+    elif len(larges) > 0:
         if not which("git-lfs"):
             raise Error(_("These files are too large to be submitted:\n{}\n"
                           "Install git-lfs (or remove these files from your directory) "
-                          "and then re-run {}!").format("\n".join(large), org))
+                          "and then re-run {}!").format("\n".join(larges), org))
         run("git lfs install --local")
-        run("git config credential.helper cache")  # for pre-push hook
-        for file in large:
-            run("git lfs track {}".format(file))
+        run("git config credential.helper cache") # for pre-push hook
+        for large in larges:
+            run("git lfs track {}".format(large))
         run("git add --force .gitattributes")
 
     # files that will be submitted
@@ -598,13 +613,13 @@ def submit(org, branch):
     if org == "submit50":
         if len(files) == 1:
             cprint(_("Files that will be submitted:"), "green")
-        for f in files:
-            cprint("./{}".format(f), "green")
+        for file in files:
+            cprint("./{}".format(file), "green")
 
         # files that won't be submitted
-        if len(other) != 0:
+        if len(others) != 0:
             cprint(_("Files that won't be submitted:"), "yellow")
-            for f in other:
+            for other in others:
                 cprint("./{}".format(f), "yellow")
 
         # prompt for honesty
