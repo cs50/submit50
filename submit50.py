@@ -623,6 +623,7 @@ def submit(org, branch):
                 cprint("./{}".format(f), "yellow")
 
         # prompt for honesty
+        readline.clear_history()
         try:
             answer = input(_("Keeping in mind the course's policy on academic honesty, "
                              "are you sure you want to submit these files (yes/no)? "))
