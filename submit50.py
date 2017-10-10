@@ -175,42 +175,36 @@ def authenticate(org):
     if not password:
 
         # prompt for username, prefilling if possible
-        while True:
-            progress(False)
-            try:
-                username = rlinput(_("GitHub username: "), username).strip()
-                if username:
-                    break
-            except EOFError:
-                print()
+        progress(False)
+        try:
+            username = rlinput(_("GitHub username: "), username).strip()
+        except EOFError:
+            print()
 
         # prompt for password
+        print(_("GitHub password: "), end="")
+        sys.stdout.flush()
+        password = str()
         while True:
-            print(_("GitHub password: "), end="")
-            sys.stdout.flush()
-            password = str()
-            while True:
-                ch = getch()
-                if ch in ["\n", "\r"]:  # Enter
-                    print()
-                    break
-                elif ch == "\177":  # DEL
-                    if len(password) > 0:
-                        password = password[:-1]
-                        print("\b \b", end="")
-                        sys.stdout.flush()
-                elif ch == "\3":  # ctrl-c
-                    print("^C", end="")
-                    os.kill(os.getpid(), signal.SIGINT)
-                elif ch == "\4":  # ctrl-d
-                    print()
-                    break
-                else:
-                    password += ch
-                    print("*", end="")
-                    sys.stdout.flush()
-            if password:
+            ch = getch()
+            if ch in ["\n", "\r"]:  # Enter
+                print()
                 break
+            elif ch == "\177":  # DEL
+                if len(password) > 0:
+                    password = password[:-1]
+                    print("\b \b", end="")
+                    sys.stdout.flush()
+            elif ch == "\3":  # ctrl-c
+                print("^C", end="")
+                os.kill(os.getpid(), signal.SIGINT)
+            elif ch == "\4":  # ctrl-d
+                print()
+                break
+            else:
+                password += ch
+                print("*", end="")
+                sys.stdout.flush()
 
     # authenticate user
     email = "{}@users.noreply.github.com".format(username)
