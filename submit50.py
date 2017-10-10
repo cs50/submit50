@@ -337,6 +337,8 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeo
             env["SSH_AUTH_SOCK"] = os.getenv("SSH_AUTH_SOCK")
 
     # spawn command
+    print("ENV:")
+    print(env)
     if sys.version_info < (3, 0):
         child = pexpect.spawn(command, cwd=cwd, env=env, ignore_sighup=True, timeout=timeout)
     else:
@@ -580,6 +582,10 @@ def submit(org, branch):
     files = [unescape(file) for file in files]
     others = [unescape(other) for other in others]
 
+    # hide .gitattributes, if any, from output
+    if ".gitattributes" in files:
+        files.remove(".gitattributes")
+
     # check for large files > 100 MB (and huge files > 2 GB)
     # https://help.github.com/articles/conditions-for-large-files/
     # https://help.github.com/articles/about-git-large-file-storage/
@@ -602,7 +608,9 @@ def submit(org, branch):
         run("git lfs install --local")
         run("git config credential.helper cache") # for pre-push hook
         for large in larges:
+            run("git rm --cached {}".format(large))
             run("git lfs track {}".format(large))
+            run("git add {}".format(large))
         run("git add --force .gitattributes")
 
     # files that will be submitted
@@ -611,13 +619,13 @@ def submit(org, branch):
 
     # prompts for submit50
     if org == "submit50":
-        if len(files) == 1:
+        if files:
             cprint(_("Files that will be submitted:"), "green")
-        for file in files:
-            cprint("./{}".format(file), "green")
+            for file in files:
+                cprint("./{}".format(file), "green")
 
         # files that won't be submitted
-        if len(others) != 0:
+        if others:
             cprint(_("Files that won't be submitted:"), "yellow")
             for other in others:
                 cprint("./{}".format(f), "yellow")
