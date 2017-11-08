@@ -557,7 +557,7 @@ def submit(org, branch):
 
     # get file lists
     files = run("git ls-files").splitlines()
-    others = run("git ls-files --exclude-standard --other").splitlines()
+    others = run("git ls-files --exclude-from={}/info/exclude --other".format(run.GIT_DIR)).splitlines()
 
     # unescape any octal codes in lists
     # https://stackoverflow.com/a/46650050/5156190
@@ -620,7 +620,7 @@ def submit(org, branch):
         if others:
             cprint(_("Files that won't be submitted:"), "yellow")
             for other in others:
-                cprint("./{}".format(f), "yellow")
+                cprint("./{}".format(other), "yellow")
 
         # prompt for honesty
         readline.clear_history()
