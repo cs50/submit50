@@ -175,42 +175,36 @@ def authenticate(org):
     if not password:
 
         # prompt for username, prefilling if possible
-        while True:
-            progress(False)
-            try:
-                username = rlinput(_("GitHub username: "), username).strip()
-                if username:
-                    break
-            except EOFError:
-                print()
+        progress(False)
+        try:
+            username = rlinput(_("GitHub username: "), username).strip()
+        except EOFError:
+            print()
 
         # prompt for password
+        print(_("GitHub password: "), end="")
+        sys.stdout.flush()
+        password = str()
         while True:
-            print(_("GitHub password: "), end="")
-            sys.stdout.flush()
-            password = str()
-            while True:
-                ch = getch()
-                if ch in ["\n", "\r"]:  # Enter
-                    print()
-                    break
-                elif ch == "\177":  # DEL
-                    if len(password) > 0:
-                        password = password[:-1]
-                        print("\b \b", end="")
-                        sys.stdout.flush()
-                elif ch == "\3":  # ctrl-c
-                    print("^C", end="")
-                    os.kill(os.getpid(), signal.SIGINT)
-                elif ch == "\4":  # ctrl-d
-                    print()
-                    break
-                else:
-                    password += ch
-                    print("*", end="")
-                    sys.stdout.flush()
-            if password:
+            ch = getch()
+            if ch in ["\n", "\r"]:  # Enter
+                print()
                 break
+            elif ch == "\177":  # DEL
+                if len(password) > 0:
+                    password = password[:-1]
+                    print("\b \b", end="")
+                    sys.stdout.flush()
+            elif ch == "\3":  # ctrl-c
+                print("^C", end="")
+                os.kill(os.getpid(), signal.SIGINT)
+            elif ch == "\4":  # ctrl-d
+                print()
+                break
+            else:
+                password += ch
+                print("*", end="")
+                sys.stdout.flush()
 
     # authenticate user
     email = "{}@users.noreply.github.com".format(username)
@@ -563,31 +557,52 @@ def submit(org, branch):
 
     # get file lists
     files = run("git ls-files").splitlines()
-    other = run("git ls-files --exclude-standard --other").splitlines()
+    others = run("git ls-files --exclude-standard --other").splitlines()
+
+    # unescape any octal codes in lists
+    # https://stackoverflow.com/a/46650050/5156190
+    def unescape(s):
+        if s.startswith('"') and s.endswith('"'):
+            return (
+                    s.replace('"', '')
+                    .encode("latin1")
+                    .decode("unicode-escape")
+                    .encode("latin1")
+                    .decode("utf8")
+                )
+        return s
+    files = [unescape(file) for file in files]
+    others = [unescape(other) for other in others]
+
+    # hide .gitattributes, if any, from output
+    if ".gitattributes" in files:
+        files.remove(".gitattributes")
 
     # check for large files > 100 MB (and huge files > 2 GB)
     # https://help.github.com/articles/conditions-for-large-files/
     # https://help.github.com/articles/about-git-large-file-storage/
-    large, huge = [], []
+    larges, huges = [], []
     for file in files:
         size = os.path.getsize(file)
         if size > (100 * 1024 * 1024):
-            large.append(file)
+            larges.append(file)
         elif size > (2 * 1024 * 1024 * 1024):
-            huge.append(file)
-    if len(huge) > 0:
+            huges.append(file)
+    if len(huges) > 0:
         raise Error(_("These files are too large to be submitted:\n{}\n"
                       "Remove these files from your directory "
-                      "and then re-run {}!").format("\n".join(huge), org))
-    elif len(large) > 0:
+                      "and then re-run {}!").format("\n".join(huges), org))
+    elif len(larges) > 0:
         if not which("git-lfs"):
             raise Error(_("These files are too large to be submitted:\n{}\n"
                           "Install git-lfs (or remove these files from your directory) "
-                          "and then re-run {}!").format("\n".join(large), org))
+                          "and then re-run {}!").format("\n".join(larges), org))
         run("git lfs install --local")
-        run("git config credential.helper cache")  # for pre-push hook
-        for file in large:
-            run("git lfs track {}".format(file))
+        run("git config credential.helper cache") # for pre-push hook
+        for large in larges:
+            run("git rm --cached {}".format(large))
+            run("git lfs track {}".format(large))
+            run("git add {}".format(large))
         run("git add --force .gitattributes")
 
     # files that will be submitted
@@ -596,18 +611,19 @@ def submit(org, branch):
 
     # prompts for submit50
     if org == "submit50":
-        if len(files) == 1:
+        if files:
             cprint(_("Files that will be submitted:"), "green")
-        for f in files:
-            cprint("./{}".format(f), "green")
+            for file in files:
+                cprint("./{}".format(file), "green")
 
         # files that won't be submitted
-        if len(other) != 0:
+        if others:
             cprint(_("Files that won't be submitted:"), "yellow")
-            for f in other:
+            for other in others:
                 cprint("./{}".format(f), "yellow")
 
         # prompt for honesty
+        readline.clear_history()
         try:
             answer = input(_("Keeping in mind the course's policy on academic honesty, "
                              "are you sure you want to submit these files (yes/no)? "))
