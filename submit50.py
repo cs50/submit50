@@ -557,7 +557,7 @@ def submit(org, branch):
 
     # get file lists
     files = run("git ls-files").splitlines()
-    others = run("git ls-files --exclude-standard --other").splitlines()
+    others = run("git ls-files --exclude-from={}/info/exclude --other".format(run.GIT_DIR)).splitlines()
 
     # unescape any octal codes in lists
     # https://stackoverflow.com/a/46650050/5156190
