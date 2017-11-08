@@ -620,7 +620,7 @@ def submit(org, branch):
         if others:
             cprint(_("Files that won't be submitted:"), "yellow")
             for other in others:
-                cprint("./{}".format(f), "yellow")
+                cprint("./{}".format(other), "yellow")
 
         # prompt for honesty
         readline.clear_history()
