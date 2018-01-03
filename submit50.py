@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import argparse
 import atexit
+import base64
 import datetime
 import distutils
 import gettext
@@ -453,24 +454,29 @@ def submit(org, branch):
     except ValueError:
         slug, src = branch, "cs50/checks"
 
-    # ensure slug exists
-    file, submit.EXCLUDE = tempfile.mkstemp()
-    url = "https://github.com/{}/raw/master/{}/submit50/exclude".format(src, slug)
-    try:
-        urllib.request.urlretrieve(url, filename=submit.EXCLUDE)
-        lines = open(submit.EXCLUDE)
-    except Exception as e:
-        if run.verbose:
-            cprint(str(e))
-        e = Error(_("Invalid slug. Did you mean to submit something else?"))
-        e.__cause__ = None
-        raise e
+    # check for common mistakes
     if slug.startswith("/") and slug.endswith("/"):
         raise Error(_("Invalid slug. Did you mean {}, without the leading and trailing slashes?".format(slug.strip("/"))))
     elif slug.startswith("/"):
         raise Error(_("Invalid slug. Did you mean {}, without the leading slash?".format(slug.strip("/"))))
     elif slug.endswith("/"):
         raise Error(_("Invalid slug. Did you mean {}, without the trailing slash?".format(slug.strip("/"))))
+
+    # get slug's gitignore file
+    try:
+        res = requests.get("https://api.github.com/repos/{}/contents/{}/submit50/exclude".format(src, slug),
+                           headers={"Accept": "application/vnd.github.v3.raw"})
+        assert res.status_code == 200
+        fd, submit.EXCLUDE = tempfile.mkstemp()
+        with os.fdopen(fd, "w") as file:
+            file.write(res.text)
+        lines = res.text.splitlines()
+    except Exception as e:
+        if run.verbose:
+            cprint(str(e))
+        e = Error(_("Invalid slug. Did you mean to submit something else?"))
+        e.__cause__ = None
+        raise e
 
     # check for missing files
     missing = []
