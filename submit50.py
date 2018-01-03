@@ -220,10 +220,16 @@ def authenticate(org):
 
     # check if incorrect password
     if res.status_code == 401:
+        if run.verbose:
+            cprint(str(res.headers), "yellow")
+            cprint(res.text, "yellow")
         raise Error(_("Invalid username and/or password."))
 
     # check for other error
     elif res.status_code != 200:
+        if run.verbose:
+            cprint(str(res.headers), "yellow")
+            cprint(res.text, "yellow")
         raise Error(_("Could not authenticate user."))
 
     # canonicalize (capitalization of) username,
