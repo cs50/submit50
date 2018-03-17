@@ -574,11 +574,10 @@ def submit(org, branch):
                     .encode("latin1")
                     .decode("unicode-escape")
                     .encode("latin1")
-                    .decode("utf8")
+                    .decode("utf8", "replace")
+                    .replace("\uFFFD", "?")
                 )
         return s
-    files = [unescape(file) for file in files]
-    others = [unescape(other) for other in others]
 
     # hide .gitattributes, if any, from output
     if ".gitattributes" in files:
@@ -620,13 +619,13 @@ def submit(org, branch):
         if files:
             cprint(_("Files that will be submitted:"), "green")
             for file in files:
-                cprint("./{}".format(file), "green")
+                cprint("./{}".format(unescape(file)), "green")
 
         # files that won't be submitted
         if others:
             cprint(_("Files that won't be submitted:"), "yellow")
             for other in others:
-                cprint("./{}".format(other), "yellow")
+                cprint("./{}".format(unescape(other)), "yellow")
 
         # prompt for honesty
         readline.clear_history()
