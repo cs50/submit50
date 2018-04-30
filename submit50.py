@@ -606,9 +606,9 @@ def submit(org, branch):
         run("git lfs install --local")
         run("git config credential.helper cache") # for pre-push hook
         for large in larges:
-            run("git rm --cached {}".format(large))
-            run("git lfs track {}".format(large))
-            run("git add {}".format(large))
+            run("git rm --cached {}".format(shlex.quote(large)))
+            run("git lfs track {}".format(shlex.quote(large)))
+            run("git add {}".format(shlex.quote(large)))
         run("git add --force .gitattributes")
 
     # files that will be submitted
