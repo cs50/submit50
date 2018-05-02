@@ -317,7 +317,7 @@ def handler(number, frame):
 
 handler.type = "submission"
 
-def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeout=None):
+def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, raw=False, timeout=None):
     """Run a command."""
 
     # echo command
@@ -343,14 +343,17 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeo
         child = pexpect.spawnu(
             command,
             cwd=cwd,
-            encoding="utf-8",
+            encoding=None if raw else "utf-8",
             env=env,
             ignore_sighup=True,
             timeout=timeout)
 
     # send output of command to stdout only if run with --verbose (and not quieted by caller)
     if run.verbose and not quiet:
-        child.logfile_read = sys.stdout
+        if raw:
+            child.logfile_read = sys.stdout.buffer
+        else:
+            child.logfile_read = sys.stdout
 
     # wait for prompt, send password
     if password:
@@ -363,7 +366,12 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeo
         child.sendline(line)
 
     # read output, check status
-    command_output = child.read().strip()
+    if raw:
+        command_output = child.read()
+        if run.verbose and not quiet:
+            sys.stdout.buffer.write(b"\n")
+    else:
+        command_output = child.read().strip()
     child.close()
     if child.signalstatus is None and child.exitstatus != 0:
         raise Error()
@@ -562,8 +570,8 @@ def submit(org, branch):
     run("git add --all")
 
     # get file lists
-    files = run("git ls-files").splitlines()
-    others = run("git ls-files --exclude-from={}/info/exclude --other".format(run.GIT_DIR)).splitlines()
+    files = run("git ls-files -z", raw=True).split(b"\0")[:-1]
+    others = run("git ls-files --exclude-from={}/info/exclude --other -z".format(run.GIT_DIR), raw=True).split(b"\0")[:-1]
 
     # unescape any octal codes in lists
     # https://stackoverflow.com/a/46650050/5156190
@@ -577,8 +585,6 @@ def submit(org, branch):
                     .decode("utf8")
                 )
         return s
-    files = [unescape(file) for file in files]
-    others = [unescape(other) for other in others]
 
     # hide .gitattributes, if any, from output
     if ".gitattributes" in files:
@@ -620,13 +626,13 @@ def submit(org, branch):
         if files:
             cprint(_("Files that will be submitted:"), "green")
             for file in files:
-                cprint("./{}".format(file), "green")
+                cprint("./{}".format(file.decode("utf-8", "replace")), "green")
 
         # files that won't be submitted
         if others:
             cprint(_("Files that won't be submitted:"), "yellow")
             for other in others:
-                cprint("./{}".format(other), "yellow")
+                cprint("./{}".format(other.decode("utf-8", "replace")), "yellow")
 
         # prompt for honesty
         readline.clear_history()
