@@ -7,6 +7,23 @@ from setuptools.command.install import install
 from subprocess import call
 from sys import platform, version_info
 
+requires = [
+        "backports.shutil_get_terminal_size", "backports.shutil_which",
+        "pexpect>=4.0", "requests", "six", "termcolor"
+]
+
+# check whether we have a Homebrew or Python installation of Python
+INSTALL_CERTS = "/Applications/Python 3.6/Install Certificates.command"
+HOMEBREW_PYTHON = "/usr/local/bin/python3"
+
+if platform == "darwin" and version_info >= (3, 6):
+    if not isfile(INSTALL_CERTS) or call(INSTALL_CERTS) != 0:
+        if not isfile(HOMEBREW_PYTHON):
+            raise RuntimeError("Install certificates not found and no Homebrew Python installed!")
+        else:
+            # certifi library installs needed certificates
+            requires.append("certifi")
+
 def create_mo_files():
     """Compiles .po files in local/LANG to .mo files and returns them as array of data_files"""
 
@@ -32,10 +49,6 @@ def install_certs(cmd):
     orig_run = cmd.run
 
     def run(self):
-        if platform == "darwin" and version_info >= (3, 6):
-            INSTALL_CERTS = "/Applications/Python 3.6/Install Certificates.command"
-            if not isfile(INSTALL_CERTS) or call(INSTALL_CERTS) != 0:
-                raise RuntimeError("Error installing certificates.")
         orig_run(self)
 
     cmd.run = run
@@ -63,10 +76,7 @@ setup(
     ],
     description="This is submit50, with which you can submit solutions to \
 problems for CS50.",
-    install_requires=[
-        "backports.shutil_get_terminal_size", "backports.shutil_which",
-        "pexpect>=4.0", "requests", "six", "termcolor"
-    ],
+    install_requires=requires,
     keywords=["submit", "submit50"],
     name="submit50",
     py_modules=["submit50"],
