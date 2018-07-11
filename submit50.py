@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import gettext
 import logging
@@ -7,6 +9,7 @@ import readline
 import shutil
 import sys
 import textwrap
+import traceback
 
 import push50
 import requests
@@ -94,8 +97,12 @@ def excepthook(type, value, tb):
     else:
         cprint(_("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), "yellow")
 
+    if excepthook.verbose:
+        traceback.print_exception(type, value, tb)
+
     cprint(_("Submission cancelled."), "red")
 
+excepthook.verbose = True
 
 if __name__ == "__main__":
 
@@ -112,10 +119,11 @@ if __name__ == "__main__":
         "prescribed identifier of work to submit"))
 
     args = parser.parse_args()
+    excepthook.verbose = args.verbose
 
     if args.verbose:
         logging.basicConfig(level="INFO")
-        push50.ProgressBar.DISBALED = True
+        push50.ProgressBar.DISABLED = True
 
     check_announcements()
     check_version()
