@@ -109,8 +109,15 @@ class LogoutAction(argparse.Action):
     def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=_("logout of submit50")):
         super().__init__(option_strings, dest=dest, nargs=0, default=default, help=help)
 
-    def __call__(*args, **kwargs):
-        push50.logout()
+    def __call__(self, parser, namespace, values, option_string=None):
+        try:
+            push50.logout()
+        except Error:
+            raise Error(_("failed to logout")) from None
+        else:
+            cprint(_("logged out successfully"), "green")
+        parser.exit()
+
 
 def main():
     sys.excepthook = excepthook

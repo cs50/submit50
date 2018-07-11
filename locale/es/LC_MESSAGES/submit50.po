@@ -40,3 +40,12 @@ msgstr "mostrar este mensaje de ayuda y salir"
 
 msgid "Submission cancelled."
 msgstr "La entrega se canceló."
+
+msgid "logout of submit50"
+msgstr "cerrar sesión de submit50"
+
+msgid "logged out successfully"
+msgstr "la sesión se cerró correctamente"
+
+msgid "failed to logout"
+msgstr "no se pudo cerrar la sesión"
