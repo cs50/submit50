@@ -112,12 +112,8 @@ class LogoutAction(argparse.Action):
     def __call__(*args, **kwargs):
         push50.logout()
 
-
-if __name__ == "__main__":
-
+def main():
     sys.excepthook = excepthook
-
-    logging.basicConfig(level="INFO")
 
     # define command-line arguments
     parser = argparse.ArgumentParser()
@@ -139,3 +135,7 @@ if __name__ == "__main__":
     check_version()
 
     push50.push(org="submit50", slug=args.slug, tool="submit50", prompt=prompt)
+
+
+if __name__ == "__main__":
+    main()
