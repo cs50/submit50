@@ -102,6 +102,7 @@ def excepthook(type, value, tb):
 
     cprint(_("Submission cancelled."), "red")
 
+
 excepthook.verbose = True
 
 if __name__ == "__main__":
