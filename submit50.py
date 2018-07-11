@@ -13,7 +13,7 @@ import requests
 import termcolor
 
 # Internationalization
-gettext.install("messages", pkg_resources.resource_filename("submit50", "locale"))
+gettext.install("submit50", pkg_resources.resource_filename("submit50", "locale"))
 
 
 class Error(Exception):
@@ -64,6 +64,8 @@ def prompt(included, excluded):
         cprint(_("Files that will be submitted:"), "green")
         for file in included:
             cprint("./{}".format(file), "green")
+    else:
+        raise Error(_("No files in this directory are expected for submission."))
 
     # files that won't be submitted
     if excluded:
@@ -96,7 +98,10 @@ def excepthook(type, value, tb):
 
 
 if __name__ == "__main__":
+
     sys.excepthook = excepthook
+
+    logging.basicConfig(level="INFO")
 
     # define command-line arguments
     parser = argparse.ArgumentParser()
@@ -104,12 +109,13 @@ if __name__ == "__main__":
                         action="store_true",
                         help=_("show commands being executed"))
     parser.add_argument("slug", help=_(
-        "prescribed identifier of work to submit: <org>/<repo>/<branch>/<problem> "))
+        "prescribed identifier of work to submit"))
 
     args = parser.parse_args()
 
     if args.verbose:
-        logging.basicConfig(level="DEBUG")
+        logging.basicConfig(level="INFO")
+        push50.ProgressBar.DISBALED = True
 
     check_announcements()
     check_version()
