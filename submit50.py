@@ -105,6 +105,14 @@ def excepthook(type, value, tb):
 
 excepthook.verbose = True
 
+class LogoutAction(argparse.Action):
+    def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=_("logout of submit50")):
+        super().__init__(option_strings, dest=dest, nargs=0, default=default, help=help)
+
+    def __call__(*args, **kwargs):
+        push50.logout()
+
+
 if __name__ == "__main__":
 
     sys.excepthook = excepthook
@@ -113,6 +121,7 @@ if __name__ == "__main__":
 
     # define command-line arguments
     parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--logout", action=LogoutAction)
     parser.add_argument("-v", "--verbose",
                         action="store_true",
                         help=_("show commands being executed"))
@@ -120,8 +129,8 @@ if __name__ == "__main__":
         "prescribed identifier of work to submit"))
 
     args = parser.parse_args()
-    excepthook.verbose = args.verbose
 
+    excepthook.verbose = args.verbose
     if args.verbose:
         logging.basicConfig(level="INFO")
         push50.ProgressBar.DISABLED = True
