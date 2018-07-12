@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 import argparse
 import gettext
 import logging
@@ -59,8 +59,6 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     termcolor.cprint(textwrap.fill(text, columns, drop_whitespace=False),
                      color=color, on_color=on_color, attrs=attrs, **kwargs)
 
-# example check50 call
-
 
 def prompt(included, excluded):
     if included:
@@ -93,7 +91,8 @@ def prompt(included, excluded):
 def excepthook(type, value, tb):
     """Report an exception."""
     if (issubclass(type, Error) or issubclass(type, push50.Error)) and str(value):
-        cprint(str(value), "yellow")
+        for line in str(value).split("\n"):
+            cprint(str(line), "yellow")
     else:
         cprint(_("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), "yellow")
 
@@ -142,7 +141,6 @@ def main():
     check_version()
 
     push50.push(org="submit50", slug=args.slug, tool="submit50", prompt=prompt)
-
 
 if __name__ == "__main__":
     main()
