@@ -24,21 +24,21 @@ class Error(Exception):
 
 
 def check_announcements():
-    """Check for any announcements from cs50.me, raise Error if so"""
+    """Check for any announcements from cs50.me, raise Error if so."""
     res = requests.get("https://cs50.me/status/submit50")  # TODO change this to submit50.io!
     if res.status_code == 200 and res.text.strip():
         raise Error(res.text.strip())
 
 
 def check_version():
-    """Check that submit50 is the latest version according to submit50.io"""
-    # retrieve version info
+    """Check that submit50 is the latest version according to submit50.io."""
+    # Retrieve version info
     res = requests.get("https://cs50.me/versions/submit50")  # TODO change this to submit50.io!
     if res.status_code != 200:
         raise Error(_("You have an unknown version of submit50. "
                       "Email sysadmins@cs50.harvard.edu!"))
 
-    # check that latest version == version installed
+    # Check that latest version == version installed
     required_required = pkg_resources.parse_version(res.text.strip())
     # local_version = pkg_resources.parse_version(pkg_resources.get_distribution("submit50").version)
 
@@ -50,12 +50,12 @@ def check_version():
 
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
-    # assume 80 in case not running in a terminal
+    # Assume 80 in case not running in a terminal
     columns, lines = shutil.get_terminal_size()
     if columns == 0:
-        columns = 80  # because get_terminal_size's default fallback doesn't work in pipes
+        columns = 80  # Because get_terminal_size's default fallback doesn't work in pipes
 
-    # print text
+    # Print text
     termcolor.cprint(textwrap.fill(text, columns, drop_whitespace=False),
                      color=color, on_color=on_color, attrs=attrs, **kwargs)
 
@@ -68,13 +68,13 @@ def prompt(included, excluded):
     else:
         raise Error(_("No files in this directory are expected for submission."))
 
-    # files that won't be submitted
+    # Files that won't be submitted
     if excluded:
         cprint(_("Files that won't be submitted:"), "yellow")
         for other in excluded:
             cprint("./{}".format(other), "yellow")
 
-    # prompt for honesty
+    # Prompt for honesty
     readline.clear_history()
     try:
         answer = input(_("Keeping in mind the course's policy on academic honesty, "
@@ -121,7 +121,7 @@ class LogoutAction(argparse.Action):
 def main():
     sys.excepthook = excepthook
 
-    # define command-line arguments
+    # Define command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--logout", action=LogoutAction)
     parser.add_argument("-v", "--verbose",
