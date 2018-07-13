@@ -15,6 +15,8 @@ import push50
 import requests
 import termcolor
 
+from . import __version__
+
 # Internationalization
 gettext.install("submit50", pkg_resources.resource_filename("submit50", "locale"))
 
@@ -121,12 +123,12 @@ class LogoutAction(argparse.Action):
 def main():
     sys.excepthook = excepthook
 
-    # Define command-line arguments
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="submit50")
     parser.add_argument("-l", "--logout", action=LogoutAction)
     parser.add_argument("-v", "--verbose",
                         action="store_true",
                         help=_("show commands being executed"))
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("slug", help=_(
         "prescribed identifier of work to submit"))
 
