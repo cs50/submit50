@@ -14,7 +14,7 @@ setup(
         'submit50': [('**.py', 'python', None),],
     },
     description="This is submit50, CS50's internal library for using GitHub as data storage.",
-    install_requires=["babel", "push50", "requests", "termcolor"],
+    install_requires=["push50", "requests", "termcolor"],
     keywords=["submit", "submit50"],
     name="submit50",
     python_requires=">= 3.6",
