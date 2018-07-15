@@ -9,7 +9,6 @@ setup(
         "Topic :: Education",
         "Topic :: Utilities"
     ],
-    cmdclass=cmdclass,
     message_extractors = {
         'submit50': [('**.py', 'python', None),],
     },
