@@ -10,7 +10,6 @@ install: pip install --upgrade .
 script: 
   - submit50 --help
   - python setup.py compile_catalog
-# TODO: remove branches flag when we actually deploy
 before_deploy: |
   version="v$(submit50 --version | cut --delimiter ' ' --fields 2)"
   if [ -z "$(git tag --list "$version")" ]; then \
