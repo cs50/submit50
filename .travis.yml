@@ -1,33 +1,35 @@
 language: python
-python:
-- '2.7'
-- '3.4'
-dist: trusty
-sudo: false
+python: 3.6
 branches:
-  except: "/^v\\d/"
-install: true
-script:
-- pip install .
-- submit50 --help
-jobs:
-  include:
-  - stage: deploy
-    python: '3.4'
-    install: true
-    script: skip
-    deploy:
-    - provider: script
-      script: 'curl --fail --data "{ \"tag_name\": \"v$(python setup.py --version)\",
-        \"target_commitish\": \"$TRAVIS_COMMIT\", \"name\": \"v$(python setup.py --version)\"
-        }" --user bot50:$GITHUB_TOKEN https://api.github.com/repos/$TRAVIS_REPO_SLUG/releases'
-      on:
-        branch: master
-    - provider: pypi
-      user: "$PYPI_USERNAME"
-      password: "$PYPI_PASSWORD"
-      on:
-        branch: master
+  except: /^v\.\d\.\d\.\d/
+before_install:
+  - pip install babel
+  # TODO: remove when push50 is on pypi
+  - pip install git+git://github.com/cs50/push50
+install: pip install --upgrade .
+script: 
+  - submit50 --help
+  - python setup.py compile_catalog
+# TODO: remove branches flag when we actually deploy
+before_deploy: |
+  version="v$(submit50 --version | cut --delimiter ' ' --fields 2)"
+  if [ -z "$(git tag --list "$version")" ]; then \
+      git config --local user.name "bot50"; \
+      git config --local user.email "bot@cs50.harvard.edu"; \
+      git tag "$version"; \
+  fi
+deploy:
+- provider: releases
+  api_key: $GH_TOKEN
+  skip_cleanup: true
+  on:
+    branch: master
+- provider: pypi
+  user: "$PYPI_USERNAME"
+  password: "$PYPI_PASSWORD"
+  skip_cleanup: true
+  on:
+    branch: master
 notifications:
   slack:
-    secure: BEHsqQe6Z7ja0+hJ2oApQAtAvdUijWf3BKDmOwcKPeTurpnSeKfQ0ocaJkwakvT7Uy237THPFVf4L5+TIHCpF4MpxjYQRZOfkbXyNdA8vm7ohuuC7jJk0UGks02FoXl65hG6ZaETYZVHqvUbCy7EpGu0LRi/hFCpzWDa12HPzxm9jDTXp5e2lvED+vuwZNI9VEoqdA1MLPSZp1TRpwY3OcQfVZ7U2NfT8nUIcpCcpEXsFYuhl+j/Xmae7CwBfRS//6T8vGbBDhuSqzeHGgr9209yuwQZ9nRiyrH8nAKrseTJCLFEDuDxFqgpBZ920Yuz9aPshjFYalWfBs48tSf/9x0pLdfzuZ3JvSLvIghXOlZlyG8ddLUsrIU/SDPl4eAv4z75k6SPGapSPew3e7S5r8Ihxlfylxx8FsBafMa5gkF/vcunLYHjkzlVLqqLU2qV7b755bj7cMvcPgcsCBnv+2huPgEKeaOodV85tlzOIX5YgLc/vjidmT3ILCycVXvElWxiuQdVEPTITTSBhPYR8z/+AXdjkIAFS7Fk6pnTUcIr8wGSkcGDRswIpR8NBB2cX4UCU50Fg9U84/FMIKdthDdYCWOpdBlrw+rkCrSlY0pns9IP6Pm9Lnq60uRD8LB7xcoVTdd23rGRKgHPU1M7ZdTwVVhQHQFYSIQf01IlLs0=
+    secure: DHyiOOI74L9aIi2raGNpsGpyNC5STBci9HvL22l+ujl0h4rcT3fg50Gj9tTtvlKsJwe+gGMx8nXwZZRO/d6uuBlr5Sez3DcBaQbC5YRJQDAxorL4R8ay+2hGtU00dMzH4mtfJwiH9lISfXf+L5nXDqisckN6KtcwHh8hRrK6wjU35D035aIKoWvKcZYA5hhc9uE6D+LV+mVMr7AK9mUDUl3kpzbc9KChRgjyP893rpEKInVbQeZtpT96v0/yyM3ef1l+x9trw7dHZWy2OfXcP4VG6SFywCls8vt4fAeIm50mpHOr11R6QScRmjB562xVt3BU1fwKjSv57nZ/N7IiNAQ97WY8LAanHQQosfESahHbXYFQ0RpPVXfdwEhQetlUuh32w5uJNqZ0Nx/CjoMO4cToTeNsYCeCIIFNKjlFLfbfuJsGqWxb3g9EgtRAYhVQSok1fNPJNbfx3SfA5ZhCFv1t8HGZADXrN0wRPblygVSyG1ELUb3KWbdQ5XtE5S+Dr2r2YVcbrVgc6OQ60g6CowItzcz91K2DFbWyUQoSHMH6iLrqa3hOBRCKsnv4YBRwn0O5B4+KmfuJBz+xj1qmlUw7YAWMmu2PUoM/X9NS+NTzE85IyQY2/KTWeqK02ixyKPqj8+vqsC8mLEz9PHJjQcaBWaGIQUNTDNIKHcUtDVA=
