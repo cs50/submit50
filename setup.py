@@ -19,6 +19,9 @@ setup(
     python_requires=">= 3.6",
     packages=["submit50"],
     url="https://github.com/cs50/submit50",
+    entry_points={
+        "console_scripts": ["submit50=submit50.__main__:main"]
+    },
     version="1.0.0",
     include_package_data=True
 )
