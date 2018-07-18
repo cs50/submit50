@@ -113,8 +113,8 @@ class LogoutAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         try:
             push50.logout()
-        except Error:
-            raise Error(_("failed to logout")) from None
+        except push50.Error:
+            raise Error(_("failed to logout"))
         else:
             cprint(_("logged out successfully"), "green")
         parser.exit()
@@ -124,7 +124,7 @@ def main():
     sys.excepthook = excepthook
 
     parser = argparse.ArgumentParser(prog="submit50")
-    parser.add_argument("-l", "--logout", action=LogoutAction)
+    parser.add_argument("--logout", action=LogoutAction)
     parser.add_argument("-v", "--verbose",
                         action="store_true",
                         help=_("show commands being executed"))
