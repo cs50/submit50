@@ -2,10 +2,7 @@ language: python
 python: 3.6
 branches:
   except: /^v\.\d\.\d\.\d/
-before_install:
-  - pip install babel
-  # TODO: remove when push50 is on pypi
-  - pip install git+git://github.com/cs50/push50
+before_install: pip install babel
 install: pip install --upgrade .
 script: 
   - submit50 --help
