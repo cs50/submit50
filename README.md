@@ -16,41 +16,33 @@ LANGUAGE=es submit50 problem
 
 # Internationalizing
 
-## Creating PO for language XX
+## Adding a new language
 
-```
-xgettext submit50.py
-sed -i -e '1,6d' messages.po
-sed -i -e '3,10d' messages.po
-sed -i 's/CHARSET/UTF-8/' messages.po
-vim messages.po # translate strings to XX
-msgfmt messages.po
-mkdir -p locale/XX/LC_MESSAGES
-mv messages.mo messages.po locale/XX/LC_MESSAGES/
-```
+1. First, ensure that `babel` is installed and that `submit50` is installed in development mode:
 
-## Updating PO for language XX
+        pip install babel
+        pip install -e .
 
-Source: https://stackoverflow.com/a/7497395
+2. Generate the translation template:
 
-```
-echo "" > messages.po
-find . -type f -iname "*.py" | xgettext -j -f -
-msgmerge -N locale/XX/LC_MESSAGES/messages.po messages.po > new.po
-mv -f new.po messages.po
-msgfmt messages.po
-mv -f messages.mo messages.po locale/XX/LC_MESSAGES/
-```
+        python setup.py extract_messages
 
-# Contributing
+3. Generate the `.po` file for the desired language:
 
-```
-pip install -e .
-```
+        python setup.py init_catalog -l <LANG>
 
-TODO
+    where `<LANG>` is the code of the language you want to translate (e.g., `es` for Spanish, `en` for English, etc.) 
 
-# References
+4. Then, add the translations to the newly created `submit50/locale/<LANG>/LC_MESSAGES/submit50.po`
 
-- https://books.google.com/books?id=kQom0WiUbZQC&pg=PA215&lpg=PA215&dq=python+gettext+class&source=bl&ots=mttyXZyZan&sig=OENd8tbqVpxWIpRIWrE84hQY8jo&hl=en&sa=X&ved=0ahUKEwjTnY3WmJzVAhWJMj4KHR_PBR8Q6AEIWTAH#v=onepage&q=python%20gettext%20class&f=false
-- https://stackoverflow.com/questions/7496156/gettext-how-to-update-po-and-pot-files-after-the-source-is-modified
+5. Finally, compile the new translations:
+
+        python setup.py compile_catalog
+
+    and test them:
+
+        LANGUAGE=<LANG> submit50 <PROBLEM>
+
+## Updating an existing language
+
+Follow the steps described in the above section, but instead of running `python setup.py init_catalog -l <LANG>`, run `python setup.py update_catalog -l <LANG>`. 
