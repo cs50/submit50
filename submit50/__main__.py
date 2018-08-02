@@ -84,7 +84,7 @@ def prompt(included, excluded):
     except EOFError:
         answer = None
         print()
-    if not answer or not re.match("^\s*(?:y|yes)\s*$", answer, re.I):
+    if not answer or not re.match(f"^\s*(?:{_('y|yes')})\s*$", answer, re.I):
         return False
 
     return True

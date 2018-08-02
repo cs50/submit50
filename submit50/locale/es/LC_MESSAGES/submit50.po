@@ -19,7 +19,10 @@ msgid ""
 "want to submit these files (yes/no)? "
 msgstr ""
 "Teniendo en cuenta la política de honestidad académica del curso, ¿estás "
-"seguro que quieres enviar estos archivos (yes/no)? "
+"seguro que quieres enviar estos archivos (sí/no)? "
+
+msgid "y|yes"
+msgstr "s|s[ií]"
 
 msgid "No files in this directory are expected for submission."
 msgstr "Ningún archivo en este directorio se espera para la entrega."
