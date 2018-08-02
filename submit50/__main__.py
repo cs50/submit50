@@ -11,7 +11,7 @@ import sys
 import textwrap
 import traceback
 
-import push50
+import lib50
 import requests
 import termcolor
 
@@ -92,7 +92,7 @@ def prompt(included, excluded):
 
 def excepthook(type, value, tb):
     """Report an exception."""
-    if (issubclass(type, Error) or issubclass(type, push50.Error)) and str(value):
+    if (issubclass(type, Error) or issubclass(type, lib50.Error)) and str(value):
         for line in str(value).split("\n"):
             cprint(str(line), "yellow")
     else:
@@ -112,8 +112,8 @@ class LogoutAction(argparse.Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         try:
-            push50.logout()
-        except push50.Error:
+            lib50.logout()
+        except lib50.Error:
             raise Error(_("failed to logout"))
         else:
             cprint(_("logged out successfully"), "green")
@@ -137,12 +137,12 @@ def main():
     excepthook.verbose = args.verbose
     if args.verbose:
         logging.basicConfig(level="INFO")
-        push50.ProgressBar.DISABLED = True
+        lib50.ProgressBar.DISABLED = True
 
     check_announcements()
     check_version()
 
-    push50.push(org="submit50", slug=args.slug, tool="submit50", prompt=prompt)
+    lib50.push(org="submit50", slug=args.slug, tool="submit50", prompt=prompt)
 
 if __name__ == "__main__":
     main()

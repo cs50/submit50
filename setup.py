@@ -12,8 +12,8 @@ setup(
     message_extractors = {
         'submit50': [('**.py', 'python', None),],
     },
-    description="This is submit50, CS50's internal library for using GitHub as data storage.",
-    install_requires=["push50", "requests", "termcolor"],
+    description="This is submit50, with which you can submit solutions to problems for CS50.",
+    install_requires=["lib50", "requests", "termcolor"],
     keywords=["submit", "submit50"],
     name="submit50",
     python_requires=">= 3.6",
