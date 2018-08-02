@@ -17,6 +17,7 @@ setup(
     keywords=["submit", "submit50"],
     name="submit50",
     python_requires=">= 3.6",
+    license="GPLv3",
     packages=["submit50"],
     url="https://github.com/cs50/submit50",
     entry_points={
