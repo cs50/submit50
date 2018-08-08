@@ -142,7 +142,7 @@ def main():
     check_announcements()
     check_version()
 
-    lib50.push(org="submit50", slug=args.slug, tool="submit50", prompt=prompt)
+    lib50.push("submit50", args.slug, prompt=prompt)
 
 if __name__ == "__main__":
     main()
