@@ -54,7 +54,7 @@ msgid "failed to logout"
 msgstr "no se pudo cerrar la sesión"
 
 msgid "Files that will be submitted:"
-msgstr "Archivos que van a entregar:"
+msgstr "Archivos que se van a entregar:"
 
 msgid "Files that won't be submitted:"
-msgstr "Archivos que no van a entregar"
+msgstr "Archivos que no se van a entregar"
