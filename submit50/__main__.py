@@ -137,12 +137,14 @@ def main():
     excepthook.verbose = args.verbose
     if args.verbose:
         logging.basicConfig(level="INFO")
+        # Disable progress bar so it doesn't interfere with log
         lib50.ProgressBar.DISABLED = True
 
     check_announcements()
     check_version()
 
     lib50.push("submit50", args.slug, prompt=prompt)
+
 
 if __name__ == "__main__":
     main()
