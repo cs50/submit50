@@ -12,17 +12,9 @@ requires = [
         "pexpect>=4.0", "requests", "six", "termcolor"
 ]
 
-# check whether we have a Homebrew or Python installation of Python
-INSTALL_CERTS = "/Applications/Python 3.6/Install Certificates.command"
-HOMEBREW_PYTHON = "/usr/local/bin/python3"
-
+# install certifi under OS X
 if platform == "darwin" and version_info >= (3, 6):
-    if not isfile(INSTALL_CERTS) or call(INSTALL_CERTS) != 0:
-        if not isfile(HOMEBREW_PYTHON):
-            raise RuntimeError("Install certificates not found and no Homebrew Python installed!")
-        else:
-            # certifi library installs needed certificates
-            requires.append("certifi")
+    requires.append("certifi")
 
 def create_mo_files():
     """Compiles .po files in local/LANG to .mo files and returns them as array of data_files"""
@@ -39,32 +31,6 @@ def create_mo_files():
 
     return mo_files
 
-def install_certs(cmd):
-    """
-    Decorator for classes subclassing one of setuptools commands.
-
-    Installs certificates before installing the package when running
-    Python >= 3.6 on Mac OS.
-    """
-    orig_run = cmd.run
-
-    def run(self):
-        orig_run(self)
-
-    cmd.run = run
-    return cmd
-
-
-@install_certs
-class CustomDevelop(develop):
-    pass
-
-
-@install_certs
-class CustomInstall(install):
-    pass
-
-
 setup(
     author="CS50",
     author_email="sysadmins@cs50.harvard.edu",
@@ -80,10 +46,6 @@ problems for CS50.",
     keywords=["submit", "submit50"],
     name="submit50",
     py_modules=["submit50"],
-    cmdclass={
-        "develop": CustomDevelop,
-        "install": CustomInstall
-    },
     entry_points={
         "console_scripts": ["submit50=submit50:main"]
     },
