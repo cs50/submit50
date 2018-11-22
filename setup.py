@@ -8,8 +8,8 @@ from subprocess import call
 from sys import platform, version_info
 
 requires = [
-        "backports.shutil_get_terminal_size", "backports.shutil_which",
-        "pexpect>=4.0", "requests", "six", "termcolor"
+    "backports.shutil_get_terminal_size", "backports.shutil_which", "pexpect>=4.0", "requests", 
+    "six", "termcolor"
 ]
 
 # install certifi under OS X
