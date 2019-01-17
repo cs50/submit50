@@ -242,7 +242,7 @@ def authenticate(org):
     timeout = int(datetime.timedelta(weeks=1).total_seconds())
     run("git -c credential.helper='cache --socket {} --timeout {}' "
         "-c credentialcache.ignoresighup=true credential approve".format(authenticate.SOCKET, timeout),
-        lines=["username={}".format(username), "password={}".format(password), "", ""],
+        lines=["username={}".format(username), "password={}".format(password.decode('utf8')), "", ""],
         quiet=True)
 
     # return credentials
