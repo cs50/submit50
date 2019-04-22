@@ -206,6 +206,8 @@ def authenticate(org):
                 print("*", end="")
                 sys.stdout.flush()
 
+    password = password.encode('utf8')
+
     # authenticate user
     email = "{}@users.noreply.github.com".format(username)
     res = requests.get("https://api.github.com/user",
@@ -240,7 +242,7 @@ def authenticate(org):
     timeout = int(datetime.timedelta(weeks=1).total_seconds())
     run("git -c credential.helper='cache --socket {} --timeout {}' "
         "-c credentialcache.ignoresighup=true credential approve".format(authenticate.SOCKET, timeout),
-        lines=["username={}".format(username), "password={}".format(password), "", ""],
+        lines=["username={}".format(username), "password={}".format(password.decode('utf8')), "", ""],
         quiet=True)
 
     # return credentials
@@ -356,7 +358,7 @@ def run(command, cwd=None, env=None, lines=[], password=None, quiet=False, timeo
     if password:
         i = child.expect(["Password for '.*': ", pexpect.EOF])
         if i == 0:
-            child.sendline(password)
+            child.sendline(password.decode('utf8'))
 
     # send lines of input
     for line in lines:
