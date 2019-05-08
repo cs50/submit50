@@ -701,7 +701,7 @@ def two_factor(org, username, password):
                         data=data,
                         headers={"X-GitHub-OTP": str(code)})
     if res.status_code == 201 and "token" in res.json():
-        return res.json()["token"]
+        return res.json()["token"].encode("utf8")
     else:
         raise Error(_("Could not complete two-factor authentication."))
 
