@@ -143,7 +143,7 @@ def main():
     check_announcements()
     check_version()
 
-    lib50.push("submit50", args.slug, prompt=prompt)
+    lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt)
 
 
 if __name__ == "__main__":

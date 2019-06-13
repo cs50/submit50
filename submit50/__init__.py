@@ -15,3 +15,5 @@ except DistributionNotFound:
 else:
     __version__ = _dist.version
 
+CONFIG_LOADER = __import__("lib50").config.Loader("submit50")
+CONFIG_LOADER.scope("files", "include", "exclude", "require")
