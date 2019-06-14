@@ -15,7 +15,7 @@ import lib50
 import requests
 import termcolor
 
-from . import __version__
+from . import __version__, CONFIG_LOADER
 
 # Internationalization
 gettext.install("submit50", pkg_resources.resource_filename("submit50", "locale"))
