@@ -20,14 +20,16 @@ from . import __version__, CONFIG_LOADER
 # Internationalization
 gettext.install("submit50", pkg_resources.resource_filename("submit50", "locale"))
 
+SUBMIT_URL = "https://submit.cs50.io"
+
 
 class Error(Exception):
     pass
 
 
 def check_announcements():
-    """Check for any announcements from cs50.me, raise Error if so."""
-    res = requests.get("https://cs50.me/status/submit50")  # TODO change this to submit50.io!
+    """Check for any announcements from submit.cs50.io, raise Error if so."""
+    res = requests.get(f"{SUBMIT_URL}/status/submit50")
     if res.status_code == 200 and res.text.strip():
         raise Error(res.text.strip())
 
@@ -35,19 +37,18 @@ def check_announcements():
 def check_version():
     """Check that submit50 is the latest version according to submit50.io."""
     # Retrieve version info
-    res = requests.get("https://cs50.me/versions/submit50")  # TODO change this to submit50.io!
+    res = requests.get(f"{SUBMIT_URL}/versions/submit50")
     if res.status_code != 200:
         raise Error(_("You have an unknown version of submit50. "
                       "Email sysadmins@cs50.harvard.edu!"))
 
     # Check that latest version == version installed
-    required_required = pkg_resources.parse_version(res.text.strip())
-    # local_version = pkg_resources.parse_version(pkg_resources.get_distribution("submit50").version)
+    required_version = pkg_resources.parse_version(res.text.strip())
+    local_version = pkg_resources.parse_version(__version__)
 
-    # TODO re-enable
-    # if required_version > local_version:
-    #    raise Error(_("You have an old version of submit50. "
-    #                  "Run update50, then re-run {}!".format(org)))
+    if required_version > local_version:
+       raise Error(_("You have an outdated version of submit50. "
+                     "Please upgrade."))
 
 
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
@@ -95,7 +96,7 @@ def excepthook(type, value, tb):
     if (issubclass(type, Error) or issubclass(type, lib50.Error)) and str(value):
         for line in str(value).split("\n"):
             cprint(str(line), "yellow")
-    else:
+    elif not isinstance(value, KeyboardInterrupt):
         cprint(_("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), "yellow")
 
     if excepthook.verbose:
