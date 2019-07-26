@@ -414,7 +414,7 @@ def submit(org, branch):
     """Submit work."""
 
     # check announcements
-    res = requests.get("https://cs50.me/status/submit50")
+    res = requests.get("https://legacy.cs50.me/status/submit50")
     if res.status_code == 200 and res.text.strip():
         raise Error(res.text.strip())
 
@@ -438,7 +438,7 @@ def submit(org, branch):
     timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
 
     # check version
-    res = requests.get("https://cs50.me/versions/submit50")
+    res = requests.get("https://legacy.cs50.me/versions/submit50")
     if res.status_code != 200:
         raise Error(_("You have an unknown version of submit50. "
                       "Email sysadmins@cs50.harvard.edu!"))
@@ -528,10 +528,10 @@ def submit(org, branch):
     except BaseException:
         if password:
             e = Error(_("Looks like {} isn't enabled for your account yet. "
-                        "Go to https://cs50.me/authorize and make sure you accept any pending invitations!".format(org, org)))
+                        "Go to https://legacy.cs50.me/authorize and make sure you accept any pending invitations!".format(org, org)))
         else:
             e = Error(_("Looks like you have the wrong username in ~/.gitconfig or {} isn't yet enabled for your account. "
-                        "Double-check ~/.gitconfig and then log into https://cs50.me/ in a browser, "
+                        "Double-check ~/.gitconfig and then log into https://legacy.cs50.me/ in a browser, "
                         "click \"Authorize application\" if prompted, and re-run {} here.".format(org, org)))
         e.__cause__ = None
         raise e
@@ -654,7 +654,7 @@ def submit(org, branch):
 
     # successful submission
     if org == "submit50":
-        cprint(_("Submitted {}! See https://cs50.me/submissions.").format(branch),
+        cprint(_("Submitted {}! See https://legacy.cs50.me/submissions.").format(branch),
                "green")
     progress(False)
     return username, commit_hash
