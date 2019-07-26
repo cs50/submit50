@@ -445,7 +445,7 @@ def submit(org, branch):
     version_required = res.text.strip()
     if parse_version(version_required) > parse_version(get_distribution("submit50").version):
         raise Error(_("You have an old version of submit50. "
-                      "Run update50, then re-run {}!".format(org)))
+                      "Please update your version of submit50, then re-run {}!".format(org)))
 
     # separate branch into slug and repo
     check_repo = "@cs50/checks"
