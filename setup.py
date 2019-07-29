@@ -1,5 +1,4 @@
 from setuptools import setup
-
 setup(
     author="CS50",
     author_email="sysadmins@cs50.harvard.edu",
