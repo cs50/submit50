@@ -144,8 +144,8 @@ def main():
     check_announcements()
     check_version()
 
-    lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt)
-
+    user_name, commit_hash, message = lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt)
+    print(message)
 
 if __name__ == "__main__":
     main()
