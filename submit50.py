@@ -438,14 +438,14 @@ def submit(org, branch):
     timestamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
 
     # check version
-    res = requests.get("https://legacy.cs50.me/versions/submit50")
-    if res.status_code != 200:
-        raise Error(_("You have an unknown version of submit50. "
-                      "Email sysadmins@cs50.harvard.edu!"))
-    version_required = res.text.strip()
-    if parse_version(version_required) > parse_version(get_distribution("submit50").version):
-        raise Error(_("You have an old version of submit50. "
-                      "Please update your version of submit50, then re-run {}!".format(org)))
+    # res = requests.get("https://legacy.cs50.me/versions/submit50")
+    # if res.status_code != 200:
+        # raise Error(_("You have an unknown version of submit50. "
+                      # "Email sysadmins@cs50.harvard.edu!"))
+    # version_required = res.text.strip()
+    # if parse_version(version_required) > parse_version(get_distribution("submit50").version):
+        # raise Error(_("You have an old version of submit50. "
+                      # "Please update your version of submit50, then re-run {}!".format(org)))
 
     # separate branch into slug and repo
     check_repo = "@cs50/checks"
