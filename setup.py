@@ -12,7 +12,7 @@ setup(
         'submit50': [('**.py', 'python', None),],
     },
     description="This is submit50, with which you can submit solutions to problems for CS50.",
-    install_requires=["lib50>=1.1.4", "requests", "termcolor"],
+    install_requires=["lib50>=1.1.4", "requests>=2.19", "termcolor>=1.1"],
     keywords=["submit", "submit50"],
     name="submit50",
     python_requires=">=3.6",
