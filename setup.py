@@ -23,6 +23,5 @@ setup(
         "console_scripts": ["submit50=submit50.__main__:main"]
     },
     version="3.0.0",
-    include_package_data=True,
-    url="https://github.com/cs50/submit50",
+    include_package_data=True
 )
