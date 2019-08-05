@@ -137,7 +137,7 @@ def main():
 
     excepthook.verbose = args.verbose
     if args.verbose:
-        logging.basicConfig(level="INFO")
+        logging.basicConfig(level=os.environ.get("SUBMIT50_LOGLEVEL", "INFO"))
         # Disable progress bar so it doesn't interfere with log
         lib50.ProgressBar.DISABLED = True
 
