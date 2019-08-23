@@ -1,0 +1,27 @@
+#include <cs50.h>
+#include <stdio.h>
+int main(void)
+{
+    int i,j,k,l,m;
+    int h=get_int("Please Enter the Height\n");
+    int temp=h;
+    for(i=1;i<=h;i++)
+    {
+        for(j=1;j<=temp-1;j++)
+        {
+            printf(" ");
+        }
+        temp--;
+        for(k=1;k<=i;k++)
+        {
+            printf("#");
+        }
+        printf("  ");
+        for(l=1;l<=i;l++)
+        {
+                printf("#");
+        }
+        printf("\n");
+    }
+    return 0;
+}
