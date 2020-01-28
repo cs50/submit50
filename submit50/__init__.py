@@ -6,7 +6,7 @@ try:
     _dist = get_distribution("submit50")
     # Normalize path for cross-OS compatibility.
     _dist_loc = os.path.normcase(_dist.location)
-    _here = os.path.normcase(__file__)
+    _here = os.path.normcase(os.path.realpath(__file__))
     if not _here.startswith(os.path.join(_dist_loc, "submit50")):
         # This version is not installed, but another version is.
         raise DistributionNotFound
