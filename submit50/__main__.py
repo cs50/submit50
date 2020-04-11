@@ -83,7 +83,7 @@ def prompt(question, included, excluded):
     
     readline.clear_history()
     try:
-        answer = input(_(question))
+        answer = input(_(question + "(yes/no) "))
     except EOFError:
         answer = None
         print()
