@@ -63,7 +63,7 @@ def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
                      color=color, on_color=on_color, attrs=attrs, **kwargs)
 
 
-def prompt(question, included, excluded):
+def prompt(honesty, included, excluded):
     if included:
         cprint(_("Files that will be submitted:"), "green")
         for file in included:
@@ -80,11 +80,11 @@ def prompt(question, included, excluded):
     # Prompt for honesty
     if not honesty:
         return True
-    
+
     readline.clear_history()
-    
+
     try:
-        answer = input(f"{_(question)} ({_('yes/no')}) ")
+        answer = input(f"{_(honesty)} ({_('yes/no')}) ")
     except EOFError:
         answer = None
         print()
