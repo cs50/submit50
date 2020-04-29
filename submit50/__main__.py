@@ -71,6 +71,7 @@ def prompt(honesty, included, excluded):
     else:
         raise Error(_("No files in this directory are expected for submission."))
 
+
     # Files that won't be submitted
     if excluded:
         cprint(_("Files that won't be submitted:"), "yellow")
@@ -80,6 +81,11 @@ def prompt(honesty, included, excluded):
     # Prompt for honesty
     if not honesty:
         return True
+
+    if honesty is True:
+        honesty = _("Keeping in mind the course's policy on "
+                    "academic honesty, are you sure you want to "
+                    "submit these files?")
 
     readline.clear_history()
 
