@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title> Log in!</title>
+</head>
+<body align="center">
+  <img src="Harvard.jpg" height="100" width="100">
+  <img src="Indigreen.jpg" height="50" width="25%">
+<canvas id="DemoCanvas" width="1500" height="100"></canvas>
+  <script>
+  var canvas = document.getElementById('DemoCanvas');
+  //Always check for properties and methods, to make sure your code doesn't break in other browsers.
+  if (canvas.getContext)
+   {
+    var context = canvas.getContext('2d');
+    // Reset the current path
+    context.beginPath();
+    // Staring point (10,45)
+     context.moveTo(10,45);
+    // End point (180,474)
+    context.lineTo(1300,47);
+    // Make the line visible
+    context.stroke();
+     }
+  </script>
+
+
+<div class="boxed"style="text-align:left; width:100%; padding:0;">
+        <form method="get" action="Home.html">
+                  <button type="Get me">Home</button></form>
+       </form>
+  </div>
+  <p>                                 </p>
+  <p>                                 </p>
+<p>                                 </p>
+<p>                                 </p>
+<b>Returning user Login here:</b>
+<p>                                 </p>
+<p>                                 </p>
+<p>                                 </p>
+<p>                                 </p>
+<form action="action_page.php" method="post">
+  <div class="container">
+    <label for="uname"><b>Username</b></label>
+    <input type="text" placeholder="Enter Username" name="uname" required>
+
+    <label for="psw"><b>Password</b></label>
+    <input type="password" placeholder="Enter Password" name="psw" required>
+
+    <button type="submit">Login</button>
+    <label>
+      <input type="checkbox" checked="checked" name="remember"> Remember me
+    </label>
+  </div>
+
+  <div class="container" style="background-color:#f1f1f1">
+    <button type="button" class="cancelbtn">Cancel</button>
+    <span class="psw">Forgot <a href="#">password?</a></span>
+  </div>
+</form>
+
+  <p> -------------------------------------------------------------------------------</p>
+  <b>First time user welcome:</b>
+  <p>                                 </p>
+  <p>                                 </p>
+    <a href="Register.html">Register here</a>
+    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+
+           </div>
+
+      <p>                                 </p>
+      <p>                                 </p>
+<p>                                 </p>
+<p>                                 </p>
+
+
+  <p> -------------------------------------------------------------------------------</p>
+<p>                                 </p>
+
+  </body>

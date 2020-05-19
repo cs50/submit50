@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<title>Draw a line</title>
+</head>
+<body>
+<canvas id="DemoCanvas" width="2500" height="200"></canvas>
+<script>
+var canvas = document.getElementById('DemoCanvas');
+//Always check for properties and methods, to make sure your code doesn't break in other browsers.
+if (canvas.getContext)
+ {
+  var context = canvas.getContext('2d');
+  // Reset the current path
+  context.beginPath();
+  // Staring point (10,45)
+   context.moveTo(10,45);
+  // End point (180,474)
+  context.lineTo(1300,47);
+  // Make the line visible
+  context.stroke();
+   }
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Register</title>
+ <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+  </head>
+  <body>
+    <div class="boxed"style="text-align:left; width:100%; padding:0;">
+            <form method="get" action="Home.html">
+                      <button type="Get me">Home</button></form>
+           </form>
+      </div>
+<div class="container">
+  <div class="columns">
+    <div class="column col-auto col-mx-auto">
+		<div class="form-group">
+<form target="_self"
+      id="bootstrapForm"
+      method="POST">
+    <fieldset>
+        <h2>New User Register here</h2>
+    </fieldset>
+
+    <fieldset>
+        <legend for="610609209">First Name</legend>
+        <div class="form-group">
+            <input id="1248082634" type="text" name="entry.1248082634" class="form-control" required>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend for="1214740323">Last Name</legend>
+        <div class="form-group">
+            <input id="537543589" type="text" name="entry.537543589" class="form-control" required>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend for="974221809">Phone Number</legend>
+        <div class="form-group">
+            <input id="1896829488" type="text" name="entry.1896829488" class="form-control" required>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend for="238925373">Email</legend>
+        <div class="form-group">
+            <input id="950221048" type="text" name="entry.950221048" class="form-control" required>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend for="1047002267">Address</legend>
+        <div class="form-group">
+            <textarea id="138512886" name="entry.138512886" class="form-control" required></textarea>
+        </div>
+    </fieldset>
+    <fieldset>
+    Password:  <label class="item item-input">
+    <input type="password" class="text-align-center" placeholder="Preferred password " ng-model="credentials.password"  autocapitalize="off" autocorrect="off">
+    </label>
+    Repeat Password:  <label class="item item-input">
+    <input type="password" class="text-align-center" placeholder="Preferred password " ng-model="credentials.password"  autocapitalize="off" autocorrect="off">
+    </label>
+</fieldset>
+    <input type="hidden" name="fvv" value="1">
+    <input type="hidden" name="fbzx" value="8081235427209087729">
+
+    <input type="hidden" name="pageHistory" value="0" </input>
+
+    <input class="btn btn-primary" type="submit" value="Submit">
+
+</form>
+</div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.min.js" integrity="sha256-2Pjr1OlpZMY6qesJM68t2v39t+lMLvxwpa8QlRjJroA=" crossorigin="anonymous"></script>
+<script>
+$('#bootstrapForm').submit(function (event) {
+    event.preventDefault()
+    var extraData = {}
+    $('#bootstrapForm').ajaxSubmit({
+        data: extraData,
+        dataType: 'jsonp',  // This won't really work. It's just to use a GET instead of a POST to allow cookies from different domain.
+        error: function () {
+            // Submit of form should be successful but JSONP callback will fail because Google Forms
+            // does not support it, so this is handled as a failure.
+            alert('Form Submitted. Thanks.')
+            // You can also redirect the user to a custom thank-you page:
+            // window.location = 'http://www.mydomain.com/thankyoupage.html'
+        }
+    })
+})
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+    <head>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>Home Page!</title>
+
+    </head>
+    <body>
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  background-color: lightblue;
+}
+
+@media only screen and (max-width: 600px) {
+  body {
+    background-color: lightblue;
+  }
+}
+</style>
+</head>
+</html>
+
+<img src="Harvard.jpg" height="100"
+width="100">
+<img src="Indigreen.jpg" height="70"
+width="25%">
+<div style="text-align:right; width:100%; padding:0;">
+<p align="right"
+<a href="Login.html">User</a>
+<a class="button" href="Login.html">Login</a>
+</p>
+</div>
+<canvas id="DemoCanvas" width="1500" height="100"></canvas>
+  <script>
+  var canvas = document.getElementById('DemoCanvas');
+  //Always check for properties and methods, to make sure your code doesn't break in other browsers.
+  if (canvas.getContext)
+   {
+    var context = canvas.getContext('2d');
+    // Reset the current path
+    context.beginPath();
+    // Staring point (10,45)
+     context.moveTo(10,45);
+    // End point (180,474)
+    context.lineTo(1300,47);
+    // Make the line visible
+    context.stroke();
+     }
+  </script>
+
+<ul class="nav nav-pills nav-justified">
+
+  <li class="nav-item">
+    <a class="nav-link active" href="#">Users</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link active" href="#">Electric vehicles</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link active" href="#">Power Co.</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link active" href="About.html">About us</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link active" href="Contact.html">Contact us</a>
+  </li>
+</ul>
+<ol>
+  <p> <b>Students </b>   </p>
+  <p> <b>Faculty</b></p>
+  <p> <b>Support staff </b></p>
+  <p> <b>Visitors</b></p>
