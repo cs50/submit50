@@ -1,0 +1,26 @@
+#include <iostream> 
+using namespace std ; 
+int main() 
+{
+ int x; 
+ cout<<"narmeen’s restaurant what do you want to eat from the menu \n\n1-drinks :\n\n2-Sandwiches : \n\n3-fruits and vegetables  \n\n4-dessert";
+ cin>> x; 
+ switch (x) 
+ {
+case 1 : cout<<"\n\n1-Strawberry 2$ \n\n2-pepsi: 1$ \n\n3-layering juice 4$ \n\n4-coffe : 5$ \n\n5-Lemon : 2$ \n\n6-mailk 3$ : \n\n7-manga : 4$ ";
+ break ;
+case  2:cout<<"\n\n1-big Beef burger : 7$ : \n\n2-Chicken burger :5$ \n\n3-Meat Shawarma 15$ \n\n4-Chicken shawarma :12$ \n\n5-Potato sandwich : 6$ : \n\n6-Cheese sandwich with vegetables 4$ ";
+ break ;
+case 3:cout<<"\n\n1-fruit salad : 5$ \n\n2-Nutella Salad :  7$ \n\n3-Miscellaneous salad : 10$ \n\n4-Nutella Special salad : 8$ \n\n5-Special salad 10% ";
+break ;
+case 4:cout<<"\n\n\1-Chocolate with milk :  3$ \n\n2-Cakes with strawberries :  4$ \n\n3- Cakes with dark chocolate :  6$ \n\n4-Sweets pot : 7$ " ;
+break ;
+default :cout<<"\n\n sorry, This request does not exist ";
+ } 
+ int demand ; cout<<" \n\nEnter your request: ";
+  cin>>demand;
+   if (demand <=7 ) cout<< " \n\nOK , Thank you for visiting our restaurant , we vish you all the best :) \n\nMiss Narmeen Qasim AL Faily "<<endl;
+   else 
+   cout<< " \n\n sorry, This request does not exist" ;
+    return 0 ;
+	 }
