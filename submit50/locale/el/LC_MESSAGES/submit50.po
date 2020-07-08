@@ -1,0 +1,74 @@
+# Greek translations for submit50.
+# Copyright (C) 2020 ORGANIZATION
+# This file is distributed under the same license as the submit50 project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: submit50 3.0.3\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2020-07-09 00:55+0300\n"
+"PO-Revision-Date: 2020-07-09 00:56+0300\n"
+"Last-Translator: Evi Kavrochorianou\n"
+"Language: el\n"
+"Language-Team: el <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: submit50/__main__.py:42
+msgid "You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!"
+msgstr "Έχετε μια άγνωστη έκδοση της submit50. Στείλτε ένα email στο sysadmins@cs50.harvard.edu!"
+
+#: submit50/__main__.py:50
+msgid "You have an outdated version of submit50. Please upgrade."
+msgstr "Έχετε μία απαρχαιωμένη έκδοση της submit50. Παρακαλώ να την αναβαθμίσετε."
+
+#: submit50/__main__.py:68
+msgid "Files that will be submitted:"
+msgstr "Αρχεία που θα παραδοθούν:"
+
+#: submit50/__main__.py:72
+msgid "No files in this directory are expected for submission."
+msgstr "Κανένα αρχείο σε αυτό τον φάκελο δεν αναμένεται για υποβολή"
+
+#: submit50/__main__.py:77
+msgid "Files that won't be submitted:"
+msgstr "Αρχεία που δεν θα υποβληθούν:"
+
+#: submit50/__main__.py:86
+msgid ""
+"Keeping in mind the course's policy on academic honesty, are you sure you"
+" want to submit these files?"
+msgstr "Υπενθυμίζοντας την πολιτική του μαθήματος όσον αφορά την Ακαδημαϊκή Ειλικρίνεια, θέλετε σίγουρα να γίνει υποβολή αυτών των αρχείων;"
+
+#: submit50/__main__.py:109
+msgid "Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"
+msgstr "Συγγνώμη, κάτι πήγε λάθος! Στείλτε email στους sysadmins@cs50.harvard.edu ωστε να ενημερωθούν!"
+
+#: submit50/__main__.py:114
+msgid "Submission cancelled."
+msgstr "Η υποβολή ακυρώθηκε."
+
+#: submit50/__main__.py:120
+msgid "logout of submit50"
+msgstr "αποσύνδεση απο το submit50"
+
+#: submit50/__main__.py:127
+msgid "failed to logout"
+msgstr "αποτυχία αποσύνδεσης"
+
+#: submit50/__main__.py:129
+msgid "logged out successfully"
+msgstr "η αποσύνδεση έγινε με επιτυχία"
+
+#: submit50/__main__.py:140
+msgid "show commands being executed"
+msgstr "δείξε τις εντολές που εκτελούνται"
+
+#: submit50/__main__.py:142
+msgid "prescribed identifier of work to submit"
+msgstr "αναγνωριστικό του έργου που θα υποβάλετε "
+
