@@ -5,6 +5,7 @@ branches:
 before_install: pip install babel
 install: pip install --upgrade .
 script: 
+  - python -m tests
   - submit50 --help
   - python setup.py compile_catalog
 before_deploy: |
