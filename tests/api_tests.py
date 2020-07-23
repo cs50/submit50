@@ -26,8 +26,8 @@ class TestSubmit50_Status(unittest.TestCase):
         self.sub_dir = self.temp_path / "status/submit50"
         os.makedirs(self.sub_dir)
 
-        Handler = functools.partial(server.SimpleHTTPRequestHandler, directory=self.temp_path)
-        self.httpd = server.HTTPServer(("localhost", self.PORT), Handler)
+        self.working_dir = os.getcwd()
+        self.httpd = server.HTTPServer(("localhost", self.PORT), server.SimpleHTTPRequestHandler)
 
     @classmethod
     def tearDownClass(self):
@@ -37,8 +37,10 @@ class TestSubmit50_Status(unittest.TestCase):
     @classmethod
     def httpd_serve(self, times):
         """Serve the given number (times) of requests. Shuts down after."""
+        os.chdir(self.temp_path)
         for i in range(times):
             self.httpd.handle_request()
+        os.chdir(self.working_dir)
 
     def test_bad_server(self):
         submit50.SUBMIT_URL = "https://foobar.cs50.io"
