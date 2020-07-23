@@ -1,15 +1,10 @@
 import contextlib
-import functools
 import io
-import logging
 import os
 import pathlib
 import requests
 import tempfile
-import re
-import subprocess
 import sys
-import time
 import threading
 import unittest
 
