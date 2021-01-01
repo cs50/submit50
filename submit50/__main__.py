@@ -5,6 +5,7 @@ import gettext
 import logging
 import pkg_resources
 import re
+import readline
 import shutil
 import sys
 import textwrap
@@ -77,6 +78,7 @@ def prompt(included, excluded):
             cprint("./{}".format(other), "yellow")
 
     # Prompt for honesty
+    readline.clear_history()
     try:
         answer = input(_("Keeping in mind the course's policy on academic honesty, "
                          "are you sure you want to submit these files (yes/no)? "))
@@ -85,7 +87,6 @@ def prompt(included, excluded):
         print()
     if not answer or not re.match(f"^\s*(?:{_('y|yes')})\s*$", answer, re.I):
         return False
-
     return True
 
 
