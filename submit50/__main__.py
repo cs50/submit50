@@ -81,14 +81,10 @@ def prompt(honesty, included, excluded):
     # Prompt for honesty
     if not honesty:
         return True
-
-    if honesty is True:
-        honesty = _("Keeping in mind the course's policy on "
-                    "academic honesty, are you sure you want to "
-                    "submit these files?")
-
+    honesty = _("Keeping in mind the course's policy on "
+                "academic honesty, are you sure you want to "
+                "submit these files?")
     readline.clear_history()
-
     try:
         answer = input(f"{_(honesty)} ({_('yes/no')}) ")
     except EOFError:
