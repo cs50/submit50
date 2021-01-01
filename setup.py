@@ -25,6 +25,6 @@ setup(
     entry_points={
         "console_scripts": ["submit50=submit50.__main__:main"]
     },
-    version="3.0.2",
+    version="3.0.3",
     include_package_data=True
 )
