@@ -1,0 +1,80 @@
+# Indonesian translations for submit50.
+# Copyright (C) 2019 Dimas Ahmad Eka Putra
+# This file is distributed under the same license as the submit50 project.
+# Dimas Ahmad Eka Putra <dimas@sman1batujajar.sch.id>, 2019.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: submit50 3.0.3\n"
+"Report-Msgid-Bugs-To: informatika@sman1batujajar.sch.id\n"
+"POT-Creation-Date: 2019-10-16 11:09+0000\n"
+"PO-Revision-Date: 2019-10-16 19:15+0700\n"
+"Last-Translator: Dimas Ahmad Eka Putra <dimas@sman1batujajar.sch.id>\n"
+"Language: id\n"
+"Language-Team: id <informatika@sman1batujajar.sch.id>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.7.0\n"
+"X-Generator: Poedit 2.2.4\n"
+
+#: submit50/__main__.py:42
+msgid "You have an unknown version of submit50. Email sysadmins@cs50.harvard.edu!"
+msgstr "Anda memiliki versi submit50 yang tidak dikenal. Email sysadmins@cs50.harvard.edu!"
+
+#: submit50/__main__.py:50
+msgid "You have an outdated version of submit50. Please upgrade."
+msgstr "Anda memiliki versi usang submit50. Silakan perbaharui."
+
+#: submit50/__main__.py:68
+msgid "Files that will be submitted:"
+msgstr "File yang akan dikirimkan:"
+
+#: submit50/__main__.py:72
+msgid "No files in this directory are expected for submission."
+msgstr "Tidak ada file dalam direktori ini yang diharapkan untuk diserahkan."
+
+#: submit50/__main__.py:76
+msgid "Files that won't be submitted:"
+msgstr "File yang tidak akan dikirimkan:"
+
+#: submit50/__main__.py:83
+msgid ""
+"Keeping in mind the course's policy on academic honesty, are you sure you want to submit "
+"these files (yes/no)? "
+msgstr ""
+"Dengan mengingat kebijakan mata pelajaran tentang kejujuran akademik, apakah Anda yakin "
+"ingin mengirimkan file ini (ya/tidak)? "
+
+#: submit50/__main__.py:88
+msgid "y|yes"
+msgstr "y|ya"
+
+#: submit50/__main__.py:100
+msgid "Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"
+msgstr "Maaf, terjadi kesalahan! Beritahukan sysadmins@cs50.harvard.edu!"
+
+#: submit50/__main__.py:105
+msgid "Submission cancelled."
+msgstr "Pengiriman dibatalkan."
+
+#: submit50/__main__.py:111
+msgid "logout of submit50"
+msgstr "logout dari submit50"
+
+#: submit50/__main__.py:118
+msgid "failed to logout"
+msgstr "gagal logout"
+
+#: submit50/__main__.py:120
+msgid "logged out successfully"
+msgstr "berhasil logout"
+
+#: submit50/__main__.py:131
+msgid "show commands being executed"
+msgstr "memperlihatkan perintah yang dieksekusi"
+
+#: submit50/__main__.py:133
+msgid "prescribed identifier of work to submit"
+msgstr "pengidentifikasi pekerjaan yang ditentukan untuk diserahkan"

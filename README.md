@@ -14,6 +14,12 @@ submit50 problem
 LANGUAGE=es submit50 problem
 ```
 
+### Indonesian
+
+```
+LANGUAGE=id submit50 problem
+```
+
 # Internationalizing
 
 ## Adding a new language
