@@ -1,3 +1,6 @@
+if __import__("os").name == "nt":
+    raise RuntimeError("submit50 does not support Windows directly. Instead, you should install the Windows Subsystem for Linux (https://docs.microsoft.com/en-us/windows/wsl/install-win10) and then install submit50 within that.")
+
 from setuptools import setup
 setup(
     author="CS50",
@@ -12,7 +15,7 @@ setup(
         'submit50': [('**.py', 'python', None),],
     },
     description="This is submit50, with which you can submit solutions to problems for CS50.",
-    install_requires=["lib50>=2.1,<3", "requests>=2.19", "termcolor>=1.1"],
+    install_requires=["lib50>=2,<3", "requests>=2.19", "termcolor>=1.1"],
     keywords=["submit", "submit50"],
     name="submit50",
     python_requires=">=3.6",
