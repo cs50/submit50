@@ -15,7 +15,7 @@ def assert_git_installed():
     Ensures that git is installed and on PATH and raises a RuntimeError if not.
     """
     try:
-        subprocess.run(['git', '--version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.check_output(['git', '--version'])
     except FileNotFoundError:
         raise RuntimeError('It looks like git is not installed. Please install git then try again.')
 
