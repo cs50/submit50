@@ -15,7 +15,7 @@ git_protocol = 'file://'
 tests_dir = os.path.dirname(os.path.realpath(__file__))
 tests_data_dir = join(tests_dir, 'data')
 
-temp_dir = join(tempfile.gettempdir(), 'submit50_tests')
+temp_dir = tempfile.mkdtemp()
 if os.path.exists(temp_dir):
     shutil.rmtree(temp_dir)
 os.mkdir(temp_dir)
