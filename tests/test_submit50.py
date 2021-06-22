@@ -155,11 +155,6 @@ class TestSubmit50(unittest.TestCase):
         self.assertEqual(diff.right_only, [])
         self.assertEqual(diff.diff_files, [])
 
-def run_suppress_stdout_stderr(*args, **kwargs):
-    kwargs['stdout'] = subprocess.DEVNULL
-    kwargs['stderr'] = subprocess.DEVNULL
-    return subprocess.run(*args, **kwargs)
-
 def reset_student_assignment_bare_repo():
     if os.path.exists(student_assignment_bare_repo_dir):
         shutil.rmtree(student_assignment_bare_repo_dir)
