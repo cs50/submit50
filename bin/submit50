@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+
+import argparse
+
+from submit50 import submit
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='A git wrapper for submitting GitHub Classroom assignments.'
+    )
+    parser.add_argument(
+        'identifier',
+        metavar='IDENTIFIER',
+        type=str,
+        help='the assignment identifier'
+    )
+    args = parser.parse_args()
+    try:
+        submit(args.identifier)
+    except (RuntimeError, ValueError) as ex:
+        # TODO output in red
+        print(ex)
+    else:
+        # TODO output in green
+        print(f'Successfully submitted {args.identifier}.')
+
+if __name__ == '__main__':
+    main()

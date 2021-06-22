@@ -1,0 +1,22 @@
+name: mario/less tests
+on: [push]
+jobs:
+  Autograding:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: "Run tests"
+      uses: docker://cs50/codespace:latest
+      id: run_tests
+      with:
+        entrypoint: /autograde.sh
+        check50_args: "cs50/problems/2021/summer/scratch"
+      env:
+        CHECK50_PATH: /tmp/check50
+    - name: "Write autograding.json"
+      run: |
+        CLASSROOM_DIR=".github/classroom"
+        mkdir -p "$CLASSROOM_DIR"
+        echo '${{ steps.run_tests.outputs.results }}' > "$CLASSROOM_DIR"/autograding.json
+    - name: "Render results"
+      uses: education/autograding@v1
