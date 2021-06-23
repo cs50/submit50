@@ -5,16 +5,27 @@ from os.path import exists, join
 from shutil import copy, copytree, rmtree
 
 DOTFILES = ['.devcontainer', '.github', '.gitignore']
-
-# E.g., org/assignment-username, org/assignment-1-username
-# GitHub usernames and org names can only contain alphanumeric chars and one hyphen and cannot
-# start or end with a hyphen
 IDENTIFIER_PATTERN = re.compile(
-    '[A-Za-z0-9]+(?:-?[A-Za-z0-9]+)/[A-Za-z0-9\.\-_]+-[A-Za-z0-9]+(?:-?[A-Za-z0-9]+)?')
+    '[A-Za-z0-9]+(?:-?[A-Za-z0-9]+)/[A-Za-z0-9\.\-_]+-[A-Za-z0-9]+(?:-?[A-Za-z0-9]+)?'
+)
 
-def assert_valid_identifier_format(identifier):
-    if IDENTIFIER_PATTERN.fullmatch(identifier) is None:
-        raise ValueError(f'Invalid identifier "{identifier}".')
+class Assignment:
+    def __init__(self, identifier):
+        # E.g., org/assignment-username, org/assignment-1-username
+        # GitHub usernames and org names can only contain alphanumeric chars and one hyphen and cannot
+        # start or end with a hyphen
+        self.identifier_pattern = re.compile(
+            '[A-Za-z0-9]+(?:-?[A-Za-z0-9]+)/[A-Za-z0-9\.\-_]+-[A-Za-z0-9]+(?:-?[A-Za-z0-9]+)?'
+        )
+
+        self.dotfiles = ['.devcontainer', '.github', '.gitignore']
+
+        self.assert_valid_identifier_format(identifier)
+        self.identifier = identifier
+
+    def assert_valid_identifier_format(self, identifier):
+        if IDENTIFIER_PATTERN.fullmatch(identifier) is None:
+            raise ValueError(f'Invalid identifier "{identifier}".')
 
 def assignment_name_from_remote(remote):
     """
