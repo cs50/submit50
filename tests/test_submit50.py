@@ -1,5 +1,7 @@
+import contextlib
 import filecmp
 import os
+import pathlib
 import shutil
 import subprocess
 import tempfile
@@ -16,9 +18,6 @@ tests_dir = os.path.dirname(os.path.realpath(__file__))
 tests_data_dir = join(tests_dir, 'data')
 
 temp_dir = tempfile.mkdtemp()
-if os.path.exists(temp_dir):
-    shutil.rmtree(temp_dir)
-os.mkdir(temp_dir)
 
 os.environ['SUBMIT50_GIT_HOST'] = f'{git_protocol}{temp_dir}'
 
@@ -28,28 +27,23 @@ org_name = 'org'
 org_dir = join(temp_dir, org_name)
 os.mkdir(org_dir)
 
-assignment_template_name = 'assignment'
-assignment_template_dir = join(org_dir, assignment_template_name)
-assignment_template_zip_path = join(tests_data_dir, 'assignments', 'templates', 'assignment.zip')
-with zipfile.ZipFile(assignment_template_zip_path) as zip_file:
-    zip_file.extractall(assignment_template_dir)
-
-student_assignment_name = 'assignment-username'
-student_assignment_bare_repo_dir = join(org_dir, student_assignment_name)
-student_assignment_bare_repo_zip_path = join(
-    tests_dir,
-    'data',
-    'assignments',
-    'student_assignment_bare_repos',
-    'assignment-username.zip'
-)
+assignment_templates = ['assignment']
+student_assignment_bare_repos = ['assignment-username']
 
 class TestSubmit50(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        unzip_assignment_templates()
+
+    def setUp(self):
+        unzip_student_assignment_bare_repos()
+
     def test_missing_git_cli(self):
-        with patch('subprocess.run', side_effect=FileNotFoundError):
+        with patch('subprocess.check_output', side_effect=FileNotFoundError):
             with self.assertRaisesRegex(RuntimeError,
                 'It looks like git is not installed. Please install git then try again.'):
-                submit('org/assignment-user')
+                with temp_student_cwd():
+                    submit('org/assignment-user')
 
     def test_invalid_identifier_formats(self):
         invalid_identifiers = [
@@ -68,86 +62,66 @@ class TestSubmit50(unittest.TestCase):
         ]
         for identifier in invalid_identifiers:
             with self.assertRaisesRegex(ValueError, f'Invalid identifier "{identifier}"'):
-                submit(identifier)
+                with temp_student_cwd():
+                    submit(identifier)
 
     def test_missing_assignment_template(self):
-        missing_assignment_template_dir = f'{git_protocol}{org_dir}/missing'
+        missing_assignment_template_dir = get_remote('missing')
         with self.assertRaisesRegex(RuntimeError,
             f'Failed to clone "{missing_assignment_template_dir}".'):
-            submit('org/missing-username')
+            with temp_student_cwd():
+                submit('org/missing-username')
 
     def test_missing_assignment(self):
+        assignment_template_name = 'assignment'
         student_assignment_name = f'{assignment_template_name}-missing'
-        identifier = f'{org_name}/{student_assignment_name}'
-        missing_assignment_bare = f'{git_protocol}{org_dir}/{assignment_template_name}-missing'
+        identifier = get_identifier(student_assignment_name)
+        template_identifier = get_identifier(assignment_template_name)
+        missing_assignment_remote = get_remote(f'{assignment_template_name}-missing')
         with self.assertRaisesRegex(RuntimeError,
-            (f'Failed to clone "{missing_assignment_bare}". Did you accept assignment'
-             f' "{org_name}/{assignment_template_name}"?')):
-            submit(identifier)
+            (f'Failed to clone "{missing_assignment_remote}". Did you accept assignment'
+             f' "{template_identifier}"?')):
+            with temp_student_cwd():
+                submit(identifier)
 
     def test_dot_devcontainer_only(self):
-        reset_student_assignment_bare_repo()
-        cwd = os.getcwd()
-        student_cwd = join(tests_data_dir, 'student_cwd', 'dot_devcontainer_only')
-        with tempfile.TemporaryDirectory() as temp_dir:
-            student_cwd_temp = join(temp_dir, 'dot_devcontainer_only')
-            shutil.copytree(student_cwd, student_cwd_temp)
-            try:
-                os.chdir(student_cwd_temp)
-                submit('org/assignment-username')
-            finally:
-                os.chdir(cwd)
-
-            submission_dir = join(tests_data_dir, 'submissions', 'with_dotfiles')
-            student_updated_clone_dir = join(temp_dir, 'student_updated_clone')
-            subprocess.check_output(
-                ['git', 'clone', student_assignment_bare_repo_dir, student_updated_clone_dir]
-            )
-            self.assertEqualDirs(student_updated_clone_dir, submission_dir)
+        student_assignment = 'assignment-username'
+        identifier = get_identifier(student_assignment)
+        with temp_student_cwd('dot_devcontainer_only'):
+            submit(identifier)
+            self.assertCorrectSubmission('assignment-username', 'with_dotfiles')
 
     def test_dot_github_only(self):
-        reset_student_assignment_bare_repo()
-        cwd = os.getcwd()
-        student_cwd = join(tests_data_dir, 'student_cwd', 'dot_github_only')
-        with tempfile.TemporaryDirectory() as temp_dir:
-            student_cwd_temp = join(temp_dir, 'dot_github_only')
-            shutil.copytree(student_cwd, student_cwd_temp)
-            try:
-                os.chdir(student_cwd_temp)
-                submit('org/assignment-username')
-            finally:
-                os.chdir(cwd)
-
-            submission_dir = join(tests_data_dir, 'submissions', 'with_dotfiles')
-            student_updated_clone_dir = join(temp_dir, 'student_updated_clone')
-            subprocess.check_output(
-                ['git', 'clone', student_assignment_bare_repo_dir, student_updated_clone_dir]
-            )
-            self.assertEqualDirs(student_updated_clone_dir, submission_dir)
+        student_assignment = 'assignment-username'
+        identifier = get_identifier(student_assignment)
+        with temp_student_cwd('dot_github_only'):
+            submit(identifier)
+            self.assertCorrectSubmission(student_assignment, 'with_dotfiles')
 
     def test_add_delete_modify(self):
-        reset_student_assignment_bare_repo()
-        cwd = os.getcwd()
-        student_cwd = join(tests_data_dir, 'student_cwd', 'add_delete_modify')
-        with tempfile.TemporaryDirectory() as temp_dir:
-            student_cwd_temp = join(temp_dir, 'add_delete_modify')
-            shutil.copytree(student_cwd, student_cwd_temp)
-            try:
-                os.chdir(student_cwd_temp)
-                submit('org/assignment-username')
-            finally:
-                os.chdir(cwd)
-
-            submission_dir = join(tests_data_dir, 'submissions', 'add_delete_modify')
-            student_updated_clone_dir = join(temp_dir, 'student_updated_clone')
-            subprocess.check_output(
-                ['git', 'clone', student_assignment_bare_repo_dir, student_updated_clone_dir]
-            )
-            self.assertEqualDirs(student_updated_clone_dir, submission_dir)
+        student_assignment = 'assignment-username'
+        identifier = get_identifier(student_assignment)
+        with temp_student_cwd('add_delete_modify'):
+            submit(identifier)
+            self.assertCorrectSubmission(student_assignment, 'add_delete_modify')
 
     # TODO
     # def test_push_error(self):
     #     self.fail()
+
+    def assertCorrectSubmission(self, student_assignment_name, correct_submission):
+        with tempfile.TemporaryDirectory() as student_updated_clone_dir:
+            student_assignment_bare_repo_dir = get_remote(student_assignment_name)
+            subprocess.check_output([
+                'git',
+                'clone',
+                '--quiet',
+                student_assignment_bare_repo_dir,
+                student_updated_clone_dir
+            ])
+
+            submission_dir = get_submission_path(correct_submission)
+            self.assertEqualDirs(student_updated_clone_dir, submission_dir)
 
     def assertEqualDirs(self, a, b):
         diff = filecmp.dircmp(a, b)
@@ -155,9 +129,57 @@ class TestSubmit50(unittest.TestCase):
         self.assertEqual(diff.right_only, [])
         self.assertEqual(diff.diff_files, [])
 
-def reset_student_assignment_bare_repo():
-    if os.path.exists(student_assignment_bare_repo_dir):
-        shutil.rmtree(student_assignment_bare_repo_dir)
+def unzip_assignment_templates():
+    assignment_templates_dir = pathlib.PosixPath(f'{tests_data_dir}/assignments/templates')
+    for name in assignment_templates:
+        zip_name = f'{name}.zip'
+        zip_path = join(assignment_templates_dir, zip_name)
+        dst = join(org_dir, name)
+        unzip(zip_path, dst)
 
-    with zipfile.ZipFile(student_assignment_bare_repo_zip_path) as zip_file:
-        zip_file.extractall(student_assignment_bare_repo_dir)
+def unzip_student_assignment_bare_repos():
+    student_assignment_bare_repos_dir = pathlib.PosixPath(
+        f'{tests_data_dir}/assignments/student_assignment_bare_repos'
+    )
+    for name in student_assignment_bare_repos:
+        zip_name = f'{name}.zip'
+        zip_path = join(student_assignment_bare_repos_dir, zip_name)
+        dst = join(org_dir, name)
+        if os.path.exists(dst):
+            shutil.rmtree(dst)
+        unzip(zip_path, dst)
+
+def unzip(zip_path, dst):
+    with zipfile.ZipFile(zip_path) as zip_file:
+        zip_file.extractall(dst)
+
+def get_assignment_template_path(name):
+    return join(templates_dir, name)
+
+def get_student_cwd_path(name):
+    return join(tests_data_dir, 'student_cwd', name)
+
+def get_submission_path(name):
+    return join(tests_data_dir, 'submissions', name)
+
+def get_remote(name):
+    return f'{git_protocol}{org_dir}/{name}'
+
+@contextlib.contextmanager
+def temp_student_cwd(student_cwd=None):
+    cwd = os.getcwd()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        if student_cwd is None:
+            student_cwd_temp = temp_dir
+        else:
+            student_cwd_dir = get_student_cwd_path(student_cwd)
+            student_cwd_temp = join(temp_dir, student_cwd)
+            shutil.copytree(student_cwd_dir, student_cwd_temp)
+        try:
+            os.chdir(student_cwd_temp)
+            yield student_cwd_temp
+        finally:
+            os.chdir(cwd)
+
+def get_identifier(student_assignment):
+    return f'{org_name}/{student_assignment}'
