@@ -6,18 +6,25 @@ from tempfile import mkdtemp
 
 from .assignment import assignment_name_from_identifier, assignment_name_from_remote
 
+class GitRepo:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def assert_git_installed():
+        """
+        Ensures that git is installed and on PATH and raises a RuntimeError if not.
+        """
+        try:
+            subprocess.check_output(['git', '--version'])
+        except FileNotFoundError:
+            raise RuntimeError('It looks like git is not installed. Please install git then try again.')
+
+
+
 GIT_HOST = os.getenv('SUBMIT50_GIT_HOST', 'https://github.com')
 
 # TODO log outputs in verbose mode
-
-def assert_git_installed():
-    """
-    Ensures that git is installed and on PATH and raises a RuntimeError if not.
-    """
-    try:
-        subprocess.check_output(['git', '--version'])
-    except FileNotFoundError:
-        raise RuntimeError('It looks like git is not installed. Please install git then try again.')
 
 def clone_assignment_template(identifier):
     """
