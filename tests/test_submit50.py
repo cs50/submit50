@@ -12,6 +12,7 @@ from os.path import join
 from unittest.mock import patch
 
 from submit50 import submit
+from submit50 import assignment
 
 
 git_protocol = 'file://'
@@ -30,6 +31,7 @@ os.mkdir(org_dir)
 assignment_templates = ['assignment']
 student_assignment_bare_repos = ['assignment-username']
 
+@patch('builtins.input', return_value='y')
 class TestSubmit50(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -38,14 +40,14 @@ class TestSubmit50(unittest.TestCase):
     def setUp(self):
         unzip_student_assignment_bare_repos()
 
-    def test_missing_git_cli(self):
+    def test_missing_git_cli(self, _):
         with patch('subprocess.check_output', side_effect=FileNotFoundError):
             with self.assertRaisesRegex(RuntimeError,
                 'It looks like git is not installed. Please install git then try again.'):
                 with temp_student_cwd():
                     submit('org/assignment-user')
 
-    def test_invalid_identifier_formats(self):
+    def test_invalid_identifier_formats(self, _):
         invalid_identifiers = [
             '-',
             'invalid-uname',
@@ -65,14 +67,14 @@ class TestSubmit50(unittest.TestCase):
                 with temp_student_cwd():
                     submit(identifier)
 
-    def test_missing_assignment_template(self):
+    def test_missing_assignment_template(self, _):
         missing_assignment_template_dir = get_remote('missing')
         with self.assertRaisesRegex(RuntimeError,
             f'Failed to clone "{missing_assignment_template_dir}".'):
             with temp_student_cwd():
                 submit('org/missing-username')
 
-    def test_missing_assignment(self):
+    def test_missing_assignment(self, _):
         assignment_template_name = 'assignment'
         student_assignment_name = f'{assignment_template_name}-missing'
         identifier = get_identifier(student_assignment_name)
@@ -82,26 +84,47 @@ class TestSubmit50(unittest.TestCase):
             with temp_student_cwd():
                 submit(identifier)
 
-    def test_dot_devcontainer_only(self):
+    def test_dot_devcontainer_only(self, _):
         student_assignment = 'assignment-username'
         identifier = get_identifier(student_assignment)
         with temp_student_cwd('dot_devcontainer_only'):
             submit(identifier)
             self.assertCorrectSubmission('assignment-username', 'with_dotfiles')
 
-    def test_dot_github_only(self):
+    def test_dot_github_only(self, _):
         student_assignment = 'assignment-username'
         identifier = get_identifier(student_assignment)
         with temp_student_cwd('dot_github_only'):
             submit(identifier)
             self.assertCorrectSubmission(student_assignment, 'with_dotfiles')
 
-    def test_add_delete_modify(self):
+    def test_add_delete_modify(self, _):
         student_assignment = 'assignment-username'
         identifier = get_identifier(student_assignment)
         with temp_student_cwd('add_delete_modify'):
             submit(identifier)
             self.assertCorrectSubmission(student_assignment, 'add_delete_modify')
+
+    def test_no_confirm(self, input_mock):
+        input_mock.return_value = 'no'
+        with self.assertRaises(AssertionError):
+            with temp_student_cwd():
+                submit('org/assignment-username')
+
+        input_mock.return_value = 'yes?'
+        with self.assertRaises(AssertionError):
+            with temp_student_cwd():
+                submit('org/assignment-username')
+
+        input_mock.return_value = 'yyes'
+        with self.assertRaises(AssertionError):
+            with temp_student_cwd():
+                submit('org/assignment-username')
+
+        input_mock.return_value = 'yesss'
+        with self.assertRaises(AssertionError):
+            with temp_student_cwd():
+                submit('org/assignment-username')
 
     # TODO
     # def test_push_error(self):

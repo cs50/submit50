@@ -1,9 +1,9 @@
 import contextlib
+import logging
 import os
 import subprocess
 import tempfile
 
-# TODO log outputs in verbose mode
 
 class GitClient:
     def __init__(self, repo, git_host='https://github.com/'):
@@ -21,7 +21,8 @@ class AssignmentTemplateGitClient(GitClient):
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
                 clone(['--depth', '1', '--quiet', remote, temp_dir])
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as exc:
+                logging.debug(exc, exc_info=True)
                 raise RuntimeError(f'Failed to clone "{remote}".')
             yield temp_dir
 
@@ -40,7 +41,8 @@ class StudentAssignmentGitClient(GitClient):
         with tempfile.TemporaryDirectory() as git_dir:
             try:
                 self._clone(['--bare', '--quiet', remote, git_dir])
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as exc:
+                logging.debug(exc, exc_info=True)
                 raise RuntimeError(f'Failed to clone "{remote}".')
             self.git_dir = git_dir
             yield git_dir
@@ -50,7 +52,10 @@ class StudentAssignmentGitClient(GitClient):
             self._add_all()
             self._commit()
             self._push()
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as exc:
+            logging.debug(ex, exc_info=True)
+            # logging.debug(ex.stdout.decode())
+            # logging.debug(ex.stderr.decode())
             raise RuntimeError('Failed to submit.')
 
     def _clone(self, args):
@@ -97,7 +102,8 @@ def assert_git_installed():
     """
     try:
         git(['--version'])
-    except FileNotFoundError:
+    except FileNotFoundError as exc:
+        logging.debug(exc, exc_info=True)
         raise RuntimeError('It looks like git is not installed. Please install git then try again.')
 
 def clone(args):
@@ -115,7 +121,8 @@ def credential_helper_not_configured():
 def not_configured(key):
     try:
         return config(['--get', key])
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as exc:
+        logging.debug(exc, exc_info=True)
         return True
     return False
 

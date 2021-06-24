@@ -1,13 +1,25 @@
 #!/usr/bin/env python
 
 import argparse
+import logging
+import signal
+import sys
 
 from submit50 import submit
+from submit50 import colors
 
+def sigint_handler(signal_number, stack_frame):
+    print(colors.red('\nInterrupted.'))
+    sys.exit(130)
+signal.signal(signal.SIGINT, sigint_handler)
 
 def main():
     parser = argparse.ArgumentParser(
         description='A git wrapper for submitting GitHub Classroom assignments.'
+    )
+    parser.add_argument(
+        '--verbose',
+        action='store_true'
     )
     parser.add_argument(
         'identifier',
@@ -16,14 +28,13 @@ def main():
         help='the assignment identifier'
     )
     args = parser.parse_args()
+    logging.basicConfig(format='%(message)s', level=logging.DEBUG if args.verbose else logging.INFO)
     try:
         submit(args.identifier)
-    except (RuntimeError, ValueError) as ex:
-        # TODO output in red
-        print(ex)
+    except (AssertionError, RuntimeError, ValueError) as ex:
+        logging.info(colors.red(ex))
     else:
-        # TODO output in green
-        print(f'Successfully submitted {args.identifier}.')
+        logging.info(colors.green(f'Successfully submitted {args.identifier}.'))
 
 if __name__ == '__main__':
     main()

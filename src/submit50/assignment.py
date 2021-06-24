@@ -1,7 +1,9 @@
+import logging
 import os
 import re
 import shutil
 
+from .colors import yellow
 from .git import AssignmentTemplateGitClient, StudentAssignmentGitClient
 
 class Assignment:
@@ -23,10 +25,14 @@ class Assignment:
             raise ValueError(f'Invalid identifier "{self.identifier}".')
 
     def submit(self):
+        self.confirm_files_to_submit()
         assignment_template_repo = self.assignment_template_repo()
         assignment_template_client = AssignmentTemplateGitClient(assignment_template_repo)
+        logging.info('Fetching configurations ...')
         with assignment_template_client.clone() as assignment_template_dir:
+            logging.info('Syncing configurations ...')
             self.copy_dotfiles_from(assignment_template_dir)
+            logging.info('Uploading ...')
             student_assignment_client = StudentAssignmentGitClient(self.identifier)
             with student_assignment_client.clone_bare():
                 student_assignment_client.add_commit_push()
@@ -52,6 +58,51 @@ class Assignment:
         for dotfile in self.dotfiles:
             copy(assignment_template_dir, dotfile)
 
+    def confirm_files_to_submit(self):
+        self.list_cwd()
+        try:
+            answer = input(yellow(
+                ("Keeping in mind the course's policy on academic honesty,"
+                 ' are you sure you want to submit these files (yes/no)? ')
+            ))
+        except EOFError:
+            answer = ''
+        assert re.fullmatch(r'(?:y|yes)', answer.strip(), re.I), 'Cancelled.'
+
+    # TODO factor out and refactor
+    def list_cwd(self):
+        contents = list(os.walk(os.getcwd()))
+        if len(contents) < 1:
+            raise RuntimeError('No files to submit.')
+
+        indentation_level = 2
+        output = []
+        root, dirs, files = contents[0]
+        for f in files:
+            if f in self.dotfiles:
+                continue
+            output.append('{}{}'.format(' ' * indentation_level, f))
+
+        for root, dirs, files in contents[1:]:
+            relative_path = root.replace(os.getcwd(), '')
+            print(relative_path, self.dotfiles)
+            if any(relative_path.startswith(dotfile) for dotfile in self.dotfiles):
+                continue
+            basename = os.path.basename(root)
+            level = relative_path.count(os.sep)
+            indent = ' ' * indentation_level * level
+            output.append('{}{}/'.format(indent, basename))
+            subindent = ' ' * indentation_level * (level + 1)
+            for f in files:
+                logging.info('{}{}'.format(subindent, f))
+
+        if len(output) < 1:
+            raise RuntimeError('No files to submit.')
+
+        logging.info(yellow('Files that will be submitted:'))
+        for entry in output:
+            logging.info(entry)
+
 def remove_if_exists(path):
     """
     Removes a file or a directory from cwd if it exists.
@@ -63,7 +114,8 @@ def remove_if_exists(path):
     if os.path.exists(path):
         try:
             shutil.rmtree(path)
-        except NotADirectoryError:
+        except NotADirectoryError as exc:
+            logging.debug(exc, exc_info=True)
             os.remove(path)
 
 def copy(assignment_template_dir, dotfile):
@@ -79,7 +131,8 @@ def copy(assignment_template_dir, dotfile):
         remove_if_exists(dotfile)
         try:
             shutil.copytree(src, os.path.join(os.getcwd(), dotfile))
-        except NotADirectoryError:
+        except NotADirectoryError as exc:
+            logging.debug(exc, exc_info=True)
             shutil.copy(src, os.path.join(os.getcwd(), dotfile))
 
         # TODO handle other potential copying issues
