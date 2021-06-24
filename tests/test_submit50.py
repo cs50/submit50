@@ -187,7 +187,7 @@ def get_remote(name):
     return f'{git_protocol}{org_dir}/{name}'
 
 @contextlib.contextmanager
-def temp_student_cwd(student_cwd=None):
+def temp_student_cwd(student_cwd='default'):
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as temp_dir:
         if student_cwd is None:

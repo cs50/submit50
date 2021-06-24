@@ -85,16 +85,15 @@ class Assignment:
 
         for root, dirs, files in contents[1:]:
             relative_path = root.replace(os.getcwd(), '')
-            print(relative_path, self.dotfiles)
-            if any(relative_path.startswith(dotfile) for dotfile in self.dotfiles):
+            if any(relative_path.lstrip('/').startswith(dotfile) for dotfile in self.dotfiles):
                 continue
             basename = os.path.basename(root)
             level = relative_path.count(os.sep)
             indent = ' ' * indentation_level * level
-            output.append('{}{}/'.format(indent, basename))
+            output.append(f'{indent}{basename}/')
             subindent = ' ' * indentation_level * (level + 1)
             for f in files:
-                logging.info('{}{}'.format(subindent, f))
+                output.append(f'{subindent}{f}')
 
         if len(output) < 1:
             raise RuntimeError('No files to submit.')
