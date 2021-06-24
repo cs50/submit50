@@ -3,15 +3,11 @@ import os
 import subprocess
 import tempfile
 
-from os.path import join
-
 # TODO log outputs in verbose mode
 
-GIT_HOST = 'https://github.com/'
-
 class GitClient:
-    def __init__(self, repo, git_host=None):
-        self.git_host = os.getenv('SUBMIT50_GIT_HOST', GIT_HOST)
+    def __init__(self, repo, git_host='https://github.com/'):
+        self.git_host = os.getenv('SUBMIT50_GIT_HOST', git_host)
         self.repo = repo
         self.git_dir = None
 
@@ -19,12 +15,9 @@ class AssignmentTemplateGitClient(GitClient):
     @contextlib.contextmanager
     def clone(self):
         """
-        Clones assignment template into a temporary directory.
-
-        :param identifer: The name of the student's copy of the assignment (E.g.,
-            org/assignment-username)
+        Clones self.repo into a temporary directory.
         """
-        remote = join(self.git_host, self.repo)
+        remote = os.path.join(self.git_host, self.repo)
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
                 clone(['--depth', '1', '--quiet', remote, temp_dir])
@@ -39,7 +32,11 @@ class StudentAssignmentGitClient(GitClient):
 
     @contextlib.contextmanager
     def clone_bare(self):
-        remote = join(self.git_host, self.repo)
+        """
+        Clones self.repo as a bare repository into a temporary directory and sets GIT_DIR to this
+        temporary directory.
+        """
+        remote = os.path.join(self.git_host, self.repo)
         with tempfile.TemporaryDirectory() as git_dir:
             try:
                 self._clone(['--bare', '--quiet', remote, git_dir])
@@ -53,7 +50,7 @@ class StudentAssignmentGitClient(GitClient):
             self._add_all()
             self._commit()
             self._push()
-        except subprocess.CalledProcessError as ex:
+        except subprocess.CalledProcessError:
             raise RuntimeError('Failed to submit.')
 
     def _clone(self, args):
@@ -78,6 +75,10 @@ class StudentAssignmentGitClient(GitClient):
 
     @staticmethod
     def _default_configs():
+        """
+        Returns a list of git command-line arguments that configure user.name, user.email, and
+        credential.helper.
+        """
         configs = []
         if user_name_not_configured():
             configs.extend(['-c', 'user.name=submit50'])
@@ -92,7 +93,7 @@ class StudentAssignmentGitClient(GitClient):
 
 def assert_git_installed():
     """
-    Ensures that git is installed and on PATH and raises a RuntimeError if not.
+    Ensures that git is installed and is on PATH and raises a RuntimeError if not.
     """
     try:
         git(['--version'])
@@ -116,7 +117,6 @@ def not_configured(key):
         return config(['--get', key])
     except subprocess.CalledProcessError:
         return True
-
     return False
 
 def config(args):

@@ -1,5 +1,5 @@
-from .assignment import *
-from .git import *
+from .assignment import Assignment
+from .git import assert_git_installed
 
 
 def submit(identifier):
