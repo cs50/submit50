@@ -5,17 +5,14 @@ import tempfile
 
 from os.path import join
 
-from .assignment import assignment_name_from_identifier, assignment_name_from_remote
-
-
 # TODO log outputs in verbose mode
 
 GIT_HOST = 'https://github.com/'
 
 class GitClient:
-    def __init__(self, identifier, git_host=None):
+    def __init__(self, repo, git_host=None):
         self.git_host = os.getenv('SUBMIT50_GIT_HOST', GIT_HOST)
-        self.identifier = identifier
+        self.repo = repo
         self.git_dir = None
 
 class AssignmentTemplateGitClient(GitClient):
@@ -27,8 +24,7 @@ class AssignmentTemplateGitClient(GitClient):
         :param identifer: The name of the student's copy of the assignment (E.g.,
             org/assignment-username)
         """
-        assignment_name = assignment_name_from_identifier(self.identifier)
-        remote = join(self.git_host, assignment_name)
+        remote = join(self.git_host, self.repo)
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
                 clone(['--depth', '1', '--quiet', remote, temp_dir])
@@ -43,18 +39,16 @@ class StudentAssignmentGitClient(GitClient):
 
     @contextlib.contextmanager
     def clone_bare(self):
-        remote = join(self.git_host, self.identifier)
+        remote = join(self.git_host, self.repo)
         with tempfile.TemporaryDirectory() as git_dir:
             try:
                 self._clone(['--bare', '--quiet', remote, git_dir])
             except subprocess.CalledProcessError:
-                assignment_name = assignment_name_from_remote(remote)
-                raise RuntimeError(
-                    f'Failed to clone "{remote}". Did you accept assignment "{assignment_name}"?')
+                raise RuntimeError(f'Failed to clone "{remote}".')
             self.git_dir = git_dir
             yield git_dir
 
-    def submit(self):
+    def add_commit_push(self):
         try:
             self._add_all()
             self._commit()

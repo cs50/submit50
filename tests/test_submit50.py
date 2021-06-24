@@ -78,9 +78,7 @@ class TestSubmit50(unittest.TestCase):
         identifier = get_identifier(student_assignment_name)
         template_identifier = get_identifier(assignment_template_name)
         missing_assignment_remote = get_remote(f'{assignment_template_name}-missing')
-        with self.assertRaisesRegex(RuntimeError,
-            (f'Failed to clone "{missing_assignment_remote}". Did you accept assignment'
-             f' "{template_identifier}"?')):
+        with self.assertRaisesRegex(RuntimeError, f'Failed to clone "{missing_assignment_remote}"'):
             with temp_student_cwd():
                 submit(identifier)
 
