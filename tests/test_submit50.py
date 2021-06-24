@@ -11,6 +11,8 @@ import zipfile
 from os.path import join
 from unittest.mock import patch
 
+from submit50 import submit
+
 
 git_protocol = 'file://'
 
@@ -20,8 +22,6 @@ tests_data_dir = join(tests_dir, 'data')
 temp_dir = tempfile.mkdtemp()
 
 os.environ['SUBMIT50_GIT_HOST'] = f'{git_protocol}{temp_dir}'
-
-from submit50 import submit
 
 org_name = 'org'
 org_dir = join(temp_dir, org_name)

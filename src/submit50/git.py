@@ -4,30 +4,23 @@ import subprocess
 import tempfile
 
 from os.path import join
-from tempfile import mkdtemp
 
 from .assignment import assignment_name_from_identifier, assignment_name_from_remote
 
 
 # TODO log outputs in verbose mode
 
-class Git:
-    def __init__(self, identifier, git_host=os.getenv('SUBMIT50_GIT_HOST', 'https://github.com/')):
-        self.git_host = git_host
+GIT_HOST = 'https://github.com/'
+
+class GitClient:
+    def __init__(self, identifier, git_host=None):
+        self.git_host = os.getenv('SUBMIT50_GIT_HOST', GIT_HOST)
         self.identifier = identifier
+        self.git_dir = None
 
-    @staticmethod
-    def assert_git_installed():
-        """
-        Ensures that git is installed and on PATH and raises a RuntimeError if not.
-        """
-        try:
-            subprocess.check_output(['git', '--version'])
-        except FileNotFoundError:
-            raise RuntimeError('It looks like git is not installed. Please install git then try again.')
-
+class AssignmentTemplateGitClient(GitClient):
     @contextlib.contextmanager
-    def clone_assignment_template(self):
+    def clone(self):
         """
         Clones assignment template into a temporary directory.
 
@@ -38,19 +31,22 @@ class Git:
         remote = join(self.git_host, assignment_name)
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
-                subprocess.check_output(
-                    ['git', 'clone', '--depth', '1', '--quiet', remote, temp_dir]
-                )
+                clone(['--depth', '1', '--quiet', remote, temp_dir])
             except subprocess.CalledProcessError:
                 raise RuntimeError(f'Failed to clone "{remote}".')
             yield temp_dir
 
+class StudentAssignmentGitClient(GitClient):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.configs = StudentAssignmentGitClient._default_configs()
+
     @contextlib.contextmanager
-    def clone_student_assignment_bare(self):
+    def clone_bare(self):
         remote = join(self.git_host, self.identifier)
         with tempfile.TemporaryDirectory() as git_dir:
             try:
-                subprocess.check_output(['git', 'clone', '--bare', '--quiet', remote, git_dir])
+                self._clone(['--bare', '--quiet', remote, git_dir])
             except subprocess.CalledProcessError:
                 assignment_name = assignment_name_from_remote(remote)
                 raise RuntimeError(
@@ -58,32 +54,79 @@ class Git:
             self.git_dir = git_dir
             yield git_dir
 
-    def enable_credential_cache(self):
-        """
-        Configures git credential cache helper if no credential helper is configured. The cache
-        helper stores credentials in memory for 15 minutes after the user provides them.
-        """
-        if not self._git(['config', 'credential.helper']):
-            self._git(['config', 'credential.helper', 'cache'])
+    def submit(self):
+        try:
+            self._add_all()
+            self._commit()
+            self._push()
+        except subprocess.CalledProcessError as ex:
+            raise RuntimeError('Failed to submit.')
+
+    def _clone(self, args):
+        return self._git(['clone', *args])
+
+    def _add_all(self):
+        return self._git(['add', '--all'])
+
+    def _commit(self):
+        return self._git(['commit', '--message', 'Automated commit by submit50'])
+
+    def _push(self):
+        current_branch = self._current_branch()
+        return self._git(['push', '--quiet', 'origin', current_branch])
+
+    def _current_branch(self):
+        return self._git(['branch', '--show-current']).decode().rstrip()
 
     def _git(self, args):
-        return subprocess.check_output(['git'] + args, env=self.env)
+        git_dir = ['--git-dir', self.git_dir] if self.git_dir else []
+        return git([*git_dir, '--work-tree', os.getcwd(), *self.configs, *args])
 
-def add_commit_push(git_dir):
+    @staticmethod
+    def _default_configs():
+        configs = []
+        if user_name_not_configured():
+            configs.extend(['-c', 'user.name=submit50'])
+
+        if user_email_not_configured():
+            configs.extend(['-c', 'user.email=submit50@users.noreply.github.com'])
+
+        if credential_helper_not_configured():
+            configs.extend(['-c', 'credential.helper=cache'])
+
+        return configs
+
+def assert_git_installed():
+    """
+    Ensures that git is installed and on PATH and raises a RuntimeError if not.
+    """
     try:
-        env = os.environ.copy()
-        env['GIT_DIR'] = git_dir
-        env['GIT_WORK_TREE'] = os.getcwd()
+        git(['--version'])
+    except FileNotFoundError:
+        raise RuntimeError('It looks like git is not installed. Please install git then try again.')
 
-        subprocess.check_output(['git', 'add', '--all'], env=env)
-        subprocess.check_output(
-            ['git', 'commit', '--message', 'Automatic commit by submit50'],
-            env=env
-        )
-        subprocess.check_output(
-            'git push --quiet origin $(git branch --show-current)',
-            shell=True,
-            env=env
-        )
-    except subprocess.CalledProcessError as ex:
-        raise RuntimeError('Failed to submit.')
+def clone(args):
+    return git(['clone', *args])
+
+def user_name_not_configured():
+    return not_configured('user.name')
+
+def user_email_not_configured():
+    return not_configured('user.email')
+
+def credential_helper_not_configured():
+    return not_configured('credential.helper')
+
+def not_configured(key):
+    try:
+        return config(['--get', key])
+    except subprocess.CalledProcessError:
+        return True
+
+    return False
+
+def config(args):
+    return git(['config', *args])
+
+def git(args):
+    return subprocess.check_output(['git', *args])
