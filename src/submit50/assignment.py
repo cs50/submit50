@@ -70,22 +70,24 @@ class Assignment:
         assert re.fullmatch(r'(?:y|yes)', answer.strip(), re.I), 'Cancelled.'
 
     # TODO factor out and refactor
+    # TODO use something other than os.walk to ignore listing ignored files/dirs?
     def list_cwd(self):
         contents = list(os.walk(os.getcwd()))
         if len(contents) < 1:
             raise RuntimeError('No files to submit.')
 
+        ignored_entries = [*self.dotfiles, '.git']
         indentation_level = 2
         output = []
         root, dirs, files = contents[0]
         for f in files:
-            if f in self.dotfiles:
+            if f in ignored_entries:
                 continue
             output.append('{}{}'.format(' ' * indentation_level, f))
 
         for root, dirs, files in contents[1:]:
             relative_path = root.replace(os.getcwd(), '')
-            if any(relative_path.lstrip('/').startswith(dotfile) for dotfile in self.dotfiles):
+            if any(relative_path.lstrip('/').startswith(dotfile) for dotfile in ignored_entries):
                 continue
             basename = os.path.basename(root)
             level = relative_path.count(os.sep)
