@@ -60,7 +60,7 @@ class StudentAssignmentGitClient(GitClient):
         return self._git(['add', '--all'])
 
     def _commit(self):
-        return self._git(['commit', '--message', 'Automated commit by submit50'])
+        return self._git(['commit', '--allow-empty', '--message', 'Automated commit by submit50'])
 
     def _push(self):
         current_branch = self._current_branch()
