@@ -9,47 +9,24 @@ from .colors import yellow
 from .git import AssignmentTemplateGitClient, StudentAssignmentGitClient
 
 class Assignment:
-    def __init__(self, identifier):
-        self.identifier = identifier
-
-        # E.g., org/assignment-username, org/assignment-1-username
-        # GitHub usernames and org names can only contain alphanumeric chars and one hyphen and
-        # cannot start or end with a hyphen
-        self.identifier_pattern = re.compile(
-            r'[A-Za-z0-9]+(?:-?[A-Za-z0-9]+)/[A-Za-z0-9\.\-_]+-[A-Za-z0-9]+(?:-?[A-Za-z0-9]+)?'
-        )
-        self.assert_valid_identifier_format()
-
+    def __init__(self, template_repo, username):
+        self.template_repo = template_repo
+        self.username = username
+        self.student_repo = f'{template_repo}-{username}'
         self.dotfiles = ['.devcontainer', '.github', '.gitignore']
-
-    def assert_valid_identifier_format(self):
-        if self.identifier_pattern.fullmatch(self.identifier) is None:
-            raise ValueError(f'Invalid identifier "{self.identifier}".')
 
     def submit(self):
         self.confirm_files_to_submit()
-        assignment_template_repo = self.assignment_template_repo()
-        assignment_template_client = AssignmentTemplateGitClient(assignment_template_repo)
+        assignment_template_client = AssignmentTemplateGitClient(self.template_repo)
         logging.info('Fetching configurations ...')
         with assignment_template_client.clone() as assignment_template_dir:
             logging.info('Syncing configurations ...')
             with temp_student_cwd():
                 self.copy_dotfiles_from(assignment_template_dir)
                 logging.info('Uploading ...')
-                student_assignment_client = StudentAssignmentGitClient(self.identifier)
+                student_assignment_client = StudentAssignmentGitClient(self.student_repo)
                 with student_assignment_client.clone_bare():
                     student_assignment_client.add_commit_push()
-
-    def assignment_template_repo(self):
-        """
-        Extracts the name of the assignment from the name of the student's copy and returns it. For
-        example, if the student's copy is org/assignment-username, returns org/assignment.
-
-        :param identifer: The name of the student's copy of the assignment (E.g.,
-            org/assignment-username)
-        """
-        assignment_name, _ = self.identifier.rsplit('-', 1)
-        return assignment_name
 
     def copy_dotfiles_from(self, assignment_template_dir):
         """

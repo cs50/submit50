@@ -14,6 +14,16 @@ def sigint_handler(signal_number, stack_frame):
 signal.signal(signal.SIGINT, sigint_handler)
 
 def main():
+    args = parse_args(sys.argv[1:])
+    configure_logging(args.verbose)
+    try:
+        submit(args.assignment, args.username)
+    except (AssertionError, RuntimeError, ValueError) as ex:
+        logging.info(colors.red(ex))
+    else:
+        logging.info(colors.green(f'Successfully submitted {args.assignment}.'))
+
+def parse_args(args):
     parser = argparse.ArgumentParser(
         description='A git wrapper for submitting GitHub Classroom assignments.'
     )
@@ -22,19 +32,22 @@ def main():
         action='store_true'
     )
     parser.add_argument(
-        'identifier',
-        metavar='IDENTIFIER',
+        'assignment',
+        metavar='ASSIGNMENT',
         type=str,
-        help='the assignment identifier'
+        help='the assignment repository (e.g., classroom50/hello)'
     )
-    args = parser.parse_args()
-    logging.basicConfig(format='%(message)s', level=logging.DEBUG if args.verbose else logging.INFO)
-    try:
-        submit(args.identifier)
-    except (AssertionError, RuntimeError, ValueError) as ex:
-        logging.info(colors.red(ex))
-    else:
-        logging.info(colors.green(f'Successfully submitted {args.identifier}.'))
+    parser.add_argument(
+        'username',
+        metavar='USERNAME',
+        type=str,
+        help='the username in your copy of the assignment'
+    )
+    return parser.parse_args(args)
+
+def configure_logging(verbose):
+    logging.basicConfig(format='%(message)s', level=logging.DEBUG if verbose else logging.INFO)
+
 
 if __name__ == '__main__':
     main()

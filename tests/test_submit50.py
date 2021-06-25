@@ -43,78 +43,50 @@ class TestSubmit50(unittest.TestCase):
         with patch('subprocess.check_output', side_effect=FileNotFoundError):
             with self.assertRaisesRegex(RuntimeError,
                 'It looks like git is not installed. Please install git then try again.'):
-                submit('org/assignment-user')
-
-    def test_invalid_identifier_formats(self, _):
-        invalid_identifiers = [
-            '-',
-            'invalid-uname',
-            'invalid',
-            'invalid-',
-            'org/invalid',
-            'org/invalid-',
-            'org/-invalid',
-            'org/-',
-            'org/assignment-username-',
-            'org/assignment-username_',
-            'org/assignment-_username',
-            'org/assignment-user_name',
-        ]
-        for identifier in invalid_identifiers:
-            with self.assertRaisesRegex(ValueError, f'Invalid identifier "{identifier}"'):
-                submit(identifier)
+                submit('org/assignment', 'username')
 
     def test_missing_assignment_template(self, _):
         missing_assignment_template_dir = get_remote('missing')
         with self.assertRaisesRegex(RuntimeError,
             f'Failed to clone "{missing_assignment_template_dir}".'):
-            submit('org/missing-username')
+            submit('org/missing', 'username')
 
     def test_missing_assignment(self, _):
-        assignment_template_name = 'assignment'
-        student_assignment_name = f'{assignment_template_name}-missing'
-        identifier = get_identifier(student_assignment_name)
-        missing_assignment_remote = get_remote(f'{assignment_template_name}-missing')
-        with self.assertRaisesRegex(RuntimeError, f'Failed to clone "{missing_assignment_remote}"'):
-            submit(identifier)
+        missing_assignment_dir = get_remote('assignment-missing')
+        with self.assertRaisesRegex(RuntimeError, f'Failed to clone "{missing_assignment_dir}"'):
+            submit('org/assignment', 'missing')
 
     def test_dot_devcontainer_only(self, _):
-        student_assignment = 'assignment-username'
-        identifier = get_identifier(student_assignment)
         with temp_student_cwd('dot_devcontainer_only'):
-            submit(identifier)
+            submit('org/assignment', 'username')
             self.assertCorrectSubmission('assignment-username', 'with_dotfiles')
 
     def test_dot_github_only(self, _):
-        student_assignment = 'assignment-username'
-        identifier = get_identifier(student_assignment)
         with temp_student_cwd('dot_github_only'):
-            submit(identifier)
-            self.assertCorrectSubmission(student_assignment, 'with_dotfiles')
+            submit('org/assignment', 'username')
+            self.assertCorrectSubmission('assignment-username', 'with_dotfiles')
 
     def test_add_delete_modify(self, _):
-        student_assignment = 'assignment-username'
-        identifier = get_identifier(student_assignment)
         with temp_student_cwd('add_delete_modify'):
-            submit(identifier)
-            self.assertCorrectSubmission(student_assignment, 'add_delete_modify')
+            submit('org/assignment', 'username')
+            self.assertCorrectSubmission('assignment-username', 'add_delete_modify')
 
     def test_no_confirm(self, input_mock):
         input_mock.return_value = 'no'
         with self.assertRaises(AssertionError):
-            submit('org/assignment-username')
+            submit('org/assignment', 'username')
 
         input_mock.return_value = 'yes?'
         with self.assertRaises(AssertionError):
-            submit('org/assignment-username')
+            submit('org/assignment', 'username')
 
         input_mock.return_value = 'yyes'
         with self.assertRaises(AssertionError):
-            submit('org/assignment-username')
+            submit('org/assignment', 'username')
 
         input_mock.return_value = 'yesss'
         with self.assertRaises(AssertionError):
-            submit('org/assignment-username')
+            submit('org/assignment', 'username')
 
     # TODO
     # def test_push_error(self):
