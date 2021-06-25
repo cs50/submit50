@@ -24,7 +24,7 @@ class Assignment:
             with temp_student_cwd():
                 self.copy_dotfiles_from(assignment_template_dir)
                 logging.info('Uploading ...')
-                student_assignment_client = StudentAssignmentGitClient(self.student_repo)
+                student_assignment_client = StudentAssignmentGitClient(self.username, self.student_repo)
                 with student_assignment_client.clone_bare():
                     student_assignment_client.add_commit_push()
 

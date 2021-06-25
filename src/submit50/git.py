@@ -27,9 +27,10 @@ class AssignmentTemplateGitClient(GitClient):
             yield temp_dir
 
 class StudentAssignmentGitClient(GitClient):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, username, *args, **kwargs):
+        self.username = username
         super().__init__(*args, **kwargs)
-        self.configs = StudentAssignmentGitClient._default_configs()
+        self.configs = self._default_configs()
 
     @contextlib.contextmanager
     def clone_bare(self):
@@ -76,18 +77,17 @@ class StudentAssignmentGitClient(GitClient):
         git_dir = ['--git-dir', self.git_dir] if self.git_dir else []
         return git([*git_dir, '--work-tree', os.getcwd(), *self.configs, *args])
 
-    @staticmethod
-    def _default_configs():
+    def _default_configs(self):
         """
         Returns a list of git command-line arguments that configure user.name, user.email, and
         credential.helper.
         """
         configs = []
         if user_name_not_configured():
-            configs.extend(['-c', 'user.name=submit50'])
+            configs.extend(['-c', f'user.name={self.username}'])
 
         if user_email_not_configured():
-            configs.extend(['-c', 'user.email=submit50@users.noreply.github.com'])
+            configs.extend(['-c', f'user.email={self.username}@users.noreply.github.com'])
 
         if credential_helper_not_configured():
             configs.extend(['-c', 'credential.helper=cache'])
