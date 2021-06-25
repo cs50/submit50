@@ -53,9 +53,7 @@ class StudentAssignmentGitClient(GitClient):
             self._commit()
             self._push()
         except subprocess.CalledProcessError as exc:
-            logging.debug(ex, exc_info=True)
-            # logging.debug(ex.stdout.decode())
-            # logging.debug(ex.stderr.decode())
+            logging.debug(exc, exc_info=True)
             raise RuntimeError('Failed to submit.')
 
     def _clone(self, args):
