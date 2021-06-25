@@ -56,11 +56,6 @@ class TestSubmit50(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, f'Failed to clone "{missing_assignment_dir}"'):
             submit('org/assignment', 'missing')
 
-    def test_dot_devcontainer_only(self, _):
-        with temp_student_cwd('dot_devcontainer_only'):
-            submit('org/assignment', 'username')
-            self.assertCorrectSubmission('assignment-username', 'with_dotfiles')
-
     def test_dot_github_only(self, _):
         with temp_student_cwd('dot_github_only'):
             submit('org/assignment', 'username')

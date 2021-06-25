@@ -14,7 +14,7 @@ class Assignment:
         self.template_repo = template_repo
         self.username = username
         self.student_repo = f'{template_repo}-{username}'
-        self.dotfiles = ['.devcontainer', '.github', '.gitignore']
+        self.dotfiles = ['.github', '.gitignore']
 
     def submit(self):
         self.confirm_files_to_submit()
