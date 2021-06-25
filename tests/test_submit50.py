@@ -12,7 +12,6 @@ from os.path import join
 from unittest.mock import patch
 
 from submit50 import submit
-from submit50 import assignment
 
 
 git_protocol = 'file://'
@@ -44,8 +43,7 @@ class TestSubmit50(unittest.TestCase):
         with patch('subprocess.check_output', side_effect=FileNotFoundError):
             with self.assertRaisesRegex(RuntimeError,
                 'It looks like git is not installed. Please install git then try again.'):
-                with temp_student_cwd():
-                    submit('org/assignment-user')
+                submit('org/assignment-user')
 
     def test_invalid_identifier_formats(self, _):
         invalid_identifiers = [
@@ -64,25 +62,21 @@ class TestSubmit50(unittest.TestCase):
         ]
         for identifier in invalid_identifiers:
             with self.assertRaisesRegex(ValueError, f'Invalid identifier "{identifier}"'):
-                with temp_student_cwd():
-                    submit(identifier)
+                submit(identifier)
 
     def test_missing_assignment_template(self, _):
         missing_assignment_template_dir = get_remote('missing')
         with self.assertRaisesRegex(RuntimeError,
             f'Failed to clone "{missing_assignment_template_dir}".'):
-            with temp_student_cwd():
-                submit('org/missing-username')
+            submit('org/missing-username')
 
     def test_missing_assignment(self, _):
         assignment_template_name = 'assignment'
         student_assignment_name = f'{assignment_template_name}-missing'
         identifier = get_identifier(student_assignment_name)
-        template_identifier = get_identifier(assignment_template_name)
         missing_assignment_remote = get_remote(f'{assignment_template_name}-missing')
         with self.assertRaisesRegex(RuntimeError, f'Failed to clone "{missing_assignment_remote}"'):
-            with temp_student_cwd():
-                submit(identifier)
+            submit(identifier)
 
     def test_dot_devcontainer_only(self, _):
         student_assignment = 'assignment-username'
@@ -108,23 +102,19 @@ class TestSubmit50(unittest.TestCase):
     def test_no_confirm(self, input_mock):
         input_mock.return_value = 'no'
         with self.assertRaises(AssertionError):
-            with temp_student_cwd():
-                submit('org/assignment-username')
+            submit('org/assignment-username')
 
         input_mock.return_value = 'yes?'
         with self.assertRaises(AssertionError):
-            with temp_student_cwd():
-                submit('org/assignment-username')
+            submit('org/assignment-username')
 
         input_mock.return_value = 'yyes'
         with self.assertRaises(AssertionError):
-            with temp_student_cwd():
-                submit('org/assignment-username')
+            submit('org/assignment-username')
 
         input_mock.return_value = 'yesss'
         with self.assertRaises(AssertionError):
-            with temp_student_cwd():
-                submit('org/assignment-username')
+            submit('org/assignment-username')
 
     # TODO
     # def test_push_error(self):
@@ -174,12 +164,6 @@ def unzip(zip_path, dst):
     with zipfile.ZipFile(zip_path) as zip_file:
         zip_file.extractall(dst)
 
-def get_assignment_template_path(name):
-    return join(templates_dir, name)
-
-def get_student_cwd_path(name):
-    return join(tests_data_dir, 'student_cwd', name)
-
 def get_submission_path(name):
     return join(tests_data_dir, 'submissions', name)
 
@@ -189,18 +173,21 @@ def get_remote(name):
 @contextlib.contextmanager
 def temp_student_cwd(student_cwd='default'):
     cwd = os.getcwd()
-    with tempfile.TemporaryDirectory() as temp_dir:
+    with tempfile.TemporaryDirectory() as temp_cwd:
         if student_cwd is None:
-            student_cwd_temp = temp_dir
+            student_cwd_temp = temp_cwd
         else:
             student_cwd_dir = get_student_cwd_path(student_cwd)
-            student_cwd_temp = join(temp_dir, student_cwd)
+            student_cwd_temp = join(temp_cwd, student_cwd)
             shutil.copytree(student_cwd_dir, student_cwd_temp)
         try:
             os.chdir(student_cwd_temp)
             yield student_cwd_temp
         finally:
             os.chdir(cwd)
+
+def get_student_cwd_path(name):
+    return join(tests_data_dir, 'student_cwd', name)
 
 def get_identifier(student_assignment):
     return f'{org_name}/{student_assignment}'

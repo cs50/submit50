@@ -1,7 +1,9 @@
+import contextlib
 import logging
 import os
 import re
 import shutil
+import tempfile
 
 from .colors import yellow
 from .git import AssignmentTemplateGitClient, StudentAssignmentGitClient
@@ -31,11 +33,12 @@ class Assignment:
         logging.info('Fetching configurations ...')
         with assignment_template_client.clone() as assignment_template_dir:
             logging.info('Syncing configurations ...')
-            self.copy_dotfiles_from(assignment_template_dir)
-            logging.info('Uploading ...')
-            student_assignment_client = StudentAssignmentGitClient(self.identifier)
-            with student_assignment_client.clone_bare():
-                student_assignment_client.add_commit_push()
+            with temp_student_cwd():
+                self.copy_dotfiles_from(assignment_template_dir)
+                logging.info('Uploading ...')
+                student_assignment_client = StudentAssignmentGitClient(self.identifier)
+                with student_assignment_client.clone_bare():
+                    student_assignment_client.add_commit_push()
 
     def assignment_template_repo(self):
         """
@@ -137,3 +140,15 @@ def copy(assignment_template_dir, dotfile):
             shutil.copy(src, os.path.join(os.getcwd(), dotfile))
 
         # TODO handle other potential copying issues
+
+@contextlib.contextmanager
+def temp_student_cwd():
+    cwd = os.getcwd()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_cwd = os.path.join(temp_dir, 'temp_cwd')
+        shutil.copytree(cwd, temp_cwd)
+        try:
+            os.chdir(temp_cwd)
+            yield temp_cwd
+        finally:
+            os.chdir(cwd)
