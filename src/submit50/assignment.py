@@ -7,6 +7,7 @@ import tempfile
 
 from .colors import yellow
 from .git import AssignmentTemplateGitClient, StudentAssignmentGitClient
+from .utils import copy, temp_student_cwd
 
 class Assignment:
     def __init__(self, template_repo, username):
@@ -83,49 +84,3 @@ class Assignment:
         logging.info(yellow('Files that will be submitted:'))
         for entry in output:
             logging.info(entry)
-
-def remove_if_exists(path):
-    """
-    Removes a file or a directory from cwd if it exists.
-
-    :param path The path of the file or directory to be removed from cwd.
-    """
-    # TODO is this a portable way for referencing cwd?
-    path = os.path.join('.', path)
-    if os.path.exists(path):
-        try:
-            shutil.rmtree(path)
-        except NotADirectoryError as exc:
-            logging.debug(exc, exc_info=True)
-            os.remove(path)
-
-def copy(assignment_template_dir, dotfile):
-    """
-    If dotfile exist in assignment_template_dir, removes dotfile from cwd, if it exists, and
-    copies it from assignment_template_dir into cwd.
-
-    :param assignment_template_dir: The path to the assigment template.
-    """
-    src = os.path.join(assignment_template_dir, dotfile)
-    if os.path.exists(src):
-        # TODO warn before removing if file or directory is different
-        remove_if_exists(dotfile)
-        try:
-            shutil.copytree(src, os.path.join(os.getcwd(), dotfile))
-        except NotADirectoryError as exc:
-            logging.debug(exc, exc_info=True)
-            shutil.copy(src, os.path.join(os.getcwd(), dotfile))
-
-        # TODO handle other potential copying issues
-
-@contextlib.contextmanager
-def temp_student_cwd():
-    cwd = os.getcwd()
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_cwd = os.path.join(temp_dir, 'temp_cwd')
-        shutil.copytree(cwd, temp_cwd)
-        try:
-            os.chdir(temp_cwd)
-            yield temp_cwd
-        finally:
-            os.chdir(cwd)
