@@ -1,9 +1,5 @@
-import contextlib
 import logging
-import os
 import re
-import shutil
-import tempfile
 
 from .colors import yellow
 from .git import AssignmentTemplateGitClient, StudentAssignmentGitClient
@@ -15,19 +11,26 @@ class Assignment:
         self.username = username
         self.student_repo = f'{template_repo}-{username}'
         self.dotfiles = ['.github', '.gitignore']
+        self.no_list_prefixes = [
+            *self.dotfiles,
+            '.devcontainer',
+            '.venv',
+            '.vscode',
+            'node_modules',
+        ]
 
     def submit(self):
-        self.confirm_files_to_submit()
         assignment_template_client = AssignmentTemplateGitClient(self.template_repo)
-        logging.info('Fetching configurations ...')
+        logging.info('Preparing files ...')
         with assignment_template_client.clone() as assignment_template_dir:
-            logging.info('Syncing configurations ...')
             with temp_student_cwd():
                 self.copy_dotfiles_from(assignment_template_dir)
-                logging.info('Uploading ...')
                 student_assignment_client = StudentAssignmentGitClient(self.username, self.student_repo)
                 with student_assignment_client.clone_bare():
-                    student_assignment_client.add_commit_push()
+                    files_to_submit = student_assignment_client.add()
+                    self.confirm_files_to_submit(files_to_submit)
+                    logging.info('Uploading ...')
+                    student_assignment_client.commit_push()
 
     def copy_dotfiles_from(self, assignment_template_dir):
         """
@@ -39,8 +42,8 @@ class Assignment:
         for dotfile in self.dotfiles:
             copy(assignment_template_dir, dotfile)
 
-    def confirm_files_to_submit(self):
-        self.list_cwd()
+    def confirm_files_to_submit(self, files_to_submit):
+        self.list_files_to_submit(files_to_submit)
         try:
             answer = input(yellow(
                 ("Keeping in mind the course's policy on academic honesty,"
@@ -50,37 +53,11 @@ class Assignment:
             answer = ''
         assert re.fullmatch(r'(?:y|yes)', answer.strip(), re.I), 'Cancelled.'
 
-    # TODO factor out and refactor
-    # TODO use something other than os.walk to ignore listing ignored files/dirs?
-    def list_cwd(self):
-        contents = list(os.walk(os.getcwd()))
-        if len(contents) < 1:
-            raise RuntimeError('No files to submit.')
+    def list_files_to_submit(self, files_to_submit):
+        logging.info('Files that will be submitted: ')
+        for entry in files_to_submit:
+            if self.should_list(entry):
+                logging.info(yellow(f'  {entry}'))
 
-        ignored_entries = [*self.dotfiles, '.git']
-        indentation_level = 2
-        output = []
-        root, dirs, files = contents[0]
-        for f in files:
-            if f in ignored_entries:
-                continue
-            output.append('{}{}'.format(' ' * indentation_level, f))
-
-        for root, dirs, files in contents[1:]:
-            relative_path = root.replace(os.getcwd(), '')
-            if any(relative_path.lstrip('/').startswith(dotfile) for dotfile in ignored_entries):
-                continue
-            basename = os.path.basename(root)
-            level = relative_path.count(os.sep)
-            indent = ' ' * indentation_level * level
-            output.append(f'{indent}{basename}/')
-            subindent = ' ' * indentation_level * (level + 1)
-            for f in files:
-                output.append(f'{subindent}{f}')
-
-        if len(output) < 1:
-            raise RuntimeError('No files to submit.')
-
-        logging.info(yellow('Files that will be submitted:'))
-        for entry in output:
-            logging.info(entry)
+    def should_list(self, entry):
+        return all(not entry.startswith(prefix) for prefix in self.no_list_prefixes)

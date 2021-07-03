@@ -48,9 +48,16 @@ class StudentAssignmentGitClient(GitClient):
             self.git_dir = git_dir
             yield git_dir
 
-    def add_commit_push(self):
+    def add(self):
         try:
             self._add_all()
+            return self._ls_files()
+        except subprocess.CalledProcessError as exc:
+            logging.debug(exc, exc_info=True)
+            raise RuntimeError('Failed to ready files for submission.')
+
+    def commit_push(self):
+        try:
             self._commit()
             self._push()
         except subprocess.CalledProcessError as exc:
@@ -62,6 +69,9 @@ class StudentAssignmentGitClient(GitClient):
 
     def _add_all(self):
         return self._git(['add', '--all'])
+
+    def _ls_files(self):
+        return sorted(self._git(['ls-files']).decode().split())
 
     def _commit(self):
         return self._git(['commit', '--allow-empty', '--message', 'Automated commit by submit50'])

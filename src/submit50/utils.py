@@ -45,6 +45,7 @@ def temp_student_cwd():
     avoid performing any potentially destructive operations in student's cwd (e.g., replacing a
     configuration directory by one from the distro).
     """
+    # TODO only copy files that are not ignored
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_cwd = os.path.join(temp_dir, 'temp_cwd')
