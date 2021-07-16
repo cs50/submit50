@@ -1,0 +1,25 @@
+on: push
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.6'
+    - name: Run tests
+      run: |
+        pip install babel
+        pip install .
+        submit50 --help
+        python setup.py compile_catalog
+    - name: Install pypa/build
+      run: python -m pip install build --user
+    - name: Build a binary wheel and a source tarball
+      run: python -m build --sdist --wheel --outdir dist/ .
+    - name: Deploy to PyPI
+      if: ${{ github.ref == 'refs/heads/main' }}
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
