@@ -44,7 +44,7 @@ class StudentAssignmentGitClient(GitClient):
                 self._clone(['--bare', '--quiet', remote, git_dir])
             except subprocess.CalledProcessError as exc:
                 logging.debug(exc, exc_info=True)
-                raise RuntimeError(f'Failed to clone "{remote}".')
+                raise RuntimeError(f'Failed to clone "{remote}".\nPlease make sure you accepted the assignment invite on the problem set page.')
             self.git_dir = git_dir
             yield git_dir
 
