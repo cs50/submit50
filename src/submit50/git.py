@@ -6,7 +6,7 @@ import tempfile
 
 
 class GitClient:
-    def __init__(self, repo, git_host='https://github.com/'):
+    def __init__(self, repo, git_host='git@github.com:'):
         self.git_host = os.getenv('SUBMIT50_GIT_HOST', git_host)
         self.repo = repo
         self.git_dir = None
