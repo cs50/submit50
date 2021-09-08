@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import os
 import signal
 import sys
 
@@ -17,7 +18,9 @@ def main():
     args = parse_args(sys.argv[1:])
     configure_logging(args.verbose)
     try:
-        submit(args.assignment, args.username)
+        username = os.getenv("CODESPACE_NAME").split("-code50")[0]
+        classroom_prefix = "classroom50"
+        submit(f"{classroom_prefix}/{args.assignment}", username)
     except (AssertionError, RuntimeError, ValueError) as ex:
         logging.info(colors.red(ex))
     else:
@@ -36,12 +39,6 @@ def parse_args(args):
         metavar='ASSIGNMENT',
         type=str,
         help='the assignment repository (e.g., classroom50/hello)'
-    )
-    parser.add_argument(
-        'username',
-        metavar='USERNAME',
-        type=str,
-        help='the username in your copy of the assignment'
     )
     return parser.parse_args(args)
 
