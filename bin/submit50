@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import requests
 import signal
 import sys
 
@@ -18,9 +19,8 @@ def main():
     args = parse_args(sys.argv[1:])
     configure_logging(args.verbose)
     try:
-        username = os.getenv("CODESPACE_NAME").split("-code50")[0]
         classroom_prefix = "classroom50"
-        submit(f"{classroom_prefix}/{args.assignment}", username)
+        submit(f"{classroom_prefix}/{args.assignment}", get_username(args.username))
     except (AssertionError, RuntimeError, ValueError) as ex:
         logging.info(colors.red(ex))
     else:
@@ -40,10 +40,36 @@ def parse_args(args):
         type=str,
         help='the assignment repository (e.g., classroom50/hello)'
     )
+    parser.add_argument(
+        'username',
+        nargs='?',
+        metavar='USERNAME',
+        const=None,
+        type=str,
+        help='the github username'
+    )
+    
     return parser.parse_args(args)
 
 def configure_logging(verbose):
     logging.basicConfig(format='%(message)s', level=logging.DEBUG if verbose else logging.INFO)
+
+def get_username(username):
+    if username is not None:
+        return username
+
+    try:
+
+        # Retrieve github username using github id, this ensure
+        # problem set can be submitted in the case of username change
+        id = os.getenv("RepositoryName")
+        url = f"https://api.github.com/user/{id}"
+        return requests.get(url).json()['login']
+    except:
+
+        # If failed to retrieve username, fallbacks to extract username
+        # using codespace name
+        return os.getenv("CODESPACE_NAME").split("-code50")[0]
 
 
 if __name__ == '__main__':
