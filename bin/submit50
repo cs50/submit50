@@ -7,7 +7,7 @@ import requests
 import signal
 import sys
 
-from submit50 import submit
+from submit50 import assignment, submit
 from submit50 import colors
 
 def sigint_handler(signal_number, stack_frame):
@@ -18,13 +18,18 @@ signal.signal(signal.SIGINT, sigint_handler)
 def main():
     args = parse_args(sys.argv[1:])
     configure_logging(args.verbose)
+    classroom_prefix = "classroom50"
+    username = get_username(args.username)
+    assignment = args.assignment
     try:
-        classroom_prefix = "classroom50"
-        submit(f"{classroom_prefix}/{args.assignment}", get_username(args.username))
+        submit(f"{classroom_prefix}/{assignment}", username)
     except (AssertionError, RuntimeError, ValueError) as ex:
         logging.info(colors.red(ex))
     else:
         logging.info(colors.green(f'Successfully submitted {args.assignment}.'))
+        message = f'Please visit the following link to view your submission:\n'
+        url = f'https://github.com/{classroom_prefix}/{assignment}-{username}/actions'
+        logging.info(colors.green(message + '\033[4m' + url + '\033[0m'))
 
 def parse_args(args):
     parser = argparse.ArgumentParser(
