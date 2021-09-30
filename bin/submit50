@@ -53,7 +53,7 @@ def parse_args(args):
         type=str,
         help='the github username'
     )
-    
+
     return parser.parse_args(args)
 
 def configure_logging(verbose):
@@ -65,16 +65,15 @@ def get_username(username):
 
     try:
 
+        # Get GitHub username from environment variable
+        return os.getenv("GITHUB_USER")
+    except:
+
         # Retrieve github username using github id, this ensure
         # problem set can be submitted in the case of username change
         id = os.getenv("RepositoryName")
         url = f"https://api.github.com/user/{id}"
         return requests.get(url).json()['login']
-    except:
-
-        # If failed to retrieve username, fallbacks to extract username
-        # using codespace name
-        return os.getenv("CODESPACE_NAME").split("-code50")[0]
 
 
 if __name__ == '__main__':
