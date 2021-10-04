@@ -2,7 +2,9 @@
 
 import argparse
 import logging
+import lib50
 import os
+import re
 import requests
 import signal
 import sys
@@ -14,13 +16,19 @@ def sigint_handler(signal_number, stack_frame):
     print(colors.red('\nInterrupted.'))
     sys.exit(130)
 signal.signal(signal.SIGINT, sigint_handler)
-
+    
 def main():
     args = parse_args(sys.argv[1:])
     configure_logging(args.verbose)
     classroom_prefix = "classroom50"
     username = get_username(args.username)
     assignment = args.assignment
+    
+    # Big Board override
+    if assignment == 'cs50/problems/2021/fall/challenges/speller':
+        big_board(assignment)
+        return
+
     try:
         submit(f"{classroom_prefix}/{assignment}", username)
     except (AssertionError, RuntimeError, ValueError) as ex:
@@ -75,6 +83,38 @@ def get_username(username):
         url = f"https://api.github.com/user/{id}"
         return requests.get(url).json()['login']
 
+def big_board(slug):
+    
+    logger = logging.getLogger("lib50")
+    logger.setLevel(logging.ERROR)
+
+    def prompt(honesty, included, excluded):
+        if honesty:
+            print(colors.yellow("Only these files will be submitted:"))
+            for entry in included:
+                print(entry)
+
+            try:
+                answer = input(colors.yellow(
+                    ("Keeping in mind the course's policy on academic honesty,"
+                    ' are you sure you want to submit these files (yes/no)? ')
+                ))
+            except EOFError:
+                answer = ''
+            
+            try:
+                assert re.fullmatch(r'(?:y|yes)', answer.strip(), re.I)
+                return True
+            except:
+                print("Submission canceled")
+                sys.exit(0)
+        
+        return False
+
+    CONFIG_LOADER = __import__("lib50").config.Loader("submit50")
+    CONFIG_LOADER.scope("files", "include", "exclude", "require")
+    user_name, commit_hash, message = lib50.push("submit50", slug, CONFIG_LOADER, prompt=prompt)
+    print(colors.green(message))
 
 if __name__ == '__main__':
     main()
