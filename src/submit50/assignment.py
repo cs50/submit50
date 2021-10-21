@@ -1,7 +1,8 @@
 import logging
 import re
+import sys
 
-from .colors import yellow
+from .colors import yellow, red
 from .git import AssignmentTemplateGitClient, StudentAssignmentGitClient
 from .utils import copy, temp_student_cwd
 
@@ -54,9 +55,17 @@ class Assignment:
         assert re.fullmatch(r'(?:y|yes)', answer.strip(), re.I), 'Cancelled.'
 
     def list_files_to_submit(self, files_to_submit):
-        logging.info('Files that will be submitted: ')
+        user_files = []
         for entry in files_to_submit:
             if self.should_list(entry):
+                user_files.append(entry)
+        
+        if len(user_files) == 0:
+            print(red("Empty submission detected, abort.\nPlease make sure you are not in an empty directory, or your gitignore configuration does not result in an empty submission."))
+            sys.exit(1)
+        else:
+            logging.info('Files that will be submitted: ')
+            for entry in user_files:
                 logging.info(yellow(f'  {entry}'))
 
     def should_list(self, entry):
