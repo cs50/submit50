@@ -36,7 +36,7 @@ def main():
     else:
         logging.info(colors.green(f'Successfully submitted {args.assignment}.'))
         message = f'Please visit the following link to view your submission:\n'
-        url = f'https://github.com/{classroom_prefix}/{assignment}-{username}/actions'
+        url = f'https://github.com/{classroom_prefix}/{assignment}-{username}'
         logging.info(colors.green(message + '\033[4m' + url + '\033[0m'))
 
 def parse_args(args):
