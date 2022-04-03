@@ -62,7 +62,7 @@ def check_version():
     res = requests.get(f"{SUBMIT_URL}/versions/submit50")
     if res.status_code != 200:
         raise Error(_("You have an unknown version of submit50. "
-                      "Email sysadmins@cs50.harvard.edu!"))
+                      "Please visit our status page https://cs50.statuspage.io for more information."))
 
     # Check that latest version == version installed
     required_version = pkg_resources.parse_version(res.text.strip())
@@ -159,7 +159,7 @@ def excepthook(type, value, tb):
         for line in str(value).split("\n"):
             cprint(str(line), "yellow")
     elif not isinstance(value, KeyboardInterrupt):
-        cprint(_("Sorry, something's wrong! Let sysadmins@cs50.harvard.edu know!"), "yellow")
+        cprint(_("Sorry, something's wrong, please try again. If the problem persists, please visit our status page https://cs50.statuspage.io for more information."), "yellow")
 
     if excepthook.verbose:
         traceback.print_exception(type, value, tb)
