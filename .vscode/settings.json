@@ -1,0 +1,6 @@
+{
+    "files.exclude": {
+        "**/.git": false,
+        "pip3 install submit50": true
+    }
+}
