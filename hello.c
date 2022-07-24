@@ -7,3 +7,4 @@
    
        printf("hello,%s\n"  , name);
        
+ }
