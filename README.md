@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/cs50/submit50.svg?branch=master)](https://travis-ci.org/cs50/submit50)
-
 # Usage
 
 ## English
@@ -31,7 +29,7 @@ LANGUAGE=es submit50 problem
 
         python setup.py init_catalog -l <LANG>
 
-    where `<LANG>` is the code of the language you want to translate (e.g., `es` for Spanish, `en` for English, etc.) 
+    where `<LANG>` is the code of the language you want to translate (e.g., `es` for Spanish, `en` for English, etc.)
 
 4. Then, add the translations to the newly created `submit50/locale/<LANG>/LC_MESSAGES/submit50.po`
 
@@ -45,4 +43,4 @@ LANGUAGE=es submit50 problem
 
 ## Updating an existing language
 
-Follow the steps described in the above section, but instead of running `python setup.py init_catalog -l <LANG>`, run `python setup.py update_catalog -l <LANG>`. 
+Follow the steps described in the above section, but instead of running `python setup.py init_catalog -l <LANG>`, run `python setup.py update_catalog -l <LANG>`.
