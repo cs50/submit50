@@ -27,7 +27,6 @@ jobs:
     - name: Extract program version
       id: program_version
       run: |
-        pip install .
         echo ::set-output name=version::$(submit50 --version | cut --delimiter ' ' --fields 2)
 
     - name: Create Release
