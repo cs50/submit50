@@ -1,0 +1,22 @@
+#include <stdio.h>
+int main(void)
+{
+  int n,m,i;
+  do
+  {
+    printf("Enter starting population greater than 9:"  );
+    scanf("%d",&n);
+   }
+   while(n < 9);
+   do
+  {
+    printf("Enter ending population greater than 9:"  );
+    scanf("%d",&m);
+   }
+   while(m < n);
+   for(i=0;n<m;i++)
+   {
+    n=n+(n/3)-(n/4);
+  }
+  printf("The year is %i\n", i);
+}
