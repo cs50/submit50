@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Search</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #f2f2f2;
+      padding: 10px;
+      text-align: right;
+    }
+    main {
+      margin: 20px;
+      text-align: left;
+    }
+    input[type="text"] {
+      width: 60%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    input[type="submit"] {
+      padding: 8px 15px;
+      margin: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: blue;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html">Google Search</a>
+  </header>
+
+  <main>
+    <h1>Google Advanced Search</h1>
+    <form action="https://www.google.com/search" method="get">
+      <div>
+        <label for="all">Find pages with all these words:</label>
+        <input type="text" id="all" name="q">
+        <br>
+        <label for="exact">Find pages with this exact word or phrase:</label>
+        <input type="text" id="exact" name="exact">
+        <br>
+        <label for="any">Find pages with any of these words:</label>
+        <input type="text" id="any" name="any">
+        <br>
+        <label for="none">Find pages with none of these words:</label>
+        <input type="text" id="none" name="none">
+        <br>
+        <input type="submit" value="Advanced Search">
+      </div>
+    </form>
+  </main>
+
+</body>
+</html>
