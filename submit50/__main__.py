@@ -18,7 +18,7 @@ from importlib.resources import files
 from . import __version__, CONFIG_LOADER
 
 # Internationalization
-gettext.install("submit50", files("submit50").joinpath("locale"))
+gettext.install("submit50", str(files("submit50").joinpath("locale")))
 
 SUBMIT_URL = "https://submit.cs50.io"
 
