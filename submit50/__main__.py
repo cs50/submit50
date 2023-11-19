@@ -3,7 +3,6 @@ import argparse
 import enum
 import gettext
 import logging
-import pkg_resources
 import re
 import shutil
 import sys
@@ -14,10 +13,12 @@ import lib50
 import requests
 import termcolor
 
+from packaging import version
+from importlib.resources import files
 from . import __version__, CONFIG_LOADER
 
 # Internationalization
-gettext.install("submit50", pkg_resources.resource_filename("submit50", "locale"))
+gettext.install("submit50", files("submit50").joinpath("locale"))
 
 SUBMIT_URL = "https://submit.cs50.io"
 
@@ -65,8 +66,8 @@ def check_version():
                       "Please visit our status page https://cs50.statuspage.io for more information."))
 
     # Check that latest version == version installed
-    required_version = pkg_resources.parse_version(res.text.strip())
-    local_version = pkg_resources.parse_version(__version__)
+    required_version = version.parse(res.text.strip())
+    local_version = version.parse(__version__)
 
     if required_version > local_version:
        raise Error(_("You have an outdated version of submit50. "
@@ -126,7 +127,7 @@ def prompt(honesty, included, excluded):
     # If there's no honesty question, continue.
     if not honesty:
         return True
-    
+
     # Prompt for honesty
     try:
         # Show default message
@@ -138,17 +139,17 @@ def prompt(honesty, included, excluded):
         # If a custom message is configured, show that instead
         else:
             honesty_question = str(honesty)
-        
+
         # Get the user's answer
         answer = input(honesty_question)
     except EOFError:
         answer = None
         print()
-    
+
     # If no answer given, or yes is not given, don't continue
     if not answer or not re.match(f"^\s*(?:{_('y|yes')})\s*$", answer, re.I):
         return False
-    
+
     # Otherwise, do continue
     return True
 
@@ -199,12 +200,12 @@ def main():
                 '\ndebug: adds the output of all commands run.')
     )
     parser.add_argument(
-        "-V", "--version", 
-        action="version", 
+        "-V", "--version",
+        action="version",
         version=f"%(prog)s {__version__}"
     )
     parser.add_argument(
-        "slug", 
+        "slug",
         help=_("prescribed identifier of work to submit")
     )
 
