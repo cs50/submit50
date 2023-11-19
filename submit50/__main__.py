@@ -13,8 +13,8 @@ import lib50
 import requests
 import termcolor
 
-from packaging import version
 from importlib.resources import files
+from packaging import version
 from . import __version__, CONFIG_LOADER
 
 # Internationalization
