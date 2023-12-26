@@ -1,0 +1,11 @@
+import sys
+def culc(x):
+    x=x/2
+    return x
+def main():
+    print("Please enter x: ")
+    x=int(input())
+    print(culc(x))
+
+
+main()
