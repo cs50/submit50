@@ -100,6 +100,9 @@ def setup_logging(level):
 
 def cprint(text="", color=None, on_color=None, attrs=None, **kwargs):
     """Colorizes text (and wraps to terminal's width)."""
+
+    # Handle invalid UTF-8 characters
+    text = text.encode('utf-8', 'replace').decode('utf-8')
     # Assume 80 in case not running in a terminal
     columns, lines = shutil.get_terminal_size()
     if columns == 0:
