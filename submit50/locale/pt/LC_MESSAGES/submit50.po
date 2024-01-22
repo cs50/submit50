@@ -1,0 +1,91 @@
+# Portuguese translations for submit50.
+# Copyright (C) 2023 ORGANIZATION
+# This file is distributed under the same license as the submit50 project.
+# FIRST AUTHOR ramon@ramonrodrigues.dev, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: submit50 3.1.1\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2023-10-04 18:12-0300\n"
+"PO-Revision-Date: 2023-10-04 18:12-0300\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pt\n"
+"Language-Team: pt <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: submit50/__main__.py:64
+msgid ""
+"You have an unknown version of submit50. Please visit our status page "
+"https://cs50.statuspage.io for more information."
+msgstr ""
+"Você possui uma versão desconhecida do submit50. Por favor visite nossa página de status "
+"https://cs50.statuspage.io para mais informação."
+
+#: submit50/__main__.py:72
+msgid "You have an outdated version of submit50. Please upgrade."
+msgstr "Você possui uma versão desatualizada do submit50. Por favor atualize."
+
+#: submit50/__main__.py:114
+msgid "Files that will be submitted:"
+msgstr "Arquivos que serão enviados:"
+
+#: submit50/__main__.py:118
+msgid "No files in this directory are expected for submission."
+msgstr "Não há arquivos no diretório atual necessários para envio."
+
+#: submit50/__main__.py:122
+msgid "Files that won't be submitted:"
+msgstr "Arquivos que não serão enviados:"
+
+#: submit50/__main__.py:134
+msgid ""
+"Keeping in mind the course's policy on academic honesty, are you sure you"
+" want to submit these files (yes/no)? "
+msgstr ""
+"Tenha em mente a política de honestidade acadêmica do curso, você tem certeza"
+"que quer enviar estes arquivos? (sim/não)"
+
+#: submit50/__main__.py:162
+msgid ""
+"Sorry, something's wrong, please try again. If the problem persists, "
+"please visit our status page https://cs50.statuspage.io for more "
+"information."
+msgstr ""
+"Desculpa, aconteceu algo de errado, por favor tente novamente. Se o problema persistir, "
+"por favor visite nossa página de status https://cs50.statuspage.io para mais"
+"informação"
+
+#: submit50/__main__.py:167
+msgid "Submission cancelled."
+msgstr "Envio cancelado."
+
+#: submit50/__main__.py:173
+msgid "logout of submit50"
+msgstr "desconectou do submit50"
+
+#: submit50/__main__.py:180
+msgid "failed to logout"
+msgstr "tentativa de desconectar falhou"
+
+#: submit50/__main__.py:182
+msgid "logged out successfully"
+msgstr "desconectou com sucesso"
+
+#: submit50/__main__.py:197
+msgid ""
+"warning: displays usage warnings.\n"
+"info: adds all commands run.\n"
+"debug: adds the output of all commands run."
+msgstr ""
+"warning: exibe avisos de como utilizar.\n"
+"info: adiciona todos os comandos executados.\n"
+"debug: adiciona a saída de dados de todos os comandos executados."
+
+#: submit50/__main__.py:208
+msgid "prescribed identifier of work to submit"
+msgstr "é preciso enviar o identificador do problema como descrito nas instruções"
