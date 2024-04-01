@@ -1,0 +1,82 @@
+from logic import *
+
+# Puzzle 0
+knowledge0 = And(
+    # Rule 1: Each character is either a knight or a knave, but not both
+    Or(AKnight, AKnave),
+    Not(And(AKnight, AKnave)),  # A cannot be both a knight and a knave
+    # Rule 2: A says “I am both a knight and a knave.”
+    Biconditional(AKnight, And(AKnight, AKnave))
+)
+
+# Puzzle 1
+knowledge1 = And(
+    # Rule 1: Each character is either a knight or a knave, but not both
+    Or(AKnight, AKnave),
+    Not(And(AKnight, AKnave)),  # A cannot be both a knight and a knave
+    Or(BKnight, BKnave),
+    Not(And(BKnight, BKnave)),  # B cannot be both a knight and a knave
+    # Rule 2: A says “We are both knaves.”
+    Biconditional(AKnight, And(AKnave, BKnave))
+)
+
+# Puzzle 2
+knowledge2 = And(
+    # Rule 1: Each character is either a knight or a knave, but not both
+    Or(AKnight, AKnave),
+    Not(And(AKnight, AKnave)),  # A cannot be both a knight and a knave
+    Or(BKnight, BKnave),
+    Not(And(BKnight, BKnave)),  # B cannot be both a knight and a knave
+    # Rule 2: A says “We are the same kind.”
+    Biconditional(AKnight, Or(And(AKnight, BKnight), And(AKnave, BKnave))),
+    # Rule 3: B says “We are of different kinds.”
+    Biconditional(BKnight, Or(And(AKnight, BKnave), And(AKnave, BKnight)))
+)
+
+# Puzzle 3
+knowledge3 = And(
+    # Rule 1: Each character is either a knight or a knave, but not both
+    Or(AKnight, AKnave),
+    Not(And(AKnight, AKnave)),  # A cannot be both a knight and a knave
+    Or(BKnight, BKnave),
+    Not(And(BKnight, BKnave)),  # B cannot be both a knight and a knave
+    Or(CKnight, CKnave),
+    Not(And(CKnight, CKnave)),  # C cannot be both a knight and a knave
+    # Rule 2: A says either “I am a knight.” or “I am a knave.”, but you don’t know which.
+    Or(Biconditional(AKnight, AKnight), Biconditional(AKnight, AKnave)),
+    # Rule 3: B says “A said ‘I am a knave.’”
+    Biconditional(BKnight, Not(AKnight)),
+    # Rule 4: B then says “C is a knave.”
+    Biconditional(BKnight, CKnave),
+    # Rule 5: C says “A is a knight.”
+    Biconditional(CKnight, AKnight)
+)
+
+# Solving the puzzles
+def main():
+    puzzles = [
+        ("Puzzle 0", knowledge0),
+        ("Puzzle 1", knowledge1),
+        ("Puzzle 2", knowledge2),
+        ("Puzzle 3", knowledge3)
+    ]
+
+    for name, knowledge in puzzles:
+        print(name)
+        # Model checking to compute whether each character is a knight or a knave
+        if model_check(knowledge, AKnight):
+            print("A is a knight")
+        elif model_check(knowledge, AKnave):
+            print("A is a knave")
+        if model_check(knowledge, BKnight):
+            print("B is a knight")
+        elif model_check(knowledge, BKnave):
+            print("B is a knave")
+        if model_check(knowledge, CKnight):
+            print("C is a knight")
+        elif model_check(knowledge, CKnave):
+            print("C is a knave")
+        print()
+
+if __name__ == "__main__":
+    main()
