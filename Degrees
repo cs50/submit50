@@ -1,0 +1,35 @@
+import imdb
+
+def degrees_of_separation(actor1_name, actor2_name):
+    # Create an IMDb access object
+    ia = imdb.IMDb()
+
+    # Get actor IDs
+    actor1 = ia.search_person(actor1_name)[0]
+    actor2 = ia.search_person(actor2_name)[0]
+
+    # Perform BFS to find degrees of separation
+    visited = set()
+    queue = [(actor1, 0)]  # Start with actor1 at level 0
+
+    while queue:
+        current_actor, distance = queue.pop(0)
+
+        # Check if we've found actor2
+        if current_actor == actor2:
+            return distance
+
+        # Add current actor to visited set
+        visited.add(current_actor)
+
+        # Get movies of current actor
+        ia.update(current_actor, info=['filmography'])
+        movies = current_actor['filmography']
+
+        # Iterate through movies
+        for movie in movies:
+            if 'actor' in movie:
+                for actor in movie['actor']:
+                    if actor.getID() not in visited:
+                        queue.append((acto
+
