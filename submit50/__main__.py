@@ -3,6 +3,7 @@ import argparse
 import enum
 import gettext
 import logging
+import os
 import re
 import shutil
 import sys
@@ -144,7 +145,11 @@ def prompt(honesty, included, excluded):
             honesty_question = str(honesty)
 
         # Get the user's answer
-        answer = input(honesty_question)
+        # If in R Studio environment, answer is always yes
+        if os.getenv("RSTUDIO") == "1":
+            answer = "yes"
+        else:
+            answer = input(honesty_question)
     except EOFError:
         answer = None
         print()
