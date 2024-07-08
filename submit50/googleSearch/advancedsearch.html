@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Advanced Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .header {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .header a {
+            margin: 0 10px;
+            text-decoration: none;
+            color: #1a0dab;
+        }
+        .search-container {
+            text-align: left;
+            width: 500px;
+        }
+        .search-container input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #dfe1e5;
+            outline: none;
+            margin-bottom: 10px;
+        }
+        .search-container input[type="submit"] {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #4285f4;
+            color: white;
+            cursor: pointer;
+        }
+        .search-container input[type="submit"]:hover {
+            background-color: #357ae8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html">Google Search</a>
+        <a href="imagesearch.html">Image Search</a>
+    </div>
+    <div class="search-container">
+        <form action="https://www.google.com/search" method="get">
+            <label for="all">Find pages with… “all these words:”</label>
+            <input type="text" id="all" name="as_q">
+            <br>
+            <label for="exact">Find pages with… “this exact word or phrase:”</label>
+            <input type="text" id="exact" name="as_epq">
+            <br>
+            <label for="any">Find pages with… “any of these words:”</label>
+            <input type="text" id="any" name="as_oq">
+            <br>
+            <label for="none">Find pages with… “none of these words:”</label>
+            <input type="text" id="none" name="as_eq">
+            <br>
+            <input type="submit" value="Advanced Search">
+        </form>
+    </div>
+</body>
+</html>
