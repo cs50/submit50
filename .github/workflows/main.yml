@@ -1,11 +1,10 @@
-on: push
 jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses:engaboud/submit50 
     - uses: actions/setup-python@v5
-      with:
+      with:engaboud/submit50
         python-version: '3.10'
     - name: Run tests
       run: |
