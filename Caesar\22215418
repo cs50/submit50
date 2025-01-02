@@ -1,0 +1,60 @@
+#include <cs50.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+int main(int argc, string argv[])
+{
+    // Check if there's exactly one argument (the key)
+    if (argc != 2)
+    {
+        printf("Usage: ./caesar key\n");
+        return 1;
+    }
+
+    // Make sure key is a number
+    for (int i = 0; argv[1][i] != '\0'; i++)
+    {
+        if (!isdigit(argv[1][i]))
+        {
+            printf("Usage: ./caesar key\n");
+            return 1; // Return 1 if the key is not an integer
+        }
+    }
+
+    // Convert key from string to int
+    int key = atoi(argv[1]);
+
+    // Get plaintext input
+    string plaintext = get_string("plaintext: ");
+
+    // Print the result
+    printf("ciphertext: ");
+
+    // Go through each character in plaintext
+    for (int i = 0; i < strlen(plaintext); i++)
+    {
+        char c = plaintext[i];
+
+        // Handle uppercase letters
+        if (isupper(c))
+        {
+            printf("%c", ((c - 'A' + key) % 26) + 'A');
+        }
+        // Handle lowercase letters
+        else if (islower(c))
+        {
+            printf("%c", ((c - 'a' + key) % 26) + 'a');
+        }
+        // Leave non-letters unchanged
+        else
+        {
+            printf("%c", c);
+        }
+    }
+
+    // End with a newline
+    printf("\n");
+    return 0;
+}
