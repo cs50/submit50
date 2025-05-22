@@ -1,0 +1,35 @@
+#include <cs50.h>
+#include<stdio.h>
+#include<ctype.h>
+#include<string.h>
+int main(int argc,string argv[]){
+    if (arg!=2){
+        printif( " usage: ./caesar key\n");
+        return 1;
+    }
+    for(int i=0; argv[1][i] !='\0';i++)
+    { 
+        if ( !isdigit(argv[1][i])){
+            printif("Usage:./caesar key\n");
+            return 1;
+        }
+    }
+    int k=atoi(argv[1]);
+    string plaintext=get_string("plaintext: ");
+    printif("ciphertext: ");
+    for ( int i=0 ,n=strlen(plaintext); i<n;i++)
+    {
+        char c=plaintext[i];
+        if(isupper(c))
+        {
+            printif("%c",(c-'A'+k)%26+'A');
+        }else if (islower(c)){
+            printif("%c,(c-'a'+k)%26+'a');
+        }else{
+        printif("%c",c);
+            }
+    }
+            printif("\n");
+
+ return 0;
+}
