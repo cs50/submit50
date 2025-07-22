@@ -1,0 +1,17 @@
+import pygame
+import sys
+import time
+import math
+import tictactoe as ttt
+
+# Full version available later if needed – not required for submitting.
+print("runner.py is for manual gameplay. Use test_tictactoe.py to test your functions.")
+
+
+import pytest
+from tictactoe import *
+
+def test_initial_state():
+    assert initial_state() == [[None, None, None],
+                               [None, None, None],
+                               [None, None, None]]
