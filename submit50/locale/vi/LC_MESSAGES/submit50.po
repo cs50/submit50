@@ -1,0 +1,113 @@
+# Vietnamese translations for submit50.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the submit50 project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: submit50 3.2.1\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-08-05 13:04-0400\n"
+"PO-Revision-Date: 2025-08-05 13:06-0400\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: vi\n"
+"Language-Team: vi <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: submit50/__main__.py:71
+msgid ""
+"Could not connect to submit.cs50.io.Please visit our status page "
+"https://cs50.statuspage.io for more information."
+msgstr ""
+"Không kết nối đến submit.cs50.io được. Vui lòng xem "
+"https://cs50.statuspage.io để biết thêm thông tin."
+
+#: submit50/__main__.py:135
+msgid "Files that will be submitted:"
+msgstr "Các tập tin sẽ nộp:"
+
+#: submit50/__main__.py:139
+msgid "No files in this directory are expected for submission."
+msgstr "Không có tập tin nào trong thư mục này để nộp."
+
+#: submit50/__main__.py:143
+msgid "Files that won't be submitted:"
+msgstr "Các tập tin sẽ không nộp:"
+
+#: submit50/__main__.py:156
+msgid ""
+"Keeping in mind the course's policy on academic honesty, including its "
+"restrictions on AI use, are you sure you want to submit these files "
+"(yes/no)? "
+msgstr ""
+"Cân nhắc quy định về tính trung thực trong học thuật, bao gồm cả "
+"các hạn chế về việc sử dụng AI, bạn có chắc chắn muốn nộp các tập tin này không?"
+"(có/không)? "
+
+#: submit50/__main__.py:174 submit50/__main__.py:194
+msgid "y|yes"
+msgstr "c|có"
+
+#: submit50/__main__.py:189
+msgid ""
+"You are submitting to a previous year's CS50x course. Your submission "
+"will not be counted towards this year's course."
+msgstr ""
+"Bạn đang nộp bài cho khóa học CS50x của năm trước."
+"Bài này sẽ không được tính vào khóa học năm nay."
+
+#: submit50/__main__.py:190
+msgid ""
+"If you are looking to submit to this year's course, please use the "
+"following slug:"
+msgstr ""
+"Nếu bạn muốn nộp bài cho khóa học năm nay, vui lòng sử dụng slug này: "
+
+#: submit50/__main__.py:194
+msgid "Do you want to continue with this submission (yes/no)? "
+msgstr "Bạn có muốn tiếp tục nộp bài này không (có/không)?"
+
+#: submit50/__main__.py:195
+msgid "User aborted submission."
+msgstr "Việc nộp bài bị hủy bỏ."
+
+#: submit50/__main__.py:207
+msgid ""
+"Sorry, something's wrong, please try again. If the problem persists, "
+"please visit our status page https://cs50.statuspage.io for more "
+"information."
+msgstr ""
+"Rất tiếc, có gì xảy ra, vui lòng thử nộp lại. Nếu vấn đề này còn tiếp nữa, "
+"vui lòng xem https://cs50.statuspage.io để biết thêm thông tin."
+
+#: submit50/__main__.py:212
+msgid "Submission cancelled."
+msgstr "Việc nộp bài bị hủy bỏ"
+
+#: submit50/__main__.py:218
+msgid "logout of submit50"
+msgstr "đăng xuất khỏi submit50"
+
+#: submit50/__main__.py:225
+msgid "failed to logout"
+msgstr "không đăng xuất được"
+
+#: submit50/__main__.py:227
+msgid "logged out successfully"
+msgstr "đăng xuất thành công"
+
+#: submit50/__main__.py:242
+msgid ""
+"warning: displays usage warnings.\n"
+"info: adds all commands run.\n"
+"debug: adds the output of all commands run."
+msgstr ""
+
+#: submit50/__main__.py:253
+msgid "prescribed identifier of work to submit"
+msgstr ""
+
