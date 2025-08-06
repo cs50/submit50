@@ -23,6 +23,8 @@ from . import __version__, CONFIG_LOADER
 # Internationalization
 gettext.install("submit50", str(files("submit50").joinpath("locale")))
 
+LOGGER = logging.getLogger("submit50")
+
 SUBMIT_URL = "https://submit.cs50.io"
 
 class LogLevel(enum.IntEnum):
@@ -206,7 +208,7 @@ def check_slug_year(slug):
             # Ask if they want to continue
             if not re.match(f"^\s*(?:{_('y|yes')})\s*$", input(_("Do you want to continue with this submission (yes/no)? ")), re.I):
                 raise Error(_("User aborted submission."))
-            
+
     except ValueError:
         pass
 
@@ -256,6 +258,12 @@ def main():
                 '\ninfo: adds all commands run.'
                 '\ndebug: adds the output of all commands run.')
     )
+    parser.add_argument("--https",
+                        action="store_true",
+                        help=_("force authentication via HTTPS"))
+    parser.add_argument("--ssh",
+                        action="store_true",
+                        help=_("force authentication via SSH"))
     parser.add_argument(
         "-V", "--version",
         action="version",
@@ -273,8 +281,26 @@ def main():
     check_announcements()
     check_version()
     check_slug_year(args.slug)
-    
-    user_name, commit_hash, message = lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt)
+
+    # Decide whether to force HTTPS or SSH authentication
+    if args.https and args.ssh:
+        LOGGER.warning(_("--https and --ssh have no effect when used together"))
+        auth_method = None
+    elif args.https:
+        auth_method = "https"
+    elif args.ssh:
+        auth_method = "ssh"
+    else:
+        auth_method = None
+
+    try:
+        user_name, commit_hash, message = lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt, auth_method=auth_method)
+    except lib50.ConnectionError:
+        LOGGER.debug(traceback.format_exc()) # log the traceback
+        raise Error(_(
+            "check50 failed to authenticate your Github account. Try running check50 again with --https or --ssh, "
+            "or try restarting your codespace. If the problem persists, please email us at sysadmins@cs50.harvard.edu."
+        ))
     print(message)
 
 if __name__ == "__main__":
