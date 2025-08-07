@@ -293,18 +293,7 @@ def main():
     else:
         auth_method = None
 
-    try:
-        user_name, commit_hash, message = lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt, auth_method=auth_method)
-    except lib50.ConnectionError:
-        LOGGER.debug(traceback.format_exc())
-        if not os.environ.get("CODESPACES"):
-            raise Error(_(
-                "submit50 failed to authenticate your Github account. Please make sure you are connected to the internet and try again."
-            ))
-    except Exception as e:
-        LOGGER.debug(traceback.format_exc())
-        raise Error(_("Sorry, something's wrong, please try again.\n"
-                                    "If the problem persists, please visit our status page https://cs50.statuspage.io for more information.")) from e
+    user_name, commit_hash, message = lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt, auth_method=auth_method)
     print(message)
 
 if __name__ == "__main__":
