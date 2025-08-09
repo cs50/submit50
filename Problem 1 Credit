@@ -1,0 +1,85 @@
+Mikiyas Alemayehu
+# include <cs50.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+
+int main(void)
+{
+    char input[32];
+    long long card_number;
+    int valid_input = 0;
+
+
+    while (!valid_input)
+    {
+        printf("Number: ");
+        if (!fgets(input, sizeof(input), stdin))
+            return 1;
+
+        input[strcspn(input, "\n")] = '\0';
+
+        valid_input = 1;
+        for (int i = 0; input[i] != '\0'; i++)
+        {
+            if (!isdigit((unsigned char)input[i]))
+            {
+                valid_input = 0;
+                break;
+            }
+        }
+
+        if (strlen(input) < 13 || strlen(input) > 16)
+            valid_input = 0;
+
+        if (!valid_input)
+            printf("Invalid input. Please enter digits only (13–16 digits).\n");
+    }
+
+    card_number = atoll(input);
+
+    int sum = 0;
+    int length = strlen(input);
+    int first_digit = input[0] - '0';
+    int first_two_digits = (input[0] - '0') * 10 + (input[1] - '0');
+
+    for (int i = length - 1, pos = 0; i >= 0; i--, pos++)
+    {
+        int digit = input[i] - '0';
+        if (pos % 2 == 1)
+        {
+            digit *= 2;
+            if (digit > 9)
+                digit -= 9;
+        }
+        sum += digit;
+    }
+
+
+    if (sum % 10 == 0)
+    {
+        if (length == 15 && (first_two_digits == 34 || first_two_digits == 37))
+        {
+            printf("AMEX\n");
+        }
+        else if (length == 16 && (first_two_digits >= 51 && first_two_digits <= 55))
+        {
+            printf("MASTERCARD\n");
+        }
+        else if ((length == 13 || length == 16) && first_digit == 4)
+        {
+            printf("VISA\n");
+        }
+        else
+        {
+            printf("INVALID\n");
+        }
+    }
+    else
+    {
+        printf("INVALID\n");
+    }
+
+    return 0;
+}
