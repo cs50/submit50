@@ -27,7 +27,7 @@ jobs:
       - name: Extract program version
         id: program_version
         run: |
-          echo ::set-output name=version::$(submit50 --version | cut --delimiter ' ' --fields 2)
+          echo "version=$(submit50 --version | cut --delimiter ' ' --fields 2)" >> $GITHUB_OUTPUT
 
       - name: Create Release
         if: ${{ github.ref == 'refs/heads/main' }}
