@@ -1,0 +1,7 @@
+define Move Bowl (speed)
+if <key [right arrow v] pressed?> then
+    change x by (speed)
+end
+if <key [left arrow v] pressed?> then
+    change x by ((speed) * (-1))
+end
