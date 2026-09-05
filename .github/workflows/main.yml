@@ -3,16 +3,25 @@ jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - name: Run tests
         run: |
-          pip install babel
+          pip install babel pytest
           pip install .
           submit50 --help
           python setup.py compile_catalog
+          pytest -q
+      - name: Run tests against the minimum supported lib50
+        run: |
+          # Exercise the oldest lib50 that setup.py admits, so an API drift (e.g. a missing
+          # push() kwarg) fails here instead of on students' machines.
+          floor=$(python -c "import re; print(re.search(r'lib50>=([\d.]+)', open('setup.py').read()).group(1))")
+          pip install "lib50==$floor"
+          pytest -q
+          pip install --upgrade "lib50<4"
       - name: Install pypa/build
         run: python -m pip install build --user
       - name: Build a binary wheel and a source tarball
@@ -27,11 +36,11 @@ jobs:
       - name: Extract program version
         id: program_version
         run: |
-          echo ::set-output name=version::$(submit50 --version | cut --delimiter ' ' --fields 2)
+          echo "version=$(submit50 --version | cut --delimiter ' ' --fields 2)" >> $GITHUB_OUTPUT
 
       - name: Create Release
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ github.token }}
           script: |
