@@ -16,10 +16,11 @@ setup(
     },
     description="This is submit50, with which you can submit solutions to problems for CS50.",
     long_description="This is submit50, with which you can submit solutions to problems for CS50.",
-    install_requires=["lib50>=3,<4", "packaging", "pytz", "requests>=2.19", "setuptools", "termcolor>=1.1"],
+    # lib50 >= 3.1.2 is the first release whose push() accepts auth_method
+    install_requires=["lib50>=3.1.2,<4", "packaging", "pytz", "requests>=2.19", "setuptools", "termcolor>=1.1"],
     keywords=["submit", "submit50"],
     name="submit50",
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     license="GPLv3",
     packages=["submit50"],
     url="https://github.com/cs50/submit50",
