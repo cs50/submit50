@@ -53,9 +53,9 @@ class Error(Exception):
     pass
 
 
-def check_announcements():
+def check_announcements(timeout=5):
     """Check for any announcements from submit.cs50.io, raise Error if so."""
-    res = requests.get(f"{SUBMIT_URL}/status/submit50")
+    res = requests.get(f"{SUBMIT_URL}/status/submit50", timeout=timeout)
     if res.status_code == 200 and res.text.strip():
         raise Error(res.text.strip())
 
