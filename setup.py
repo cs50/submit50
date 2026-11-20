@@ -20,7 +20,8 @@ setup(
     install_requires=["lib50>=3.1.2,<4", "packaging", "pytz", "requests>=2.19", "setuptools", "termcolor>=1.1"],
     keywords=["submit", "submit50"],
     name="submit50",
-    python_requires=">=3.8",
+    # lib50 >= 3.1.2 uses `match` statements, which need Python 3.10
+    python_requires=">=3.10",
     license="GPLv3",
     packages=["submit50"],
     url="https://github.com/cs50/submit50",

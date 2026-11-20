@@ -1,6 +1,26 @@
 on: push
 jobs:
+  test-minimum-python:
+    # Run the suite on the oldest Python setup.py admits, so the declared floor is one that
+    # submit50 and the pinned lib50 can actually import on.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: floor
+        run: |
+          echo "version=$(python3 -c "import re; print(re.search(r'python_requires=\">=([\d.]+)\"', open('setup.py').read()).group(1))")" >> $GITHUB_OUTPUT
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ steps.floor.outputs.version }}
+      - name: Run tests
+        run: |
+          pip install babel pytest
+          pip install .
+          submit50 --help
+          python setup.py compile_catalog
+          pytest -q
   test-and-deploy:
+    needs: test-minimum-python
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

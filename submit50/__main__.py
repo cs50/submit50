@@ -286,11 +286,12 @@ def main():
     try:
         user_name, commit_hash, message = lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt, auth_method=auth_method)
     except lib50.ConnectionError as e:
-        # lib50 raises a bare ConnectionError when a forced SSH login fails (no HTTPS fallback);
-        # give the user something more actionable than the generic status-page message
+        # lib50 raises a bare ConnectionError both when a forced SSH login fails (no HTTPS fallback)
+        # and when GitHub is unreachable before authentication, so the message must cover both
         if auth_method == "ssh" and not str(e):
-            raise Error(_("SSH authentication failed. Make sure your SSH key is added to your GitHub account "
-                          "and loaded in ssh-agent, or omit --ssh to authenticate via HTTPS instead."))
+            raise Error(_("Could not authenticate with GitHub via SSH. Check that you are online, that your SSH key "
+                          "is added to your GitHub account and loaded in ssh-agent, or omit --ssh to authenticate "
+                          "via HTTPS instead."))
         raise
     print(message)
 
