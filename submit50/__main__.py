@@ -53,42 +53,55 @@ class Error(Exception):
     pass
 
 
-def check_announcements():
+def check_announcements(timeout=5):
     """Check for any announcements from submit.cs50.io, raise Error if so."""
-    res = requests.get(f"{SUBMIT_URL}/status/submit50")
+    try:
+        res = requests.get(f"{SUBMIT_URL}/status/submit50", timeout=timeout)
+    except requests.RequestException:
+        # Being unable to check is not an announcement; don't block the submission
+        cprint(_("Could not reach submit.cs50.io to check for announcements. Continuing anyway."), "yellow")
+        return
     if res.status_code == 200 and res.text.strip():
         raise Error(res.text.strip())
 
 
 def check_version(package_name=__package__, timeout=5):
-    """Check that submit50 is the latest version according to submit.cs50.io and PyPI."""
-    if not __version__:
+    """
+    Check that submit50 is the latest version according to submit.cs50.io and PyPI.
+
+    Only submit.cs50.io reporting that this version is too old blocks the submission.
+    If the check itself can't be completed, warn and continue.
+    """
+    # Not installed as a package (e.g. running from source): nothing to compare against
+    try:
+        current = version.parse(__version__)
+    except version.InvalidVersion:
         return
 
-    # Retrieve version info
-    res = requests.get(f"{SUBMIT_URL}/versions/submit50", timeout=timeout)
-    if res.status_code != 200:
-        raise Error(_("Could not connect to submit.cs50.io."
-                      "Please visit our status page https://cs50.statuspage.io for more information."))
+    # Minimum required version according to submit.cs50.io
+    try:
+        res = requests.get(f"{SUBMIT_URL}/versions/submit50", timeout=timeout)
+        res.raise_for_status()
+        minimum = version.parse(res.text.strip())
+    except (requests.RequestException, version.InvalidVersion):
+        cprint(_("Could not check whether {} is up to date. Continuing anyway.").format(package_name), "yellow")
+        return
 
-    # Get the minimum required version from submit.cs50.io
-    latest_io = version.parse(res.text.strip())
-    current = version.parse(__version__)
+    if current < minimum:
+        raise Error(_("Current version {} of {} is no longer supported. Run \"pip3 install --upgrade {}\" now to upgrade.")
+                    .format(current, package_name, package_name))
 
-    # Get PyPI version
-    latest_pypi = max(
-        requests.get(f"https://pypi.org/pypi/{package_name}/json", timeout=timeout).json()["releases"],
-        key=version.parse
-    )
-    latest_pypi = version.parse(latest_pypi)
+    # Latest version on PyPI, only to suggest an upgrade
+    try:
+        res = requests.get(f"https://pypi.org/pypi/{package_name}/json", timeout=timeout)
+        res.raise_for_status()
+        latest_pypi = max(version.parse(release) for release in res.json()["releases"])
+    except (requests.RequestException, ValueError, KeyError, TypeError, version.InvalidVersion):
+        return
 
-    # Check for minimum requirement
-    if current < latest_io:
-        raise Error(_(f"Current version {current} of {package_name} is no longer supported. Run \"pip3 install --upgrade {package_name}\" now to upgrade."))
-
-    # Check for latest version
     if latest_pypi > current:
-        cprint(f"A newer version of {package_name} is available. Run \"pip3 install --upgrade {package_name}\" now to upgrade.", "magenta")
+        cprint(_("A newer version of {} is available. Run \"pip3 install --upgrade {}\" now to upgrade.")
+               .format(package_name, package_name), "magenta")
 
 
 def setup_logging(level):
