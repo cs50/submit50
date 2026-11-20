@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: submit50 3.2.2\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-04 23:47-0400\n"
+"POT-Creation-Date: 2026-11-20 09:44-0500\n"
 "PO-Revision-Date: 2026-09-04 23:50-0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -18,27 +18,52 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: submit50/__main__.py:71
+#: submit50/__main__.py:62
 msgid ""
-"Could not connect to submit.cs50.io. Please visit our status page "
-"https://cs50.statuspage.io for more information."
+"Could not reach submit.cs50.io to check for announcements. Continuing "
+"anyway."
 msgstr ""
-"Không kết nối đến submit.cs50.io được. Vui lòng xem "
-"https://cs50.statuspage.io để biết thêm thông tin."
+"Không kết nối đến submit.cs50.io được để kiểm tra thông báo. Vẫn tiếp tục "
+"nộp bài."
 
-#: submit50/__main__.py:135
+#: submit50/__main__.py:87
+#, python-brace-format
+msgid "Could not check whether {} is up to date. Continuing anyway."
+msgstr ""
+"Không kiểm tra được {} đã là phiên bản mới nhất chưa. Vẫn tiếp tục nộp "
+"bài."
+
+#: submit50/__main__.py:91
+#, python-brace-format
+msgid ""
+"Current version {} of {} is no longer supported. Run \"pip3 install "
+"--upgrade {}\" now to upgrade."
+msgstr ""
+"Phiên bản hiện tại {} của {} không còn được hỗ trợ. Hãy chạy \"pip3 "
+"install --upgrade {}\" ngay để nâng cấp."
+
+#: submit50/__main__.py:103
+#, python-brace-format
+msgid ""
+"A newer version of {} is available. Run \"pip3 install --upgrade {}\" now"
+" to upgrade."
+msgstr ""
+"Đã có phiên bản mới hơn của {}. Hãy chạy \"pip3 install --upgrade {}\" "
+"ngay để nâng cấp."
+
+#: submit50/__main__.py:148
 msgid "Files that will be submitted:"
 msgstr "Các tập tin sẽ nộp:"
 
-#: submit50/__main__.py:139
+#: submit50/__main__.py:152
 msgid "No files in this directory are expected for submission."
 msgstr "Không có tập tin nào trong thư mục này để nộp."
 
-#: submit50/__main__.py:143
+#: submit50/__main__.py:156
 msgid "Files that won't be submitted:"
 msgstr "Các tập tin sẽ không nộp:"
 
-#: submit50/__main__.py:156
+#: submit50/__main__.py:169
 msgid ""
 "Keeping in mind the course's policy on academic honesty, including its "
 "restrictions on AI use, are you sure you want to submit these files "
@@ -48,11 +73,11 @@ msgstr ""
 "chế về việc sử dụng AI, bạn có chắc chắn muốn nộp các tập tin này không "
 "(có/không)? "
 
-#: submit50/__main__.py:174 submit50/__main__.py:194
+#: submit50/__main__.py:187 submit50/__main__.py:207
 msgid "y|yes"
 msgstr "c|co|có"
 
-#: submit50/__main__.py:189
+#: submit50/__main__.py:202
 msgid ""
 "You are submitting to a previous year's CS50x course. Your submission "
 "will not be counted towards this year's course."
@@ -60,21 +85,21 @@ msgstr ""
 "Bạn đang nộp bài cho khóa học CS50x của năm trước. Bài này sẽ không được "
 "tính vào khóa học năm nay."
 
-#: submit50/__main__.py:190
+#: submit50/__main__.py:203
 msgid ""
 "If you are looking to submit to this year's course, please use the "
 "following slug:"
 msgstr "Nếu bạn muốn nộp bài cho khóa học năm nay, vui lòng sử dụng slug này:"
 
-#: submit50/__main__.py:194
+#: submit50/__main__.py:207
 msgid "Do you want to continue with this submission (yes/no)? "
 msgstr "Bạn có muốn tiếp tục nộp bài này không (có/không)? "
 
-#: submit50/__main__.py:195
+#: submit50/__main__.py:208
 msgid "User aborted submission."
 msgstr "Người dùng đã hủy nộp bài."
 
-#: submit50/__main__.py:207
+#: submit50/__main__.py:220
 msgid ""
 "Sorry, something's wrong, please try again. If the problem persists, "
 "please visit our status page https://cs50.statuspage.io for more "
@@ -83,23 +108,23 @@ msgstr ""
 "Rất tiếc, có gì xảy ra, vui lòng thử nộp lại. Nếu vấn đề này còn tiếp "
 "nữa, vui lòng xem https://cs50.statuspage.io để biết thêm thông tin."
 
-#: submit50/__main__.py:212
+#: submit50/__main__.py:225
 msgid "Submission cancelled."
 msgstr "Đã hủy nộp bài."
 
-#: submit50/__main__.py:218
+#: submit50/__main__.py:231
 msgid "logout of submit50"
 msgstr "đăng xuất khỏi submit50"
 
-#: submit50/__main__.py:225
+#: submit50/__main__.py:238
 msgid "failed to logout"
 msgstr "không đăng xuất được"
 
-#: submit50/__main__.py:227
+#: submit50/__main__.py:240
 msgid "logged out successfully"
 msgstr "đăng xuất thành công"
 
-#: submit50/__main__.py:242
+#: submit50/__main__.py:255
 msgid ""
 "warning: displays usage warnings.\n"
 "info: adds all commands run.\n"
@@ -109,19 +134,19 @@ msgstr ""
 "info: thêm tất cả các lệnh đã chạy.\n"
 "debug: thêm kết quả của tất cả các lệnh đã chạy."
 
-#: submit50/__main__.py:248
+#: submit50/__main__.py:261
 msgid "force authentication via HTTPS"
 msgstr "buộc xác thực qua HTTPS"
 
-#: submit50/__main__.py:251
+#: submit50/__main__.py:264
 msgid "force authentication via SSH"
 msgstr "buộc xác thực qua SSH"
 
-#: submit50/__main__.py:259
+#: submit50/__main__.py:272
 msgid "prescribed identifier of work to submit"
 msgstr "định danh được chỉ định của bài cần nộp"
 
-#: submit50/__main__.py:279
+#: submit50/__main__.py:292
 msgid ""
 "SSH authentication failed. Make sure your SSH key is added to your GitHub"
 " account and loaded in ssh-agent, or omit --ssh to authenticate via HTTPS"
@@ -131,7 +156,16 @@ msgstr ""
 "vào tài khoản GitHub và đã được nạp vào ssh-agent, hoặc bỏ --ssh để xác "
 "thực qua HTTPS."
 
-#: submit50/__main__.py:291
+#: submit50/__main__.py:304
 msgid "--https and --ssh have no effect when used together"
 msgstr "--https và --ssh không có hiệu lực khi dùng cùng nhau"
+
+#~ msgid ""
+#~ "Could not connect to submit.cs50.io. "
+#~ "Please visit our status page "
+#~ "https://cs50.statuspage.io for more information."
+#~ msgstr ""
+#~ "Không kết nối đến submit.cs50.io được."
+#~ " Vui lòng xem https://cs50.statuspage.io để"
+#~ " biết thêm thông tin."
 
