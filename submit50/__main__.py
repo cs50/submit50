@@ -174,17 +174,17 @@ def prompt(honesty, included, excluded):
             honesty_question = str(honesty)
 
         # Get the user's answer
-        # If in R Studio environment, answer is always yes
+        # If in R Studio environment, the answer is always yes (skip the localized regex)
         if os.getenv("RSTUDIO") == "1":
-            answer = "yes"
-        else:
-            answer = input(honesty_question)
+            return True
+
+        answer = input(honesty_question)
     except EOFError:
         answer = None
         print()
 
     # If no answer given, or yes is not given, don't continue
-    if not answer or not re.match(f"^\s*(?:{_('y|yes')})\s*$", answer, re.I):
+    if not answer or not re.match(rf"^\s*(?:{_('y|yes')})\s*$", answer, re.I):
         return False
 
     # Otherwise, do continue
@@ -204,7 +204,7 @@ def check_slug_year(slug):
             cprint(suggested_slug, "yellow")
 
             # Ask if they want to continue
-            if not re.match(f"^\s*(?:{_('y|yes')})\s*$", input(_("Do you want to continue with this submission (yes/no)? ")), re.I):
+            if not re.match(rf"^\s*(?:{_('y|yes')})\s*$", input(_("Do you want to continue with this submission (yes/no)? ")), re.I):
                 raise Error(_("User aborted submission."))
             
     except ValueError:
@@ -256,6 +256,12 @@ def main():
                 '\ninfo: adds all commands run.'
                 '\ndebug: adds the output of all commands run.')
     )
+    parser.add_argument("--https",
+                        action="store_true",
+                        help=_("force authentication via HTTPS"))
+    parser.add_argument("--ssh",
+                        action="store_true",
+                        help=_("force authentication via SSH"))
     parser.add_argument(
         "-V", "--version",
         action="version",
@@ -273,9 +279,36 @@ def main():
     check_announcements()
     check_version()
     check_slug_year(args.slug)
-    
-    user_name, commit_hash, message = lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt)
+
+    # Decide whether to force HTTPS or SSH authentication
+    auth_method = resolve_auth_method(args.https, args.ssh)
+
+    try:
+        user_name, commit_hash, message = lib50.push("submit50", args.slug, CONFIG_LOADER, prompt=prompt, auth_method=auth_method)
+    except lib50.ConnectionError as e:
+        # lib50 raises a bare ConnectionError both when a forced SSH login fails (no HTTPS fallback)
+        # and when GitHub is unreachable before authentication, so the message must cover both
+        if auth_method == "ssh" and not str(e):
+            raise Error(_("Could not authenticate with GitHub via SSH. Check that you are online, that your SSH key "
+                          "is added to your GitHub account and loaded in ssh-agent, or omit --ssh to authenticate "
+                          "via HTTPS instead."))
+        raise
     print(message)
+
+
+def resolve_auth_method(https, ssh):
+    """
+    Map the --https/--ssh flags to lib50's auth_method ("https", "ssh", or None for lib50's default).
+    Warn and fall back to the default when both flags are given.
+    """
+    if https and ssh:
+        cprint(_("--https and --ssh have no effect when used together"), "yellow")
+        return None
+    if https:
+        return "https"
+    if ssh:
+        return "ssh"
+    return None
 
 if __name__ == "__main__":
     main()
